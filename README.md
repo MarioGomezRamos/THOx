@@ -1,2 +1,2 @@
 # THOx
- Test commit
+ v1.0
