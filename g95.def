@@ -1,0 +1,6 @@
+FC = g95
+#F90C = $(FC)
+FORM = -ffixed-form
+#FFLAGS = -g 
+#FFLAGS = -g
+#FFLAGS1 = -O1  

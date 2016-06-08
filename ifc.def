@@ -1,0 +1,11 @@
+FC = ifc
+F90C = $(FC)
+FFLAGS1 = -r8  -w -FI 
+FFLAGS2 = -r8
+
+
+#FORM = -Mnofree
+FFLAGS =  -g -cm -w  -FI
+#FFLAGS =  -cm -w -O2 -FI
+#FFLAGS = -g
+

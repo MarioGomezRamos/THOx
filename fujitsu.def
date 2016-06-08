@@ -1,0 +1,3 @@
+FC=f90
+FFLAGS= -g -Am
+FFLAGS = -g -Fixed -Kfast -Am -X9  -s -fw      

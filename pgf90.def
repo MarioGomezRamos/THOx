@@ -1,0 +1,6 @@
+FC = pgf90
+#F90C = $(FC)
+FORM = -Mnofree
+FFLAGS = -g -fast -Ktrap=fp
+#FFLAGS = -g
+#FFLAGS1 = -O1  
