@@ -3,7 +3,7 @@ c **  Scattering amplitudes & cross sections
 c *** --------------------------------------------------------------
       subroutine xsecs(kin,ncc,iexgs)
       use xcdcc,    only: smats,elab,jpch,jtmin,jtmax,nex,exch,parch,
-     &                    famps
+     &                    famps,jbord,jump
       use channels, only: jptset,jpiset,jpsets
       use factorials
       use sistema
@@ -48,6 +48,13 @@ c     -----------------------------------------------------------
 c ---------------------------------------------------------------
 c PLM
 !      REAL*8 PM(0:1000,0:1000),PD(0:1000,0:1000)
+
+      complex*16,allocatable:: ampauxJ(:,:,:,:) !MGR
+      integer :: njtot,nlp,ijtot,ilp,njtotcalc,ijtotcalc,nspline,ispline
+      integer :: jspl
+      integer,allocatable :: interpJ(:)
+      real*8 ljmax
+
 
       namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,jsets,
      &                    ermin,ermax,ner,icore,
@@ -146,6 +153,27 @@ c *** (zero target spin assumed here!)
       allocate(delcf(0:lfmax),stat=istat)
       call coulph(etaf,delcf,lfmax) !Coulomb phase-shifts for final channel
 
+!MGR let's find the maximum number of L' that there are for any Jtot
+      nlp=0
+      njtot=0
+      ljmax=0d0
+      do icc=1,ncc
+        jtot  =jptset(icc)%jtot
+        njtot =max(njtot,floor(jtot))
+        nch   =jptset(icc)%nchan
+        do nf=1,nch
+          if (jptset(icc)%nchan.eq.0) cycle
+          if (jptset(icc)%idx(nf).ne.iex) cycle 
+          lf  =jptset(icc)%l(nf);
+          ljmax=max(ljmax,abs(jtot-lf-0d0))           
+        enddo  
+      enddo
+      njtot=njtot-floor(jbord(1))
+      nlp=nint(2d0*ljmax+1d0)
+!      write(0,*) 'nlp',nlp,'njtot',njtot
+!-----------------------------------------------------------------------
+
+
       write(kfam,'(4f6.1,i5,i2,1f10.3)') jpgs,jtarg,jpf,
      & jtarg,nth,nearfa,elab
       write(1370,'(a,i3,a,1f8.4)') 'iex=',iex,' Ex=',exc !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST AMPS
@@ -161,9 +189,12 @@ c *** (zero target spin assumed here!)
 
       allocate(ampl(0:lfmax,nmi,nmf)) ! angle-independent amplitudes
 c1     allocate(ampaux(0:lfmax,nmi,nmf),lfv(0:lfmax) )
+             allocate(ampauxJ(0:njtot,nlp,nmi,nmf)) !MGR
+       allocate(interpJ(0:njtot)) !MGR
       ampl(:,:,:)=0; 
 c1      ampaux(:,:,:)=0; lfv(:)=0
-
+      ampauxJ(:,:,:,:)=0d0;interpJ(:)=1 !MGR
+      ijtot=-1 !MGR
       do icc=1,ncc
        partot=jptset(icc)%partot
        jtot  =jptset(icc)%jtot
@@ -172,7 +203,10 @@ c1      ampaux(:,:,:)=0; lfv(:)=0
 !          write(*,*)'skipping jtot=',jtot
           cycle 
        endif
-
+       if (jtot.ge.jbord(1)) then
+       ijtot=floor(jtot-jbord(1))!MGR
+       interpJ(ijtot)=0!MGR
+       endif
        do ni=1,nch
        if (jptset(icc)%idx(ni).ne.iexgs) cycle ! no inc waves 
        li   =jptset(icc)%l(ni)
@@ -224,6 +258,16 @@ c1        lfv(lf)=lf
      &  3i3," => nf,lf,iex=",3i3,6x,"S=",2f12.6," r1,r2=",2f12.5)')
      &  ni,li,1,nf,lf,iex,smat,r1,r2
        endif
+       
+!MGR--------------------------------------------------------------------
+       if(ijtot.ge.0) then
+       ilp=nint(ljmax+jtot-lrf)+1 
+!       write(0,*) 'ijtot',ijtot,'ilp',ilp,'im',im,'imp',imp, 'jtot',jtot
+       ampauxJ(ijtot,ilp,im,imp)= ampauxJ(ijtot,ilp,im,imp)  
+     &                 + phci*conjg(phcf)*r1*r2*c1*sqrt(2*lri+1)  
+     &                 * (smat-kron(ni,nf))*YLMC2(lf,mlp)
+       endif 
+!-----------------------------------------------------------------------        
        enddo ! imp
        enddo ! imp
        enddo ! nchf
@@ -232,53 +276,79 @@ c1        lfv(lf)=lf
     
 
 !!!!!!!!!!!!!!!!!!!!!!!!! INTERPOLATION !!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (.false.) then 
-      allocate(gaux(lfmax+1),xv(lfmax+1))
-      do icc=1,ncc
-       partot=jptset(icc)%partot
-       jtot  =jptset(icc)%jtot
-       nch   =jptset(icc)%nchan
-       if (nch.eq.0) cycle
-       if (.not.jptset(icc)%interp) cycle
+      if (.true.) then
+!First we need to know the points that are already calculated
+      njtotcalc=0
+      do ijtot=0,njtot
+      if (interpJ(ijtot).eq.0) njtotcalc=njtotcalc+1
+      enddo
+      
+!------------------------------------------------------------------------      
+      allocate(gaux(njtotcalc),xv(njtotcalc))
+      njtotcalc=0
+      do ijtot=0,njtot
+      if (interpJ(ijtot).eq.0) then
+       njtotcalc=njtotcalc+1
+       xv(njtotcalc)=ijtot
+      endif
+      enddo
+!      write(0,*) 'Passed njtotcalc,', njtotcalc,'njtot',njtot
+      do ijtot=0,njtot
+       jtot  =ijtot+jbord(1)
+       if (interpJ(ijtot).eq.0) cycle
 
-       do ni=1,nch
-       if (jptset(icc)%idx(ni).ne.iexgs) cycle ! no inc waves 
-       li   =jptset(icc)%l(ni)
-       lri  =li
-       jpi  =jptset(icc)%jp(ni)             ! should be just jpgs
-       nmi  =2*jpi+1
-
-       do nf=1,nch
-       if (jptset(icc)%nchan.eq.0) cycle
-       if (jptset(icc)%idx(nf).ne.iex) cycle 
-       lf  =jptset(icc)%l(nf)
-       lrf =lf
-       jpf =jptset(icc)%jp(nf)
-       nmf =2*jpf+1
+!MGR Let's try with splines
+!      pspline=(jtot-jbord(1))/jump(1)
+!      call SPLINT(pspline,njtotcalc,ispline,nspline,spline)
+      
+!      write(0,*) 'Spline N',njtotcalc,' NP',nspline,'I',ispline,'P',
+!     & pspline,'SP',spline(1:nspline)
        
-       if (lf.gt.lfmax) stop 'internal error; lf >lfmax in famps!' 
-
        do im=1,nmi
         rm= -jpi + (im -1)
         do imp=1,nmf
-        rmp=-jpf + (imp-1)
-        mlp=nint(rm-rmp)
-        rmlp=rm-rmp
-        if (abs(mlp).gt.lf) cycle        
-        phci =exp(zz*(delci(li)-delci(0)))
-        phcf =exp(zz*(delcf(lf)-delcf(0)))
-        gaux(1:lfmax+1)=ampaux(0:lfmax,im,imp)
-        xv(1:lfmax+1)  =lfv(0:lfmax)
-        write(*,'(10(i3,2f10.5))') (nint(xv(l)),gaux(l),l=1,lfmax)
-        caux=cfival(lrf,xv,gaux,lfmax+1,alpha)
-        write(*,*)'lf,caux=',lf,caux
-        ampl(lf,im,imp)= ampl(lf,im,imp)+caux*(phcf*phcf)
+        rmp= -jpf + (imp -1)
+        do ilp=1,nlp
+
+        lf=nint(ljmax+jtot-ilp)+1
+        if (abs(nint(rm-rmp)).gt.lf) cycle
+             
+        phcf =exp(2d0*zz*(delcf(lf)-delcf(0)))
+        gaux(:)=0d0
+!        write(0,*) 'Interpolating Jtot:', jtot,'L',lf 
+        do ijtotcalc=1,njtotcalc
+          gaux(ijtotcalc)=ampauxJ(nint(xv(ijtotcalc)),ilp,im,imp)
+        enddo
+!MGR splines        
+!        ampauxJ(ijtot,ilp,im,imp)=0d0
+!        do jspl=1,nspline
+!        if(interpJ(ijtot).eq.1) then
+!        ampl(lf,im,imp)=ampl(lf,im,imp)+spline(jspl)*
+!     &   gaux(jspl+ispline-1)*phcf
+!        endif
+!        ampauxJ(ijtot,ilp,im,imp)=ampauxJ(ijtot,ilp,im,imp)+spline(jspl)
+!     &  *gaux(jspl+ispline-1)
+!        enddo
+                   
+!        write(*,'(10(i3,2f10.5))') (nint(xv(l)),gaux(l),l=1,lfmax)
+        caux=cfival(ijtot+0d0,xv,gaux,njtotcalc,0d0)
+        ampl(lf,im,imp)= ampl(lf,im,imp)+caux*phcf
+        ampauxJ(ijtot,ilp,im,imp)=ampauxJ(ijtot,ilp,im,imp)+caux
+         
+        enddo !ilp
        enddo ! imp
-       enddo ! imp
-       enddo ! nchf
-       enddo ! nchi
-       enddo ! icc (j/pi sets)
+       enddo ! im
+       enddo ! ijtot (j/pi sets)
+       deallocate(gaux,xv)
        endif 
+!       write(0,*) 'Exit interpolation'
+
+!       do ijtot=0,njtot
+!       write(888,*) ijtot, dble(ampauxJ(ijtot,1,1,1)),
+!     &  aimag(ampauxJ(ijtot,1,1,1))
+!       enddo
+!       write(888,*) '&'    
+       
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -376,6 +446,8 @@ c *** Differential cross sections for each state
 800     format(1x,1f8.3,2g15.5)
         write(kxs,*)'&'
         deallocate(ampl,fam,pl,delcf)
+        deallocate(ampauxJ)
+         deallocate(interpJ)
 !        deallocate(ampaux,xv,lfv)
         if(allocated(gaux)) deallocate(gaux)
       enddo ! iex 
