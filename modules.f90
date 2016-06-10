@@ -14,6 +14,7 @@ c -------------------------------------------------------
 
       module sistema
        integer:: nmult,ncoul
+       integer:: partgs,ntex !MGR
        real*8:: zc,zv,zp,zt,rcc,mp,mt,jtgs
        character*25, namep, namet
        parameter(nmult=7)
@@ -142,22 +143,35 @@ c
 !          integer, parameter:: maxch=500
           integer partot           ! parity of system
           real*8  jtot             ! total angular momentum (Jp+L+Jt)
-!          real*8  jt               ! spin of target (zero so far!) 
+          real*8  jt(2000)               ! spin of target MGR
+          real*8  ext(2000)        ! energy of target MGR
+          real*8  idt(2000)        !index of target MGR
           real*8  nchan            ! number of channels (p+t configurations)
           logical interp           ! true if this J/pi set will be obtained by interpolation
 c         .................... can we allocate these vars dynamically?????????????
           integer l(2000)       ! p-t orbital angular momentum
           integer idx(2000)     ! index of projectile state
           real*8  jp(2000)      ! projectile spin
-          real*8  jt(2000)      ! target spin
+          real*8  jlp(2000)      ! J=L+Jp MGR
           real*8  exc(2000)     ! excitation energy of projectile
-          real*8  ext(2000)     ! excitation energy of target
           real*8  kcm(2000)     ! wavenumber
           integer iex           ! index of excited state
 
       END TYPE
       TYPE(PTCHANNEL),allocatable:: jptset(:)
          
+!MGR------------------------------------------------------------------------      
+      TYPE TCHANNEL
+          integer partarg        !Parity of target             
+          real*8  jtarg          !Angular momentum of target
+          real*8  extarg         !Excitation energy of target
+          real*8 Krot           !Rotational projection of intrinsic angular momentum
+          integer nphonon        !Vibrational number of phonons
+          integer inc            !0 if not incoming channel, 1 if incoming channel
+      END TYPE
+      TYPE (TCHANNEL),allocatable:: tset(:)
+      logical targdef
+!-------------------------------------------------------------------------
 
 c core state variables (deprecated; use qnc instead)
         real*8::  jc(maxcore)
@@ -211,18 +225,22 @@ c frad changed to complex in v2.3
      &                            rquad(:),xrad1(:)
       complex*16,allocatable:: xintgn(:),xintgc(:)
       complex*16,allocatable:: potQKn(:,:,:,:),potQKc(:,:,:,:)
-      complex*16:: potn,potc,fauxn,fauxc,caux
+      complex*16,allocatable:: potQKn_targ(:,:,:,:,:), !MGR
+     & potQKc_targ(:,:,:,:,:)                          !MGR
+      complex*16:: potn,potc,fauxn,fauxc,caux,potnv,potcv,potncor,
+     & potccor 
       complex*16,allocatable,target::Ff(:,:,:,:),Fc(:,:,:,:),Fn(:,:,:,:)
       complex*16,pointer:: ffr(:,:,:,:,:,:)
       parameter(nener=200,numfilmax=10) !,nchmax=10)
       integer, allocatable:: np(:)
 
 c     Solving the CC (separate module??)
-      integer:: method,lamax,nmatch,nrcc,lambmax
+      integer:: method,lamax,nmatch,nrcc,lambmax,lambpmax !MGR
       real*8,allocatable:: exch(:) ! ordered excitation energies for all JT/PI sets
       integer,allocatable:: parch(:) 
       real*8,allocatable:: jpch(:) 
       complex*16, allocatable:: ffc(:,:,:,:),smats(:,:,:),famps(:,:,:)
+      complex*16, allocatable:: ffcn(:,:,:,:),ffcc(:,:,:,:) !MGR
       real*8:: hcm,rmatch,elab,ecm,jtmin,jtmax,rmaxcc
       real*8:: jump(1:5),jbord(1:5) 
 
@@ -235,6 +253,14 @@ c ... to store bin information
          real*8 pshel(100,200)
       END TYPE
       TYPE(BIN_INFO), allocatable::binset(:) 
+
+      !MGR lambdahipervector
+      integer nlambhipr
+      TYPE LAMBDAHIPER
+        integer lambda,lambdap,q
+      END TYPE LAMBDAHIPER
+      
+      TYPE(LAMBDAHIPER):: lambdahpr(10000)      
 
       end module xcdcc
 
@@ -280,7 +306,7 @@ c for proj-target coupling potentials
          real*8,allocatable,target::vcore(:,:),vcorei(:,:),vcorec(:,:)
          real*8,allocatable,target::vval(:,:),vvali(:,:),vvalc(:,:)
          REAL*8,target :: MELC(1:nmult),MELV(1:nmult)
-         real*8:: MEL(1:nmult)
+         real*8:: MEL(1:nmult),MELT(1:nmult) !MGR
        end module ptpots
 
 c--------------------------------------------------------------------------Added for laguerre cuadratures

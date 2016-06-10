@@ -237,7 +237,14 @@ c *** Define reaction (projectile, target, energy)
       call partition()
 
 c *** Coupling potentials (includes DCE routines)
+      if (.not. targdef) then
+      write(*,*) 'using transition subroutine Target Spin=0'
       call transition 
+      else
+      write(*,*) 'using transition_targdef subroutine 
+     & with target excitation'
+!      call transition_targdef
+      endif
 
 c *** Build & solve CDCC equations
       iexgs=1 !assume that the incident channel is the first state!!!!
@@ -265,14 +272,73 @@ c *** ----------------------------------------
       use sistema
       use globals, only: kin
       use constants
+      use channels, only: tset,targdef
       implicit none
-      real*8 :: ecmi,mupt,conv,etai,kcmi,jt
-
-      namelist /reaction/ elab,namep,namet,mp,mt,zt,jt
+      integer par,itex,part,nphon,inc,notgdef
+      real*8 :: ecmi,mupt,conv,etai,kcmi,It,et,jt,K !MGR
+      character*1::pchar !MGR
+      namelist /reaction/ elab,namep,namet,mp,mt,zt,jt,par,ntex,nphon,
+     & K,notgdef !MGR
+      namelist /targstates/ et,It,part,nphon,K,inc !MGR
 c           
       write(*,'(//,5x,"******  REACTION CALCULATION ******")')
       jt=0.0; zt=0.0; mt=0.0 
+      ntex=0; nphon=0; K=0; inc=0;par=1 !MGR
+      targdef=.false.                   !MGR
+      notgdef=0                         !MGR
+      
       read(kin,nml=reaction)
+!MGR--------------------------------------------------------------------
+      jtgs=jt
+      partgs=par
+      if (abs(jt).gt.0.2d0) targdef=.true.
+      if(ntex.le.0) then
+        allocate(tset(1))
+        tset(:)%Krot=0d0
+        tset(1)%partarg=par
+        tset(1)%jtarg=jt
+        tset(1)%extarg=0d0
+        tset(1)%Krot=K
+        tset(1)%nphonon=nphon
+        tset(1)%inc=1
+      else
+        allocate(tset(ntex+1))
+        tset(:)%Krot=0d0
+        tset(1)%partarg=par
+        tset(1)%jtarg=jt
+        tset(1)%extarg=0d0
+        tset(1)%Krot=K
+        tset(1)%nphonon=nphon
+        tset(1)%inc=1
+        targdef=.true.
+      endif
+      
+      if (ntex.gt.0) then
+        do itex=1,ntex
+          nphon=0; K=0; inc=0
+          read(kin,nml=targstates)
+          tset(itex+1)%partarg=part
+          tset(itex+1)%jtarg=It
+          tset(itex+1)%extarg=et
+          tset(itex+1)%Krot=K
+          tset(itex+1)%nphonon=nphon
+          tset(itex+1)%inc=inc
+          if (inc.ne.0) then
+             tset(1)%inc=0 !Not fully implemented BEWARE
+          endif
+        enddo
+      endif
+      
+      if (notgdef.gt.0) targdef=.false.
+      
+      write(*,*) ntex+1,' target states'
+      do itex=1,ntex+1
+      if (tset(itex)%partarg.eq.1) pchar='+'
+      if (tset(itex)%partarg.eq.-1) pchar='-'
+      write(*,*) 'State #',itex,': J/pi',tset(itex)%jtarg,pchar,
+     & ' E:',tset(itex)%extarg
+      enddo
+!_----------------------------------------      
 
       ecmi=elab*mt/(mp+mt)
       mupt=mp*mt/(mp+mt)*amu
@@ -280,7 +346,6 @@ c
       conv=(2*mupt/hc**2)
       etai=conv*zp*zt*e2/kcmi/2.
       zp  =zc+zv 
-      jtgs=jt
       if ((zp.lt.0).or.(zt.lt.0)) then 
           write(*,*)'Projectile or target charge not specified!'
           stop
