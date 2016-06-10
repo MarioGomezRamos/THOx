@@ -3,7 +3,7 @@ c **  Scattering amplitudes & cross sections
 c *** --------------------------------------------------------------
       subroutine xsecs(kin,ncc,iexgs)
       use xcdcc,    only: smats,elab,jpch,jtmin,jtmax,nex,exch,parch,
-     &                    famps,jbord,jump
+     &                    famps0,jbord,jump
       use channels, only: jptset,jpiset,jpsets
       use factorials
       use sistema
@@ -113,7 +113,7 @@ c     -----------------------------------------------------------
 
 c *** Factorials (CHECK IF THIS IS NEEDED!!!!!!!!!!!!!!)
 !      lmax=nint(jtmax+maxval(jpch))     
-!      write(*,*)'famps: lmax=',lmax
+!      write(*,*)'famps0: lmax=',lmax
 !      call factorialgen(2*lmax)
 
 
@@ -131,7 +131,7 @@ c *** Compute & store amplitudes (Fresco, CPC Eq. (3.30))
 c *** (zero target spin assumed here!) 
       nmi    =2*jpgs+1
       nmfmax =2*maxval(jpiset(:)%jtot)+1
-      allocate(famps(nex,nth,nmi*nmfmax))
+      allocate(famps0(nex,nth,nmi*nmfmax))
       
       if (nex.lt.1) then
          write(*,*)'solvecc: nex<1!'; stop
@@ -225,7 +225,7 @@ c1      ampaux(:,:,:)=0; lfv(:)=0
        nmf =2*jpf+1
        smat=smats(icc,ni,nf) 
        
-       if (lf.gt.lfmax) stop 'internal error; lf >lfmax in famps!' 
+       if (lf.gt.lfmax) stop 'internal error; lf >lfmax in famps0!' 
 325    format(' Chan:',2i5,2x,2f6.1,2x,"S=",2f11.7)
 
        do im=1,nmi
@@ -406,7 +406,7 @@ c
         faux=faux + ampl(lf,im,imp)*r1
        enddo !lf
        fam(ith,im,imp)=fc*kron(im,imp)*kron(iexgs,iex) + faux 
-       famps(iex,ith,iam)= fam(ith,im,imp)
+       famps0(iex,ith,iam)= fam(ith,im,imp)
        enddo !im
        enddo !imp
        write(kfam,'(2x,1f8.4)') th 
@@ -543,7 +543,7 @@ c Double x-sections
 1000  if ((doublexs).or.(triplexs))
      &     call d2sigma(nth,dth,thmin,ermin,ermax,
      &                 ner,icore,jsets,fileamp,doublexs,triplexs)
-      if (allocated(famps)) deallocate(famps)
+      if (allocated(famps0)) deallocate(famps0)
       end subroutine
 
 
@@ -555,7 +555,7 @@ c Double differential x-sections dsigma/dEx dW  (NEW VERSION)
 c ----------------------------------------------------------------
       subroutine d2sigma(nth,dth,thmin,emin,emax,ncont,
      &                   icore,jsets,fileamp,doublexs,triplexs)
-      use xcdcc,    only: elab,jpch,nex,exch,parch,famps,binset
+      use xcdcc,    only: elab,jpch,nex,exch,parch,famps0,binset
       use channels, only: jpiset,jpsets,nchmax,sn,qnc
       use sistema
       use constants
@@ -654,7 +654,7 @@ c ------------------------------------------------------------------------------
 
 c     If no amplitudes have been calculated before, we try to read them
 c     from an external file, specified by the user 
-      if (.not.allocated(famps).and.(fileamp.ne."")) then
+      if (.not.allocated(famps0).and.(fileamp.ne."")) then
       if (fileamp.eq."") then
           write(*,*)'No amplitudes calculated and no file specified';
           stop
@@ -664,7 +664,7 @@ c     from an external file, specified by the user
       read(kfam,*,err=900) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
       rewind(kfam)
 
-      allocate(famps(maxstat,mth,nmi*nmfmax))
+      allocate(famps0(maxstat,mth,nmi*nmfmax))
       iex=0
       do iset=1,jpsets  
       nex=jpiset(iset)%nex
@@ -673,7 +673,7 @@ c     from an external file, specified by the user
       nm=nmi*nmf
       do n=1,nex
       iex=iex+1
-      if (iex.gt.maxstat) stop'increase dimension of famps' ! temporary solution
+      if (iex.gt.maxstat) stop'increase dimension of famps0' ! temporary solution
 !      write(*,*)'expected jpf=',jpf
       read(kfam,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
 !      write(*,*) 'ie,jpf,mth=',iex,jpf,mth
@@ -685,7 +685,7 @@ c     from an external file, specified by the user
       endif 
       do ith=1,nth
       read(kfam,*) th  
-      read(kfam,228) (famps(iex,ith,iam),iam=1,nm) 
+      read(kfam,228) (famps0(iex,ith,iam),iam=1,nm) 
 228   format(1P,6E12.4)
       enddo !states
       enddo !ith
@@ -739,7 +739,7 @@ c *** Sum discrete inel/breakup angular distributions
       iex=ips(iset,n)
       if (energ(iset,n).lt.0)    cycle  ! bound state 
       if (energ(iset,n).gt.Ethr) cycle  ! closed channel
-      raux=raux+ 10.*abs(famps(iex,ith,iam))**2/nmi
+      raux=raux+ 10.*abs(famps0(iex,ith,iam))**2/nmi
       enddo ! states within j/pi set
       enddo !imp 
       enddo !im
@@ -916,7 +916,7 @@ c *** Compute DOUBLE x-sections dsigma/dedw
       iex=ips(iset,n)
 !      if((iecv.eq.1).and.(imp.eq.1)) 
 !     &   write(*,*)'inc,iset,n,iex=',inc,iset,n,iex
-      tmat_aux=f2t*famps(iex,ith,iam)
+      tmat_aux=f2t*famps0(iex,ith,iam)
       sumps=sumps+gsolap(iset,n,inc,iecv)*tmat_aux
 !      if (ith.eq.1) write(*,*) iset,n,inc,iecv,
 !     & abs(gsolap(iset,n,inc,iecv))
@@ -1115,7 +1115,7 @@ c-------------------------------------------------------------------------------
       if (ebin.lt.0) cycle ! bound state
       iex=ips(iset,n)
       write(99,*)'iset,n=',iset,n
-      write(99,308) (famps(iex,1,iii),iii=1,iam)
+      write(99,308) (famps0(iex,1,iii),iii=1,iam)
 308   format(1p,6e12.4)
       if (jpiset(iset)%nho.eq.0) then ! bin set
 !        ebin=hc**2*(binset(iset)%khat(n))**2/(2.d0*mucv)
@@ -1129,7 +1129,7 @@ c-------------------------------------------------------------------------------
       Kcmf=sqrt(2.d0*mupt*ecmf)/hc    
       f2t=-2.*pi*hc**2/mupt*sqrt(Kcmi/Kcmf) ! conversion factor f(theta) -> T-mat
 !      if(wrt)write(99,*)'n,k,bindk=',n,binset(iset)%kmid(n),1/sqrt(dk)
-      famps(iex,:,:)=f2t*famps(iex,:,:)      ! convert f(theta) -> T(theta)
+      famps0(iex,:,:)=f2t*famps0(iex,:,:)      ! convert f(theta) -> T(theta)
       if (ecmf.lt.1e-4) ecmf=1e-4
       write(99,3130)'   iset=',iset,' ich=',n,' Ecmf=',Ecmf,
      +    'Ko=',kcmf,abs(kcmf-Kthr),' Ebin=',ebin,
@@ -1466,9 +1466,9 @@ c1 ------------------------------------
       if (energ(iset,n).lt.0)    cycle ! bound states
       if (energ(iset,n).gt.Ethr) cycle ! closed channels
       iex=ips(iset,n)
-! famps() already transformed to T-matrix
-!      sumps=sumps+fv(n)*f2t*famps(iex,nial+ith,iii)
-      sumps=sumps+fv(n)*famps(iex,nial+ith,iii)
+! famps0() already transformed to T-matrix
+!      sumps=sumps+fv(n)*f2t*famps0(iex,nial+ith,iii)
+      sumps=sumps+fv(n)*famps0(iex,nial+ith,iii)
 
       enddo !  n (PS's)
       fxyc(ith+1,ier)=sumps
@@ -1518,15 +1518,15 @@ c1      f2t=-2.*pi*hc**2/mupt*sqrt(Kcmi/Kcmf) ! conversion factor f(theta) -> T-
       do ith=0,5
 c CHECK !!!! ASSUME g(k)=1 for bins !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       iex=ips(iset,n)
-! TEST : f2t already included in famps 
-!      fxyc(ith+1,n)=f2t*famps(iex,nial+ith,iii)
+! TEST : f2t already included in famps0 
+!      fxyc(ith+1,n)=f2t*famps0(iex,nial+ith,iii)
 !     &             *sqrt(pi/2.)/sqrt(dk)    
-!      fxyc2(ith+1,n)= f2t*famps(iex,nial+ith,iii)
+!      fxyc2(ith+1,n)= f2t*famps0(iex,nial+ith,iii)
 !     & /binset(iset)%khat(n)/sqrt(dk)  
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      fxyc(ith+1,n)=famps(iex,nial+ith,iii)
+      fxyc(ith+1,n)=famps0(iex,nial+ith,iii)
      &             *sqrt(pi/2.)/sqrt(dk)    
-      fxyc2(ith+1,n)= famps(iex,nial+ith,iii)
+      fxyc2(ith+1,n)= famps0(iex,nial+ith,iii)
      & /binset(iset)%khat(n)/sqrt(dk)    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST!!!!!!!!
       enddo !ith
       enddo !n 

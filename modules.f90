@@ -239,7 +239,8 @@ c     Solving the CC (separate module??)
       real*8,allocatable:: exch(:) ! ordered excitation energies for all JT/PI sets
       integer,allocatable:: parch(:) 
       real*8,allocatable:: jpch(:) 
-      complex*16, allocatable:: ffc(:,:,:,:),smats(:,:,:),famps(:,:,:)
+      complex*16, allocatable:: ffc(:,:,:,:),smats(:,:,:),famps0(:,:,:)
+      complex*16, allocatable:: famps(:,:,:,:) !MGR
       complex*16, allocatable:: ffcn(:,:,:,:),ffcc(:,:,:,:) !MGR
       real*8:: hcm,rmatch,elab,ecm,jtmin,jtmax,rmaxcc
       real*8:: jump(1:5),jbord(1:5) 
