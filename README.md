@@ -1,2 +1,3 @@
 # THOx
- v1.0
+ Included Jump Needs testing !!!
+ Still Spin_target=0 calculations
