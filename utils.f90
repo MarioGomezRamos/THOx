@@ -1421,6 +1421,31 @@ c
       return
       end
 
+!c     ********************************************************************
+      real*8 function u9(ra,rb,rc,rd,re,rf,rg,rh,ri)
+!c     -------------------------------------------------------------------
+!c     nine-j symbol. definition as in brink and satchler.
+!c     -------------------------------------------------------------------
+      implicit real*8(a-h,o-z)
+      u9=0.0d0
+      k1=idint(2.d0*dabs(ra-ri)+0.01d0)
+      k2=idint(2.d0*dabs(rb-rf)+0.01d0)
+      k3=idint(2.d0*dabs(rd-rh)+0.01d0)
+      minrda=max0(k1,k2,k3)
+      k1=idint(2.d0*(ra+ri)+0.01d0)
+      k2=idint(2.d0*(rb+rf)+0.01d0)
+      k3=idint(2.d0*(rd+rh)+0.01d0)
+      maxrda=min0(k1,k2,k3)
+      if(minrda-maxrda) 30,30,20
+   30 do 50 n1=minrda,maxrda,2
+      r1=float(n1)/2.d0
+      ramda2=n1
+      y9=(ramda2+1.d0)*rac(ra,ri,rd,rh,r1,rg)*rac(rb,rf,rh,rd,r1,re)
+      u9=u9+y9*rac(ra,ri,rb,rf,r1,rc)
+   50 continue
+   20 return
+      end function
+
 c ... Interpolation routines from FRESCO 
 c ... Complex interpolation function for complex
 c ... (for uniform grids only!) 

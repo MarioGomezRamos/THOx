@@ -816,7 +816,7 @@ c     --------------------------------------------------------------
 
       if(nc.eq.1) then                    ! nuclear part
       xpos=(xrvec-rfrag(1))/(rfrag(2)-rfrag(1)) 
-      if(iq.eq.0.and.coef.lt.0.d0) then
+      if(coef.lt.0.d0) then
 !      vvalp=fival(xrvec,rfrag,vval(:,iq),nr,alpha)
         vvalp=FFR4(xpos,vval(:,iq),nr)
 !       vvalip=fival(xrvec,rfrag,vvali(:,iq),nr,alpha)

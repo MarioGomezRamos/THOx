@@ -35,7 +35,7 @@ SRC=$(TOPDIR)
 
 OBJ=modules.o coul90.o scatcc.o  thox.o basis.o hdiag.o ho.o lst-amos.o utils.o \
     pauli.o sort.o nag2.o whittaker.o  \
-     continuum.o belam.o ham.o \
+     continuum.o belam.o ham.o  transition_targdef.o\
         transition.o   clebsg.o  projpot.o fragpot.o \
         rmatel.o solvecc.o lapack.o  rmatrix.o ccbins.o xsections.o \
 	bincc2.o
@@ -82,6 +82,8 @@ belam.o:belam.f90 modules.f90
 	$(FC) $(FFLAGS1) -c belam.f90
 transition.o:transition.f90 modules.f90
 	$(FC) $(FFLAGS1)  -c transition.f90
+transition_targdef.o:transition_targdef.f90 modules.f90
+	$(FC) $(FFLAGS1)  -c transition_targdef.f90
 fragpot.o:fragpot.f90 modules.f90
 	$(FC) $(FFLAGS1) -c fragpot.f90
 projpot.o:projpot.f90 modules.f90

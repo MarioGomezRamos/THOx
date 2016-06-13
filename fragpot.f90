@@ -681,7 +681,7 @@ c  typically given in units of e.fm^q
 !      parameter(mmultipole=4,alpha=0d0)
 !      real*8 pl(0:mmultipole),c(0:mmultipole),sp(9),w(9),  
 !     &    vdef(0:mmultipole),def(2:mmultipole)
-      parameter(alpha=0.5d0)
+      parameter(alpha=0.0d0)
       real*8, dimension(0:qmax):: pl,vdef,def,c
       real*8 sp(9),w(9) 
 !!! TEST

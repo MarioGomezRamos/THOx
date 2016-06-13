@@ -243,7 +243,7 @@ c *** Coupling potentials (includes DCE routines)
       else
       write(*,*) 'using transition_targdef subroutine 
      & with target excitation'
-!      call transition_targdef
+      call transition_targdef
       endif
 
 c *** Build & solve CDCC equations
@@ -252,7 +252,12 @@ c *** Build & solve CDCC equations
       call cdcc(iexgs,ncc)
 
 c *** Scattering amplitudes and cross sections
+      if (.not. targdef) then
       call xsecs(kin,ncc,iexgs)
+      else
+      call xsecs_tdef(kin,ncc,iexgs)
+      endif
+      
 
 !      tripple=.true.
 !      if (tripple) call three_body()

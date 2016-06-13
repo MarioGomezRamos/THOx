@@ -297,7 +297,7 @@ c ------------------------------------------------------------------------------
          enddo
        enddo
 !--------------------------------------------------------------------------
-
+       
 
 c *** START CALCULATION OF COUPLING POTENTIALS ---------------------------------------
       write(*,'(/,2x,"** FORMFACTORS **")') 
@@ -336,6 +336,7 @@ c commented by AMoro, to save memory
       potnv=0d0; potcv=0d0; potncor=0d0;  potccor=0d0
       r1=rquad(iquad); ! internal coordinate (r)
       r2=xrad2(irad2)  ! p-t coordinate (R)
+      
       if ((ncoul.eq.0).or.(ncoul.eq.1)) then  !nuclear part
         nc=1 ! nuclear part
         potncor= pot(r1,r2,nq,k,coefc,nc)
@@ -773,7 +774,8 @@ c for fresco
       if (verb.ge.4) 
      & write(120,'(1x,1f8.3,2x,2g16.8)') r2,fauxc+fauxn
       enddo !irad
-
+      write(440,*) 'm1',m1,'m2',m2,'xlc',nint(xlc),'xlcp',xlcp,'Q',nq,
+     & 'rmeln',rmeln,'rmelc',rmelc
 c Extrapolate Coulomb formactors from R=Rmax to Rextrap
       fauxc=fauxc/rmelc
       if (rextrap.gt.rmax) then

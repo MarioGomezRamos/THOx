@@ -86,6 +86,109 @@ c AMM: final??
 123   return
       end
 
+!Reduced matrix element for target excitation NOT INCLUDING <It|Q|It'>
+      SUBROUTINE rmatel_tdef(nset,mset,ilam,nch,mch,K,nQ,lambda,
+     .xjp1,xjp2,rmatn,ignorespin) 
+!      use xcdcc, only: chann!,rmatn,rmatc
+      use factoriales
+      use channels,only:spchan,jpiset,sn
+      use xcdcc, only: lambdahpr
+      
+      implicit none
+      logical ignorespin
+      real*8 rmatn,xjp1,xjp2,pi,xKg,Qg,xl1g,xl2g,xj1g,xj2g,sn1
+      integer nch,mch,nset,mset,ilam,K,nQ,lambda
+      real*8 xlamb,xlambp,xl1,xl2,xj1,xj2,xI1,xI2,xfac
+      real*8,external:: threej,sixj
+      real*8 xj1aux,xj2aux,xjp1aux
+      
+      pi=dacos(-1.d0)
+      rmatn=0d0
+      xfac=0d0
+
+
+       xl1=jpiset(nset)%lsp(nch)
+       xj1=jpiset(nset)%jsp(nch)
+       xI1=jpiset(nset)%jc(nch)
+       
+       xl2=jpiset(mset)%lsp(mch)
+       xj2=jpiset(mset)%jsp(mch)
+       xI2=jpiset(mset)%jc(mch)
+       
+       sn1=sn
+       
+       if (ignorespin) then
+       xj1=xl1
+       xI1=0d0
+       xj2=xl2
+       xI2=0d0
+       sn1=0d0
+       endif
+       
+       
+       if(xI2.ne.xI1) then
+         write(*,*) 'Something wrong. Core i',xI1,'not equal to core f',
+     &   xI2 
+         return
+       endif
+
+
+!      if (lambdac.eq.2) write(197,'(2f8.4,i3,2f8.4,4i3)') 
+!     &  xi1,xl1,nch,xi2,xl2,mch,k,nq,lambda
+      xlamb=lambdahpr(ilam)%lambda+0d0
+      xlambp=lambdahpr(ilam)%lambdap+0d0
+      if (lambdahpr(ilam)%q.ne.nQ) then
+      write(*,*) 'Something wrong: Q in hipervector',lambdahpr(ilam)%q,
+     & 'not equal to Q',nq
+      endif
+      
+      if((nint(xlamb).gt.(K+lambda)).or.(nint(xlamb).lt.abs(K-lambda))
+     &.or.(mod(nint(xlamb)+K+lambda,2).ne.0)) return
+      if(nint(xlambp).gt.(K+nq-lambda).or.(nint(xlambp)
+     & .lt.abs(K-nq+lambda)).or.(mod(nint(xlambp)+K+nq-lambda,2).ne.0)) 
+     & return
+      
+      xKg=dsqrt(2.d0*dble(K)+1.d0)
+      Qg=dsqrt(2.d0*dble(nQ)+1.d0)
+      xl1g=dsqrt(2.d0*xl1+1.d0)
+      xl2g=dsqrt(2.d0*xl2+1.d0)
+      xj1g=dsqrt(2.d0*xj1+1.d0)
+      xj2g=dsqrt(2.d0*xj2+1.d0)
+
+
+
+      xfac=(-1d0)**(xj2+xj1+xl1+xl2+sn1+xjp1+xlamb+xI1)*
+     & dsqrt(2.d0*xjp1+1.d0)*dsqrt(2.d0*xjp2+1.d0)*2d0*sqrt(pi)*
+     & dsqrt(2.d0*xlamb+1.d0)*xKg*Qg**2*xl1g*xl2g*xj1g*xj2g*
+     & dsqrt(fact(2*nQ)/(fact(2*lambda)*fact(2*(nQ-lambda))))*
+     & threej(dble(K),dble(lambda),xlamb,0.d0,0.d0,0.d0)*
+     & (2.d0*xlambp+1.d0)*threej(xl1,xl2,xlambp,0.d0,0.d0,0.d0)*
+     & threej(dble(K),dble(nq-lambda),xlambp,0.d0,0.d0,0.d0)*
+     & sixj(xjp2,xjp1,xlambp,xj1,xj2,xI1)*
+     & sixj(xj1,xj2,xlambp,xl2,xl1,sn1)*
+     & sixj(xlambp,xlamb,dble(nQ),dble(lambda),dble(nQ-lambda),dble(K))
+     
+
+!      write(330,*)'li',xl1,'lf',xl2,'ji',xj1,'jf',xj2,'s',sn,'K',k
+!      write(330,*)'lamp',xlambp,'Q',nq,'lambda',lambda,'lam',xlamb
+!      write(330,*) 'xfac',xfac
+ 
+!!! CHECK IF THIS IS VALID ALSO FOR NQ=0!!!!!!! AMORO!!!!!!!!!!!!!!!1
+!      strmat=WIGN3J(dble(nQ),xI1,xI2,0.d0,-xKc,xKc)
+!     .*(-1.d0)**nint(xI2+xKc+dble(nQ))*xI1g*xI2g        ! nuclear
+!      strmat=rotor(xI1,xKc,nQ,xI2,1)
+      rmatn=xfac
+!      if (abs(rmatn).gt.1e-6) then
+!      write(330,*) 'Coupling states'
+!      write(330,*) '[(',nint(xl1),',',sn,')',xj1,',',xI1,']',xjp1
+!      write(330,*) '[(',nint(xl2),',',sn,')',xj2,',',xI2,']',xjp2
+!      write(330,*) 'K',k,'Q',nq,'lamb',lambda,'Lambda',xlamb,'Labmda_p',
+!     & xlambp
+!      endif
+!      strmat=rotor(xI1,xKc,nQ,xI2,2)                     ! coulomb
+123   return
+      end
+
 c ------------------------------------------------------------
 c Reduced matrix element in ROTOR model
 C nc=1: coulomb
@@ -129,9 +232,9 @@ c --------------------------------------------------------------
 !!!! AMoro: these factors already included in radial formfactor
 !       rotor=rotor*dsqrt(4.d0*pi)/Qg
 !!!!!
-cc      rotor=WIGN3J(xq,xI1,xI2,zero,-xK,xK)
-cc     .      *(-1.d0)**nint(xI2+xK+xq)*xI1g*xI2g 
-cc      rotor=Mnq*dsqrt(4.d0*pi)/Qg*rotor
+!cc      rotor=WIGN3J(xq,xI1,xI2,zero,-xK,xK)
+!cc     .      *(-1.d0)**nint(xI2+xK+xq)*xI1g*xI2g 
+!cc      rotor=Mnq*dsqrt(4.d0*pi)/Qg*rotor
 
       endif
       endif

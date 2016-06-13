@@ -1879,3 +1879,577 @@ c     Interpolation for IA=NSET
       return
       end
 
+
+!MGR amplitudes with target excitation or spin of target
+
+c *** --------------------------------------------------------------
+c **  Scattering amplitudes & cross sections
+c *** --------------------------------------------------------------
+      subroutine xsecs_tdef(kin,ncc,iexgs)
+      use xcdcc,    only: smats,elab,jpch,jtmin,jtmax,nex,exch,parch,
+     &                    famps
+      use channels, only: jptset,jpiset,jpsets,tset
+      use factorials
+      use sistema
+      use constants
+      use parameters, only:  maxchan,maxsets
+      use globals,  only: debug,written,verb
+      use nmrv,     only: hort
+      use wfs,      only: nr,dr,energ,rvec,wfr
+      implicit none
+      logical :: doublexs,triplexs,jsets(maxsets)
+c     ---------------------------------------------------------
+      integer, parameter :: klog=99
+      integer   , parameter:: kamp=136, kxs=300,kfam=137,
+     &                        ksmat=170, !ksj=157,
+     &                        nearfa=1
+      integer :: istat,kin
+      integer :: inc,iexgs,icc,ncc,nch,ni,nf,lmax,iex,lfmax,ith,icore
+      integer :: partot,nth,njt,parold,maxleg,ner,itex,itarg
+      integer :: iam,im,imp,mlp,li,lf,nmi,nmti,nmtf,nmf,mi,mf,ijt,l
+      integer :: nmtfmax,nmfmax,imt,imtp,idt
+c     ------------------------------------------------------------
+      real*8  :: kron,cleb,ylmc,ylmc2 !external functions
+      real*8    , parameter:: zero=0
+      real*8    , parameter:: theps=1e-3,alpha=0d0
+      real*8    , allocatable:: lfv(:),xv(:)
+      real*8  :: jtot,jpgs,jpi,jpf,jpold,jtarg,jti,jtf,jlpi,jlpf
+      real*8  :: kcmi,kcmf,exc,vi,vf,tkch,etarg,partarg,extarg
+      real*8  :: ecmi,ecmf,etai,etaf,mupt,ermin,ermax,jwtarg
+      real*8  :: thmin,thmax,dth,cth,sth,s2,th,thrad
+      real*8, allocatable :: pl(:,:),delci(:),delcf(:)
+      real*8  :: rm,rmp,rmlp,lri,lrf,rmt,rmtp
+      real*8  :: factor, r1,r2,delif,yffc
+      real*8  :: xsruth,xs,xstot,xsj,xr,xrj,sigex(nex),xsaux
+      real*8  :: sigtex(ntex+1),sigextex(nex,ntex+1)
+c     -----------------------------------------------------------
+      complex*16, parameter:: zz=cmplx(0.,1.)
+      complex*16,allocatable:: ampl(:,:,:,:,:),fam(:,:,:,:,:)
+      complex*16, allocatable:: ampaux(:,:,:,:,:),gaux(:)
+      complex*16 smat,c1,faux,fc,phci,phcf,caux,cfival,resc,ffc4                     
+c     -----------------------------------------------------------
+      CHARACTER  PARITY(3)
+      character*40 fileamp
+      DATA PARITY / '-','?','+' /
+c ---------------------------------------------------------------
+c PLM
+!      REAL*8 PM(0:1000,0:1000),PD(0:1000,0:1000)
+
+      namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,jsets,
+     &                    ermin,ermax,ner,icore,itarg,
+     &                    triplexs
+
+c initialize -------------------------------------------------
+      written(kamp)=.true.
+      written(kxs)=.true.
+      written(kfam)=.true.
+      
+!      written(ksj)=.false.
+      written(kxs+1:kxs+min(nex,9))=.true.
+      pi=acos(-1d0)
+      thmin=0; thmax=0; dth=0; 
+      doublexs=.false. ; triplexs=.false.
+      ermin=-1; ermax=-1
+      jsets(:)=.true.        
+      fileamp=""
+      ner=0
+      
+c     -----------------------------------------------------------
+      rewind(kin)
+      itarg=1
+      read(kin,nml=xsections)
+
+      if (thmax.gt.thmin) then
+        nth=nint((thmax-thmin)/dth)+1
+      else
+        write(*,*)'thmax<thmin!; Aborting'; stop
+      endif
+
+      if (ner.eq.0) then
+         write(*,*)'NER=0!!';
+      endif
+
+!      write(*,*)'ncc=',ncc
+
+      if (ncc.eq.0) goto 1000
+
+      jpgs =jpch(iexgs)
+      mupt =mp*mt/(mp+mt)*amu 
+      ecmi =elab*mt/(mp+mt)
+      kcmi =sqrt(2*mupt*ecmi)/hc
+      etai =zp*zt*mupt/kcmi/hc/finec 
+      lmax =nint(jtmax+maxval(jpch)+maxval(tset(:)%jtarg))
+
+
+
+      write(*,'(/,5x,"*** SCATTERING AMPLITUDES AND X-SECTIONS ***",/)')
+      write(*,320) elab, ecmi,kcmi, etai
+320   format(3x,"Elab=",1f7.2, 5x,'Ecm=',1f8.3,5x,
+     &  'Kcm=',1f6.3, 4x,'Eta param. =',1f7.4)
+      write(*,'(/,3x, "o Jtmin=",1f4.1,3x,"Jtmax=",1f5.1,/ )')
+     &  jtmin,jtmax
+      call flush(6)
+
+c *** Factorials (CHECK IF THIS IS NEEDED!!!!!!!!!!!!!!)
+!      lmax=nint(jtmax+maxval(jpch))     
+!      write(*,*)'famps: lmax=',lmax
+!      call factorialgen(2*lmax)
+
+
+c *** Compute Coulomb phases for l< lmax
+       allocate(delci(0:lmax),stat=istat)
+       if (istat>0) then
+         write(*,*) 'readsmat: allocating memory for DELC failed!';
+         stop
+       endif
+       call coulph (etai,delci,lmax) !Coulomb phase-shifts for inc channel
+
+
+
+c *** Compute & store amplitudes (Fresco, CPC Eq. (3.30))   
+c *** (zero target spin assumed here!) !MGR let's try and change it
+      nmi    =nint(2*jpgs+1)
+      nmti   =nint(2*jtgs+1)
+      nmfmax =nint(2*maxval(jpiset(:)%jtot)+1)
+      nmtfmax=nint(2*maxval(tset(:)%jtarg)+1)
+      allocate(famps(nex,ntex+1,nth,nmi*nmfmax*nmti*nmtfmax))
+      
+      if (nex.lt.1) then
+         write(*,*)'solvecc: nex<1!'; stop
+      endif
+      if (iexgs.lt.1) then
+         write(*,*)'solvecc: inc=',iexgs; stop
+      endif
+
+      do iex=1,nex  ! loop in projectile states
+      jpf  = jpch(iex) 
+      exc  = exch(iex)
+      do itex=1,ntex+1
+      jtarg =tset(itex)%jtarg
+      etarg =tset(itex)%extarg
+      tkch=ecmi+exch(iexgs)-exc-etarg
+      
+      if (tkch.lt.0) cycle    !closed channel
+      kcmf = sqrt(2*mupt*tkch)/hc
+      etaf = zp*zt*mupt/kcmf/hc/finec 
+      nmf  = nint(2*jpf +1)
+      nmtf = nint(2*jtarg+1)
+      lfmax= nint(jtmax+jpf+jtarg)
+      maxleg=max(1,lfmax)
+      write(*,*) 'Projectile state',iex,'Target state',itex,'Ecm',tkch,
+     & 'k_f:',kcmf
+      allocate(delcf(0:lfmax),stat=istat)
+      call coulph(etaf,delcf,lfmax) !Coulomb phase-shifts for final channel
+
+!      write(kfam,301) iex,exc,jpf,parity(parch(iex)+2)
+!      write(kfam,*) elab,nth
+      write(kfam,'(4f6.1,i5,i2,1f10.3)') jpgs,jtgs,jpf,
+     & jtarg,nth,nearfa,elab
+      write(kxs,302) iex,exc,jpf,parity(parch(iex)+2)
+      if (iex+itex.le.10) write(kxs+(iex-1)*(ntex+1)+itex,302) 
+     &      iex,exc,jpf,parity(parch(iex)+2),itex,tset(itex)%extarg
+300   format(3x,'o Angle-indep amplitudes for state #',i3,
+     &   ' Ex=',1f7.3,' MeV',' J/pi=',1f5.1,a1)     
+301   format(1x,'# f(theta) amplitudes for state #',i3,
+     &   ' Ex=',1f7.3,' MeV',' J/pi=',1f5.1,a1) 
+302   format(1x,'# Cross sections for state #',i3,
+     &   ' Ex=',1f7.3,' MeV',' J/pi=',1f5.1,a1,'Targ. state',i3,
+     &   ' E_targ=',1f7.3)
+
+      allocate(ampl(0:lfmax,nmi,nmti,nmf,nmtf)) ! angle-independent amplitudes
+      allocate(ampaux(0:lfmax,nmi,nmti,nmf,nmtf),lfv(0:lfmax) )
+      ampl(:,:,:,:,:)=0; 
+      ampaux(:,:,:,:,:)=0; lfv(:)=0
+
+      do icc=1,ncc
+       partot=jptset(icc)%partot
+       jtot  =jptset(icc)%jtot
+       nch   =jptset(icc)%nchan
+       if (jptset(icc)%interp) then
+!          write(*,*)'skipping jtot=',jtot
+          cycle 
+       endif
+
+       do ni=1,nch
+       if (jptset(icc)%idx(ni).ne.iexgs) cycle ! no inc waves 
+       if (jptset(icc)%idt(ni).ne.1) cycle !no inc waves NEEDS REPHRASING MGR
+       li   =jptset(icc)%l(ni)
+       lri  =li
+       jpi  =jptset(icc)%jp(ni)             ! should be just jpgs
+       jlpi =jptset(icc)%jlp(ni)
+       jti  =jptset(icc)%jt(ni)
+       nmi  =nint(2*jpi+1)
+       nmti =nint(2*jti+1)
+
+       do nf=1,nch
+       if (jptset(icc)%nchan.eq.0) cycle
+       if (jptset(icc)%idx(nf).ne.iex) cycle 
+       if (jptset(icc)%idt(nf).ne.itex) cycle 
+       lf  =jptset(icc)%l(nf);   
+!       nlf=nlf+1;     
+!       lfv(icc,nlf)=lf 
+       lrf =lf
+       jpf =jptset(icc)%jp(nf)
+       jlpf=jptset(icc)%jlp(nf)
+       jtf= jptset(icc)%jt(nf)
+       nmf =nint(2*jpf+1)
+       nmtf=nint(2*jtf+1)
+       smat=smats(icc,ni,nf) 
+       
+       if (lf.gt.lfmax) stop 'internal error; lf >lfmax in famps!' 
+325    format(' Chan:',2i5,2x,2f6.1,2x,"S=",2f11.7)
+
+       do im=1,nmi
+        rm= -jpi + (im -1)
+        do imp=1,nmf
+        rmp=-jpf + (imp-1)
+        do imt=1,nmti
+         rmt= -jti + (imt -1)
+        do imtp=1,nmtf
+         rmtp=-jtf + (imtp-1)
+        mlp=nint(rm+rmt-rmp-rmtp)
+        rmlp=rm+rmt-rmp-rmtp
+        if (abs(mlp).gt.lf) cycle        
+        r1=cleb(lri,zero,  jpi, rm, jlpi,rm)*
+     &     cleb(jlpi,rm,jti,rmt,jtot,rm+rmt)
+     &    *cleb(lrf,rmlp,jpf, rmp,jlpf,rmlp+rmp)*
+     &     cleb(jlpf,rmlp+rmp,jtf,rmtp,jtot,rm+rmt)
+        r2=sqrt(kcmf/kcmi)  ! this needs to be generalized for different partitions!!
+        c1=sqrt(pi)/zz/kcmi
+        phci =exp(zz*(delci(li)-delci(0)))
+        phcf =exp(zz*(delcf(lf)-delcf(0)))
+c Satchler (4.58) for spin zero target:
+        ampl(lf,im,imt,imp,imtp)= ampl(lf,im,imt,imp,imtp)  
+     &                 + phci*phcf*r1*r2*c1*sqrt(2*lri+1)  
+     &                 * (smat-kron(ni,nf))*YLMC2(lf,mlp) 
+        ampaux(lf,im,imt,imp,imtp)= ampaux(lf,im,imt,imp,imtp)  
+     &                   + phci*exp(-zz*(delcf(lf)-delcf(0)))
+     &                   * r1*r2*c1*sqrt(2*lri+1)           
+     &                   * (smat-kron(ni,nf))*YLMC2(lf,mlp) 
+        lfv(lf)=lf
+
+!        write(777,*)'lf,mlp,ylm=', lf,mlp,YLMC(lf,mlp),YLMC2(lf,mlp)
+
+        if (debug) then
+        write(klog,'(6x,"Contrib to AMP: ni,li,iex=",
+     &  3i3," => nf,lf,iex=",3i3,6x,"S=",2f12.6," r1,r2=",2f12.5)')
+     &  ni,li,1,nf,lf,iex,smat,r1,r2
+       endif
+       enddo ! imtp
+       enddo ! imt
+       enddo ! imp
+       enddo ! imp
+       enddo ! nchf
+       enddo ! nchi
+       enddo ! icc (j/pi sets)
+    
+
+!!!!!!!!!!!!!!!!!!!!!!!!! INTERPOLATION !!!!!!!!!!!!!!!!!!!!!!!!!!!
+      allocate(gaux(lfmax+1),xv(lfmax+1))
+      do icc=1,ncc
+       partot=jptset(icc)%partot
+       jtot  =jptset(icc)%jtot
+       nch   =jptset(icc)%nchan
+       if (nch.eq.0) cycle
+       if (.not.jptset(icc)%interp) cycle
+
+       do ni=1,nch
+       if (jptset(icc)%idx(ni).ne.iexgs) cycle ! no inc waves 
+       li   =jptset(icc)%l(ni)
+       lri  =li
+       jpi  =jptset(icc)%jp(ni)             ! should be just jpgs
+       nmi  =2*jpi+1
+
+       do nf=1,nch
+       if (jptset(icc)%nchan.eq.0) cycle
+       if (jptset(icc)%idx(nf).ne.iex) cycle 
+       lf  =jptset(icc)%l(nf)
+       lrf =lf
+       jpf =jptset(icc)%jp(nf)
+       nmf =2*jpf+1
+       
+       if (lf.gt.lfmax) stop 'internal error; lf >lfmax in famps!' 
+
+       do im=1,nmi
+        rm= -jpi + (im -1)
+        do imp=1,nmf
+        rmp=-jpf + (imp-1)
+        do imt=1,nmti
+         rmt= -jti + (imt -1)
+        do imtp=1,nmtf
+         rmtp=-jtf + (imtp-1)
+        mlp=nint(rm+rmt-rmp-rmtp)
+        rmlp=rm+rmt-rmp-rmtp
+        if (abs(mlp).gt.lf) cycle        
+        phci =exp(zz*(delci(li)-delci(0)))
+        phcf =exp(zz*(delcf(lf)-delcf(0)))
+        gaux(1:lfmax+1)=ampaux(0:lfmax,im,imt,imp,imtp)
+        xv(1:lfmax+1)  =lfv(0:lfmax)
+        write(*,'(10(i3,2f10.5))') (nint(xv(l)),gaux(l),l=1,lfmax)
+        caux=cfival(lrf,xv,gaux,lfmax+1,alpha)
+        write(*,*)'lf,caux=',lf,caux
+        ampl(lf,im,imt,imp,imtp)= ampl(lf,im,imt,imp,imtp)+
+     &   caux*(phcf*phcf)
+       enddo ! imtp
+       enddo ! imt
+       enddo ! imp
+       enddo ! imp
+       enddo ! nchf
+       enddo ! nchi
+       enddo ! icc (j/pi sets)
+       
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+c write angle-indep amplitudes ----------------------------------------
+       write(kamp,300) iex,exc,jpf,parity(parch(iex)+2)
+       do lf=0,lfmax
+!225    WRITE(kamp,226) LF,((AMPL(lf,im,imp)*phcf,imp=1,nmf), im=1,nmi)
+225    WRITE(kamp,226) lf,((((ampl(lf,im,imt,imp,imtp),imtp=1,nmtf),
+     &  imp=1,nmf),imt=1,nmti), im=1,nmi)
+226    FORMAT(' LP=',I5,1X,1P,10E12.4 / (10X,10E12.4),/)
+       do im=1,nmi
+        rm= -jpi + (im -1)
+        do imp=1,nmf
+        rmp=-jpf + (imp-1)
+        enddo
+       enddo
+       enddo ! lf
+
+
+c Angle-dependent amplitudes: f(theta,m,mp) (Fresco CPC eq. (3.31)
+       allocate(fam(nth,nmi,nmti,nmf,nmtf))
+!       write(*,*)'allocate pl with lfmax+1=',lfmax+1
+       allocate(pl(maxleg+1,maxleg+1))
+       fam(:,:,:,:,:)=0; pl=0;
+       do ith=1,nth
+          th = thmin + dth*(ith-1)
+          if (th<theps) th=theps
+          thrad = th*pi/180.
+          cth=cos(thrad)
+          sth=sin(thrad)
+          s2= sin(thrad/2)**2
+          call PLM(cth,maxleg,maxleg,maxleg+1,PL)
+
+c Point Coulomb (Satchler 4.11a), but with different phase convention 
+c (no e^{2 i delc(0)}  factor as in Fresco !) 
+          r1=-etai*log(s2)  !  2*delc(0)
+          fc=-etai/(2*kcmi)*exp(zz*r1)/s2
+c 
+       iam=0
+       do im=1,nmi
+       rm= -jpi + (im -1)
+       do imt=1,nmti
+         rmt= -jti + (imt -1)
+       do imp=1,nmf
+       ! global index for spin projections
+       rmp=-jpf + (imp-1)
+       do imtp=1,nmtf
+         rmtp=-jtf + (imtp-1)
+       iam=iam+1 
+       faux=0
+       rmlp=rm+rmt-rmp-rmtp
+       mlp=nint(rm+rmt-rmp-rmtp)
+       if (abs(mlp).gt.lfmax) stop'mlp>lfmax'
+
+       do lf=abs(mlp),lfmax
+         if(mlp.lt.0) then
+          r1=pl(lf+1,-mlp+1)
+         else 
+          r1=pl(lf+1,mlp+1)          
+         endif 
+        faux=faux + ampl(lf,im,imt,imp,imtp)*r1
+       enddo !lf
+       fam(ith,im,imt,imp,imtp)=fc*kron(im,imp)*kron(imt,imtp)*
+     &  kron(iexgs,iex)*kron(itex,1) + faux !Needs rephrasing MGR
+       famps(iex,itex,ith,iam)= fam(ith,im,imt,imp,imtp)
+       enddo !imtp
+       enddo !im
+       enddo !imt
+       enddo !imp
+!       write(kfam,'(2x,"theta=",1f6.2)') th 
+       write(kfam,'(2x,1f6.2)') th ! changed in v2.2e
+       write(kfam,228) ((((fam(ith,im,imt,imp,imtp),imtp=1,nmtf),
+     &  imp=1,nmf),imt=1,nmti),im=1,nmi)
+228    format(1P,6E12.4)
+!       write(kfam,*) ' '
+       enddo !angles
+777    format(f8.3,1e12.3,1f10.4,1e12.3)
+
+
+
+c *** Differential cross sections for each state
+       do ith=1,nth
+        th = thmin + dth*(ith-1)
+        if (th<theps) th=theps
+        factor=1./nmi/nmti
+        thrad=th*pi/180        
+        xs=0d0
+        do im=1,nmi
+        do imt=1,nmti
+        do imp=1,nmf
+        do imtp=1,nmtf
+         xs=xs+10*factor*abs(fam(ith,im,imt,imp,imtp))**2
+        enddo !imtp
+        enddo !imp
+        enddo !imt
+        enddo !imp
+        if ((iex.eq.1).and.(itex.eq.1).and.(zp*zt.gt.0)) then 
+            s2=sin(thrad/2.)**2
+            xsruth=10*(etai/(2.*kcmi*s2))**2  ! point Coulomb(mb/sr)
+            write(kxs,800) th,xs/xsruth,xs!,xsruth*10
+            write(kxs+1,800) th,xs/xsruth,xs!,xsruth*10
+        else
+            write(kxs,800) th,xs
+            if (iex.le.10) write(kxs+(iex-1)*(ntex+1)+itex,800) th,xs
+        endif
+        enddo !ith
+800     format(1x,1f8.3,2g15.5)
+        write(kxs,*)'&'
+        deallocate(ampl,fam,pl,delcf,ampaux,lfv,xv)
+        if(allocated(gaux)) deallocate(gaux)
+      enddo !itex
+      enddo ! iex 
+
+
+c *** Angle-integrated cross sections 
+      sigex(:)=0
+      sigtex(:)=0d0
+      sigextex(:,:)=0d0
+      xstot = 0.
+      jpi   = jpch(iexgs)
+      nmi   = 2*jpi+1
+      jti   = jtgs
+      nmti  =nint(2*jtgs+1)
+      icc=0
+      njt  =jtmax-jtmin+1
+      do ijt=1,njt
+      jtot=jtmin+dble(ijt-1)
+      xsj=0
+      xrj=0
+      do partot=1,-1,-2
+      xs=0
+      xr=0
+       icc=icc+1 ! CC set (total J/pi)
+       if (jptset(icc)%interp) cycle
+!       partot=jptset(icc)%partot
+!       jtot  =jptset(icc)%jtot
+       nch   =jptset(icc)%nchan
+       do ni=1,nch
+       if (jptset(icc)%idx(ni).ne.iexgs) cycle ! no inc waves 
+       if (jptset(icc)%idt(ni).ne.1) cycle !Needs rephrasing MGR 
+       li= jptset(icc)%l(ni)
+       jlpi=jptset(icc)%jlp(ni)
+       jti=jptset(icc)%jt(ni)
+       do nf=1,nch
+       iex  = jptset(icc)%idx(nf)
+       idt  = jptset(icc)%idt(nf)
+       exc  = exch(iex)
+       etarg= jptset(icc)%ext(nf)
+       tkch=ecmi+exch(iexgs)-exc-etarg
+       if (tkch.lt.0) cycle    !closed channel
+       kcmf = sqrt(2*mupt*tkch)/hc
+       lf   = jptset(icc)%l(nf)
+       jpf  = jptset(icc)%jp(nf) 
+       jlpf=jptset(icc)%jlp(nf)
+       jtf=jptset(icc)%jt(nf)
+
+       if ((iex.eq.iexgs).and.(idt.eq.1)) then ! elastic channel 
+         written(ksmat)=.true.
+         smat=smats(icc,ni,nf)
+         xr=xr+10*(pi/kcmi**2)*(2.*jtot+1)/nmi/nmti*(1-abs(smat)**2)
+         write(ksmat,'(1f6.1,2x,3i3,3f6.1," ->",3i3,3f6.1,2x,3f14.8)')
+     &   jtot,iexgs,1,li,jpi,jlpi,jti,iex,idt,lf,jpf,jlpf,jtf,smat,
+     &   abs(smat)
+       else      
+         smat=smats(icc,ni,nf)! *sqrt(kcmf/kcmi)
+         xsaux=10*(pi/kcmi**2)*(2.*jtot+1)/nmi/nmti
+     &    *abs(smat)**2*kcmf/kcmi
+         xs=xs + xsaux 
+         sigex(iex)=sigex(iex) + xsaux
+         sigtex(idt)=sigtex(idt)+ xsaux
+         sigextex(iex,idt)=sigextex(iex,idt)+ xsaux
+         if (verb.gt.1) then
+         write(ksmat,'(1f6.1,2x,3i3,3f6.1," ->",3i3,3f6.1,2x,3f14.8)')
+     &   jtot,iexgs,1,li,jpi,jlpi,jti,iex,itex,lf,jpf,jlpf,jtf,smat,
+     &   abs(smat)
+         endif
+       endif
+       enddo !nf
+       enddo !ni
+       xstot= xstot + xs
+       xsj  = xsj   + xs
+       xrj  = xrj   + xr
+       write(*,'(5x," J/pi=",1f5.1,a1,3x,
+     &   " xs(inel)=",1e12.3, " mb"," reac=",1e12.3)') 
+     &   jtot,parity(partot+2),xs,xr
+      enddo !partot
+! COMMENTED, becase we have printed the x-sections after each J/pi set
+!      write(ksj, '(1x,1f5.1,3f10.4,2x,i2)') jtot,xrj-xsj,xrj,xsj
+      enddo !ijt (JT)
+      write(*,780) xstot
+780   format(/,3x," => total inel+bu x-section=",1f8.3," mb")
+
+
+c *** Angle-integrated cross section for each projectile state
+      write(*,'(/,2x,"o Angle-integrated xs for each state:")')
+      jpold=-1 ; parold=-2
+      do iex=1,nex
+        partot=parch(iex)
+        exc   =exch(iex)
+        jpf   =jpch(iex)
+        if (iex.eq.1) jpold=jpf
+        if ((iex.gt.1).and.(jpf.ne.jpold).and.(partot.ne.parold))
+     & write(130,*) '&'
+        jpold=jpf
+        write(130,795) exc, sigex(iex), iex,jpf,partot
+        write(*,790) iex,jpf,parity(partot+2),exc, sigex(iex)
+789     format(8x,"#",i4,3x,1f5.1, a1,f10.3,"->")
+790     format(8x,"#",i4,3x,1f5.1, a1,f10.3,"->",f12.6,' mb')
+794     format(1x,1f10.3,2x,12x,1x,i3,1f5.1,2x,i2)
+795     format(1x,1f10.3,2x,1f12.6,1x,i3,1f5.1,2x,i2)
+      enddo
+
+!   Angle-integrated cross section for each target state
+      write(*,'(/,2x,"o Angle-integrated xs for each target state:")')
+      jpold=-1 ; parold=-2
+      do idt=1,ntex+1
+        partot= tset(idt)%partarg
+        exc   = tset(idt)%extarg
+        jtf   =tset(idt)%jtarg
+        jpold=jpf
+        write(1130,795) exc, sigtex(idt), idt,jtf,partot
+        write(*,790) idt,jtf,partot,exc, sigtex(idt)
+      enddo
+
+!   Angle-integrated cross section for each target and projectile state
+      write(*,'(/,2x,"o Angle-integrated xs for each target and 
+     & projectile state:")')
+      jpold=-1 ; parold=-2
+      do iex=1,nex
+        partot=parch(iex)
+        exc   =exch(iex)
+        jpf   =jpch(iex)
+        if (iex.eq.1) jpold=jpf
+        if ((iex.gt.1).and.(jpf.ne.jpold).and.(partot.ne.parold))
+     & write(130,*) '&'
+        jpold=jpf
+        
+        do idt=1,ntex+1
+          partarg= tset(idt)%partarg
+          extarg   = tset(idt)%extarg
+          jwtarg   =tset(idt)%jtarg
+          write(1230,794) exc, iex,jpf,partot
+        write(*,789) iex,jpf,parity(partot+2),exc
+          write(1230,795) extarg, sigextex(iex,idt), idt,jtf,partot
+          write(*,790) idt,jtf,partot,extarg, sigextex(iex,idt)
+        enddo
+      enddo
+
+1000  continue
+
+      if (allocated(famps)) deallocate(famps)
+
+
+
+      end subroutine
