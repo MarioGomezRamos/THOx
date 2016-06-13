@@ -698,8 +698,8 @@ c -----------------------------------------------------
       case(5)     ! R-matrix method (P. Desc. subroutine)
       write (0,*) 'R-matrix not properly implemented STOP'
       STOP
-        call schcc_rmat(nch,ecm,zp*zt,inc,ql,factor,hcm,
-     &  rstart,nr,wf,phase,smat,info,nlag,ns)
+        call schcc_rmat_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
+     &  rstart,nr,wf,phase,smat,info,nlag,ns,einc,icc)
 
       case default
         write(*,*)'Method',method,' not valid!'

@@ -5142,3 +5142,130 @@ c
 
       call flush(6)
       end subroutine schcc_ena_MGR
+
+!-----------------------------------------------------------------------
+
+
+c ------------------------------------------------------------------
+c   Solve multichannel Schrodinger equation callint R-matrix routines
+c   by P. Descouvemont CPC XXX XXX
+c
+c   NLAG = nb. of Laguerre bases per radial interval
+c   NS   = nb. of radial intervals
+c   -----------------------------------------------------------------
+      subroutine schcc_rmat_MGR(nch,ecm,z12,incvec,ql,conv,dr,
+     & r0,nr,wf,phase,smat,info,nlag,ns,einc,icc)
+      use nmrv,only: vcoup,ech
+      use xcdcc, only: rvcc,smats
+      use constants , only: e2
+      use memory
+      implicit none
+      logical :: iftr,twf,info
+c     -------------------------------------------------------------
+      integer :: ir,nma,nch,inc,nr,nmax,icc,ninc,i
+      integer*4, parameter:: nr2=0
+      integer*4 :: nlag,ns,ich,ichp,nopen
+      integer*4,allocatable:: nvc(:)
+c     -----------------------------------------------------------
+      real*8 :: ecm,tkch,z12,conv
+      real*8  :: r,rmax,dr,r0,einc,kinc
+      real*8  :: zrma(nlag*ns),eta(nch),kch(nch),ql(nch)
+      real*8  :: aux,jci,jcf
+      real*8,parameter :: alpha=0.
+!      real*8 fc(500),dfc(500),gc(500),dgc(500),xfac(nchan,nchan)
+c     -----------------------------------------------------------
+      complex*16 :: cfival,caux,phc,ph2
+      complex*16 :: cpot(nlag*ns,nch,nch),cu(nch,nch),
+     &              cpnl,faux(nr)
+      complex*16 cfx(nch)
+      complex*16, intent(out):: wf(nch,nr)
+      complex*16 :: phase(nch),smat(nch) !,svel(nch)
+      complex*16,allocatable :: cf(:,:,:)
+      logical :: incvec(nch)
+c     ----------------------------------------------------------
+!      call cpu_time(start)
+c *** Initialize some variables & R-matrix
+      nmax=nlag*ns
+      rmax=rvcc(nr)
+      twf=.false.
+      
+      ninc=0
+      do i=1,nch
+      if (incvec(i)) ninc=ninc+1
+      enddo
+      allocate(nvc(ninc))
+      i=1
+      do ich=1,nch
+      if (incvec(ich)) then
+      nvc(i)=ich
+      i=i+1
+      endif
+      enddo
+      allocate(cf(nlag*ns,nch,ninc))
+      
+      
+      call rmat_ini(nlag,ns,rmax,zrma)
+c *** -----------------------------------
+
+
+c *** Interpolation of coupling matrix in Lagrange mesh
+      kinc=sqrt(conv*ecm)
+      do ich=1,nch
+      aux=ecm+einc-ech(ich)
+      kch(ich)=sqrt(conv*abs(aux))
+      eta(ich)=conv*z12*e2/kch(ich)/2.
+      if (aux.lt.0) kch(ich)=-kch(ich)
+
+      do ichp=ich,nch
+      phc=(0d0,1d0)**(ql(ichp)-ql(ich))
+      faux(1:nr)=conv*vcoup(ich,ichp,1:nr)
+      do 4 ir=1,nmax
+      r=zrma(ir)
+      caux=cfival(r,rvcc,faux,nr,alpha)
+      cpot(ir,ich,ichp)=caux
+      if (ich.ne.ichp) cpot(ir,ichp,ich)=caux
+!    &   *conjg(phc)
+    4 continue
+      enddo !ich
+      enddo !ichp
+      deallocate(vcoup) ! not needed any more ?????????????
+
+! TEST
+!      do ir=1,nmax
+!        write(1,'(1f8.3,2x,50f12.8)')zrma(ir),cpot(ir,1,1)
+!      enddo
+!      do ir=1,nr
+!        write(2,'(1f8.3,2x,50f12.8)')rvec(ir),ccmat(1,1,ir)
+!      enddo 
+      call rmatrix(nch,ql,kch,eta,rmax,nlag,ns,cpot,cu,nmax,nch,
+     &             nopen,twf,cf,nmax,nch,ninc,nvc,0,cpnl)
+
+       do ich=1,ninc
+       i=nvc(ich)
+       smat(1:nopen)=cu(1:nopen,i)*sqrt(kinc/kch(1:nopen))
+       smats(icc,inc,1:nopen)=smat(1:nopen) 
+       enddo
+
+       do i=1,ninc
+       inc=nvc(i)
+       do ich=1,nch     
+       write(*,500)ich,smat(ich),cu(ich,inc),abs(smat(ich))
+500   format(10x,"Chan. #",i3,5x,
+     &    "S=(",1f8.5,",",1f8.5,")", 5x, 
+     &    "S=(",1f8.5,",",1f8.5,") ->  |S|=",1f9.6)     
+       enddo
+       enddo
+
+       if (twf) then
+       do  ir=1,nmax
+       write(501,1002)zrma(ir),
+     &      (cf(ir,ich,1)*(0.,-1.),ich=1,nch)
+!     &      (cf(ir,ich,1)*(0.,-1.)*sqrt(kch(ich)/kch(inc)),ich=1,nch)
+1002   format(f8.3,10(2es12.4,2x))
+       enddo
+       write(501,*)'&'
+       endif
+          
+     
+      return
+      end subroutine
