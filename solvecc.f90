@@ -42,6 +42,13 @@ c     ---------------------------------------------------------------
 c     ---------------------------------------------------------------
       complex*16 smat
 c     ---------------------------------------------------------------
+
+!MGR--------------------------------------------------------------------
+      logical,allocatable:: incvec(:)
+      logical incch
+      real*8 einc
+!-----------------------------------------------------------------------
+
 !      namelist /reaction/ elab,jtmin,jtmax,jump,jbord,mp,mt,zt,skip
       namelist /numerov/ method,
      &         hcm,rmaxcc,rcc,hort,rmort,
@@ -275,7 +282,7 @@ c *** Channel energy
 c --------------------------------------------------------------------------
 !!! CHECK FACTORIALS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 !      nfacmax=2*nint(jtotmax+maxval(jptset(icc)%jp(:)))
-      nfacmax=1000
+      nfacmax=100
       if (debug) then
       write(*,*)'Allocating factorials for n=',nfacmax
       endif
@@ -379,14 +386,52 @@ c ... construct < c| V | c'> matrix for this J/pi set from radial F(R)
         endif
 
 
+!c ... Solve CC equations for each incoming channel 
+!        do inc=1,nch  ! incoming channels are those with iex=iexgs
+!          iex  = jptset(icc)%idx(inc)
+!          if (iex.ne.iexgs) cycle 
+!          if (jptset(icc)%idt(inc).ne.1) cycle
+!          call solvecc (icc,nch,inc,nrcc,nlag,ns)    
+          
+!c ... Compute integrated cross sections
+!        do ich=1,nch
+!          kcmf  = jptset(icc)%kcm(ich)
+!          smat=smats(icc,inc,ich)*sqrt(kcmf/kcmi)  ! velocity factor
+!          factor=10*(pi/kcmi**2)*(2.*jtot+1)/(2*jpgs+1)/(2*jtgs+1)
+!          if ((jptset(icc)%idx(ich).eq.iexgs).and.
+!     &     (jptset(icc)%idt(ich).eq.1)) then
+!          if (ich.eq.inc) then
+!            xsr=xsr+factor*(1-abs(smat)**2)
+!            xsrj=xsrj+factor*(1-abs(smat)**2)
+!          else 
+!            xsinel=xsinel  + factor*abs(smat)**2
+!            xsinelj=xsinelj+ factor*abs(smat)**2
+!          endif
+!        enddo ! ich
+!       enddo !inc
+
+!MGR--------------------------------------------------------------------
 c ... Solve CC equations for each incoming channel 
+        allocate(incvec(nch))
+        einc=jptset(icc)%exc(iexgs)
+        incvec(:)=.false.
+        incch=.false.
         do inc=1,nch  ! incoming channels are those with iex=iexgs
           iex  = jptset(icc)%idx(inc)
-          if (iex.ne.iexgs) cycle 
-          if (jptset(icc)%idt(inc).ne.1) cycle
-          call solvecc (icc,nch,inc,nrcc,nlag,ns)    
+          if ((iex.eq.iexgs) .and. (jptset(icc)%idt(inc).eq.1)) then
+          incvec(inc)=.true.
+          incch=.true.
+          endif
+        enddo  
+        if (.not. incch) then
+        deallocate(incvec,vcoup)
+        cycle
+        endif 
+          call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)    
           
 c ... Compute integrated cross sections
+       do inc=1,nch
+       if (.not. incvec(inc)) cycle
         do ich=1,nch
           kcmf  = jptset(icc)%kcm(ich)
           smat=smats(icc,inc,ich)*sqrt(kcmf/kcmi)  ! velocity factor
@@ -402,8 +447,14 @@ c ... Compute integrated cross sections
           endif
         enddo ! ich
        enddo !inc
+       deallocate(incvec)
+!-----------------------------------------------------------------------
       if (allocated(vcoup)) deallocate(vcoup)
-
+      write(440,*) 'Jtot',jtot,partot
+      do inc=1,nch
+      write(440,*) (dble(smats(icc,inc,ich)),dimag(smats(icc,inc,ich)),
+     & ich=1,nch)
+      enddo
       
        write(*,320)xsr,xsinel,xsr-xsinel
 320    format(5x,"o X-sections: Reac=", 1f8.3,5x,
@@ -566,7 +617,112 @@ c     Deallocate variables
       deallocate(ql)
       end subroutine
 
+c *** -------------------------------------------------------
+c *** Solve CC eqns using Numerov method
+c c *** -----------------------------------------------------
+      subroutine solvecc_MGR(icc,nch,incvec,nr,nlag,ns,einc)
+      use xcdcc   ,  only: hcm,elab,smats,rvcc,method
+      use channels,  only: jptset
+      use nmrv,      only: vcoup, ech,ql,hort,cutr
+      use constants, only: hc,amu
+      use sistema
+      use globals  , only: verb,debug
+!      use memory   , only: tcc
+      implicit none
+      integer    :: ir,n,nr,icc,nch,inc,nlag,ns
+      complex*16 :: phase(nch),wf(nch,nr),smat(nch)
+      real*8:: ecm,einc
+      real*8:: rmass,factor,rstart
+!!!!!!!!!! TEST: delete me when I work 
+      real*8 vcoul,rc
+      logical:: test=.false., info=.true.
+      real*8 ::v0,r0,a0,w0,ri,ai,a13,vaux,waux,ws,r
+      real*8 ::ti,tf
+      logical :: incvec(nch)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+!      write(*,'(//,3x," Numerov integration:")') 
+      debug=.false.
+      rmass=mp*mt/(mp+mt)
+      ecm=elab*mt/(mp+mt)
+      factor=(2*amu/hc**2)*rmass
+
+
+!      allocate(wf(nch,nmatch))
+      if (allocated(ech))   deallocate(ech)
+      if (allocated(ql))    deallocate(ql)
+      allocate(ech(nch))
+      allocate(ql(nch))
+
+      ql(1:nch) =jptset(icc)%l(1:nch)  
+      ech(1:nch)=jptset(icc)%exc(1:nch)+jptset(icc)%ext(1:nch)
+
+
+
+
+c Solve eqns
+c-------------------------------------------------------
+      if (debug) then
+        write(*,*) 'Calling Numerov with:'
+        write(*,*)'    Incoming channel=',inc
+        write(*,*)'    (2*amu/hc**2)*rmass=',factor
+        write(*,*)'    Ecm=',ecm
+        write(*,*)'    l-values=',ql(1:nch)
+        write(*,*)'    Channel energies:',ech(1:nch)
+        write(*,*)'    Z1*Z2=',zp*zt
+      if (.not.allocated(vcoup)) then
+        write(*,*)'solvecc: vcoup not allocated!'
+        stop
+      endif
+      endif
+c -----------------------------------------------------
+      call cpu_time(ti)
+      rstart=rvcc(1)
+      cutr=-10
+      select case(method)
+      case(0) ! predictor-corrector (Baylis & Peels)
+        call schcc_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
+     &  rstart,nr,wf,phase,smat,info,einc,icc)
+
+      case(1,2,3) ! Enhanced Numerov (Thorlacious & Cooper) / Raynal
+        call schcc_ena_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
+     &  rstart,nr,wf,phase,smat,method,info,einc,icc)
+
+      case(4)     ! Enhanced Numerov (Fresco version of T&C)
+!        write(0,*) 'Entering schcc_erwin Jtot',jptset(icc)%jtot,
+!     &   jptset(icc)%partot
+!      write(0,*) 'incvec',incvec(:),'einc',einc
+        call schcc_erwin_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
+     &  rstart,nr,wf,phase,smat,method,info,einc,icc)
+
+      case(5)     ! R-matrix method (P. Desc. subroutine)
+        call schcc_rmat(nch,ecm,zp*zt,inc,ql,factor,hcm,
+     &  rstart,nr,wf,phase,smat,info,nlag,ns)
+
+      case default
+        write(*,*)'Method',method,' not valid!'
+        stop
+      end select
+
+      call cpu_time(tf)
+      write(*,'(5x,"[ CC solved in",1f8.3," sec ]")') tf-ti
+!      tcc=tcc+finish-start
+!      smats(icc,inc,1:nch)=smat(1:nch)
+
+      
+!!!!! TEST!!!!!!!!!!!!!!!!!!!!!!!!!!
+!      if (icc.eq.1) then 
+!      do ir=1,nr
+!      write(50,'(1f8.3,2x,50f12.8)') rvcc(ir),(wf(n,ir),n=1,min(2,nch))
+!      enddo
+!      write(50,*)'&'
+!      endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+c     Deallocate variables
+!      if (allocated(vcoup)) deallocate(vcoup)
+      deallocate(ql)
+      end subroutine
 
 c *** Calculate coupling matrix for CC set
       subroutine makevcoup(icc,nch)

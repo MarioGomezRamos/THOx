@@ -3921,4 +3921,1224 @@ c
       return
       end
 
+c -------------------------------------------------------
+c   Solve multichannel Schrodinger equation
+c   ecm     = kinetic energy
+c           (E= Ecm + core energy)
+c   nch     = number of channels
+c   inc     = incoming channel
+c   ql(nch) = array with l'values for nch channels
+c             (NEEDS TO BE ALLOCATED BY USER)
+c   nr      = number of radial points
+c   dr      = radial step 
+c   z1*z2   = product of charges
+c   wf      = array to store wfs(nch,nr) (out)
+c   phase   = array to store phase shifts (out)
+c   factor  = conversion factor 2*mu/hbar^2
+c   
+c   The following variables must be passed through the nmrv module:
+c    ech(nch) = channel energies (NEEDS TO BE ALLOCATED BY USER)
+C    vcoup   = matrix with couplings (nchan,nchan,nr)
+c   ----------------------------------------------------
+c   ym is the component of the solution at r-h (similarly for Z)
+c   y0 is the component of the solution at r
+c   yp                                     r+h
+c ------------------------------------------------------
+      subroutine schcc_MGR(nch,ecm,z12,incvec,ql,factor,dr,r0,
+     & npt,wf,phase,smat,info,einc,icc)
+      use xcdcc, only: smats
+      use nmrv,only: nr,h,vcoup,conv,ech,debug,rmin,hort,
+     &               rvec,rmort
+      use globals, only: verb
+      use factorials
+      use constants , only: e2
+      use memory
+      implicit none
+      logical:: copen(nch),orto,info
+      integer:: nch,klog,npt,ql(nch)
+      integer:: ir,irmin,is,isp,ich,inc,l,lmax
+      integer:: i,j,k,im,ip,i0,norto,icc
+c     ----------------------------------------------
+      real*8 :: ymem,ti,tf
+      real*8 :: ecm,tkch,eta,z12
+      real*8 :: dr,r,r0,rm,h2,factor
+      real*8 :: rturn,rmorto,rmatch
+      real*8 :: kch(nch),kch2(nch),rturnv(nch),etav(nch)
+      real*8 :: start,finish,aux,big,small
+      real*8 , parameter:: pi=acos(-1d0)
+      real*8 :: einc,kinc
+c     ----------------------------------------------
+      complex*16, intent(out):: wf(nch,nr)
+      complex*16, dimension(nch,nch):: yp,yc,y0,ym
+      complex*16, dimension(nch,nch):: zp,zc,z0,zm
+      complex*16 :: y(nch,nch,npt)
+      complex*16 :: phase(nch),smat(nch)
+      complex*16 :: a(nch,nch),c1,c2
+      logical :: incvec(nch)
+c     ---------------------------------------------
+      y=0d0      
+      debug=.false.
 
+      big=huge(big)
+      small=epsilon(small)
+      h=dr
+      h2=h*h
+      conv=factor
+      copen(:)=.true.
+      nr=npt
+      klog=99
+      rmin=0
+      lmax=maxval(ql)
+      orto=.false.
+
+      if (debug) then
+        write(*,*)'schcc: ql=',ql(1:nch)
+        write(*,*)'schcc: ecm=',ecm
+      endif
+
+      if (allocated(rvec)) deallocate(rvec)
+      allocate(rvec(nr))
+      do ir=1,nr
+        rvec(ir)=r0+(ir-1)*dr
+      enddo
+      rm      =rvec(nr)    !Max radius for integration
+      rmatch  =rvec(nr-2)  !Matching radius for derivative
+
+      norto=nint(hort/h)
+      if (abs(hort).gt.0.) orto=.true.
+
+c     ------------------------------------------------
+      if (verb.ge.3) then
+        ymem=nch*nch*(npt+2)*lc16/1e6
+        write(*,190) ymem
+190     format(5x,"[ WFS require", 1f8.2," Mbytes ]")
+        ymem=nch*nch*lc16/1e6
+!        write(*,*)'Auxiliary arrays require 8x',
+!     &  ymem,'=',ymem*8, 'Mbyes'
+!        write(*,*)'Max real=',big
+      endif 
+c     ---------------------------------------------------
+      if (ecm.lt.0) then 
+      write(*,200) ecm
+200   format(4x,'Skipping negative energy:',1f7.3, ' MeV')
+      wf(:,:)=0d0
+      return
+      endif
+
+      if (rmort.gt.0) rmorto=rmort
+      
+      kinc=sqrt(conv*ecm)   
+      do ich=1,nch
+      aux=ecm+einc-ech(ich)
+      kch2(ich)=conv*aux
+      if (aux.gt.0) then
+        if (debug) write(99,300) ich,aux,"open"
+        kch(ich)=sqrt(conv*aux)
+        etav(:)=conv*z12*e2/kch(:)/2.
+        rturnv(ich) =(etav(ich)+SQRT(etav(ich)**2 + 
+     &               ql(ich)*(ql(ich)+1d0)))/kch(ich)
+        if (rturnv(ich).gt.rmorto) rmorto=rturnv(ich) 
+        copen(ich)=.true.
+      else
+        if (debug) write(99,300) ich,aux,"closed"
+        kch(ich)=sqrt(-conv*aux)
+        rmorto=rm
+        copen(ich)=.false.
+      endif
+300   format(3x,"Channel",i2," Final Ecm=",1f8.3," MeV ->",a6)
+      enddo
+      if (rmort.lt.0) rmorto=rmorto+abs(rmort) 
+
+
+
+c classical turning point for incoming channel
+      eta=conv*z12*e2/kinc/2.
+      l=1000
+      do ich=1,nch
+      if (incvec(ich)) then
+      l=min(ql(ich),l)
+      endif
+      enddo
+      RTURN =(eta+SQRT(eta**2 + L*(L+1d0)))/kinc  
+c turning point for all channels
+!      rmorto=maxval(rturnv(:))  ! outermost turning point
+
+      if (debug) write(*,'(6(5x,i3,2x,1f8.3))')
+     &   (ich,rturnv(ich),ich=1,nch) 
+ 
+
+      call factorialgen(lmax+1)
+      call cpu_time(start)
+c 
+c Starting values and initial integration point
+c 
+!      rmin=h ;       irmin=1
+      rmin=max(h,rturn-10.) ! CHECK h or r0 ?
+      irmin=nint(rmin/h)+1
+
+!      write(*,*) 'PC-Numerov  from ir=',irmin,' r=',rmin,' fm',
+!    & ' to  R=',Rm,'in steps of',h,' and matching at Rmatch=',rmatch
+
+
+      if (debug) write(95,*)'Starting value ir=,',irmin,'r=',rvec(irmin)
+      ym(:,:)=0d0; zm(:,:)=0d0; 
+      y0(:,:)=0d0; z0(:,:)=0d0;
+      do ich=1,nch
+        l=ql(ich)
+!        if (debug) write(klog,*)'ich,l,dlfac(l)',ich,l,dlfac2(l)
+ 
+50      aux= (kch(ich)*h)**(l+1)/exp(0.5*dlfac2(l))
+!        if (aux.lt.1e-30) then
+!          rmin=rmin+5*h
+!          goto 50        
+!        endif
+
+!        irmin=nint(rmin/h) !+1
+!        y0(ich,ich)=(kch(ich)*h)**(l+1)/exp(0.5*dlfac2(l))
+!!!!! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        y0(ich,ich)=1e-10
+        y0(ich,ich)=1e-10
+!!!!!! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+        if (debug) then
+        write(95,320) (y0(ich,is),is=1,min(10,nch)) 
+320     format(5x,50("(",2g16.6,")",5x))
+        endif
+      enddo
+
+!      if (debug) write(95,*)'Initial dot product(ABS):'
+!      write(95,'(10(2x,"is=",i2,3x,1g10.5))') (is,
+!     &     abs(dot_product(y0(:,is),y0(:,is-1)))
+!     & , is=2,nch)
+
+
+      if (info) then
+      write(*,'(5x,"o Classical turning point: inner=",1f6.2," fm",
+     &  5x,"outer=",1f8.2," fm",
+     &  5x,"R-min=",1f6.2," fm")') 
+     &  minval(rturnv(:)), maxval(rturnv(:)), rmin      
+      endif
+c
+c Zm=F[r=0,ym] and Z0=F[r=h,y0]
+c
+      if (irmin.lt.2) write(*,*)'wrong irmin=',irmin
+      call zfun(nch,ql,kch2,irmin-1,ym,zm)
+      call zfun(nch,ql,kch2,irmin  ,y0,z0)
+      
+      do ir=irmin,nr-1  
+      r=rvec(ir) ! (ir-1)*h    
+      im=ir-1  ! r-h
+      i0=ir    ! r
+      ip=ir+1  ! r+h
+      call zfun(nch,ql,kch2,im,ym,zm)
+!      call zfun(nch,ql,kch2,i0,y0,z0)
+
+      if (debug.and.(mod(ir,10).eq.0)) then
+         write(95,'(/,"y0(x) ir=",i4,3x,"r=",1f7.2)') ir,r
+         do ich=1,min(nch,10)
+      write(95,'(5x,50g14.5)')(y0(ich,is),is=1,min(nch,10))
+ !        write(*,320) (y0(ich,is),is=1,min(nch,10))
+         enddo
+      endif !debug
+
+c
+c predictor
+c                         
+      YP(:,:)=2*Y0(:,:)-YM(:,:)+h2*Z0(:,:)  
+ 
+      if (maxval(abs(yp)).gt.big) then
+         write(*,*)' ** WARNING ** Solution too big at ir,r=',ir,r
+      endif
+      if (debug.and.(mod(ir,10).eq.0)) then
+        write(95,*)'Predictor for ir,r=',ir,r
+        do ich=1,min(nch,10)
+!        write(95,'(5x,50g14.5)') (yp(ich,is),is=1,nch)
+        write(95,320) (yp(ich,is),is=1,min(nch,10))
+        enddo
+        call flush(95)
+      endif !debug
+                         
+c
+c corrector
+c         
+      call zfun(nch,ql,kch2,ip,yp,zp)
+      yc(:,:)=yp(:,:)+(h2/12.)*(zp(:,:)+zm(:,:)-2*z0(:,:))
+
+      if (debug.and.(mod(ir,10).eq.0)) then
+        write(95,*)'Corrector:'
+        do ich=1,min(nch,10)
+        write(95,'(5x,50g14.5)') (yc(ich,is),is=1,nch)
+        enddo
+      endif ! debug
+
+c 
+c modify final solution 
+c
+      call zfun(nch,ql,kch2,ip,yc,zc)
+      yp(:,:)=yc(:,:)+(h2/30.)*(zc(:,:)-zp(:,:))
+      call zfun(nch,ql,kch2,ip,yp,zp)
+
+      if (debug.and.(mod(ir,10).eq.0)) then
+        write(95,*)'Modified corrector:'
+        do ich=1,min(nch,10)
+        write(95,'(5x,50g14.5)') (yp(ich,is),is=1,nch)
+        enddo
+      
+        write(95,*)'Max|Yc-Yp|:',maxval(abs(yc-yp))
+!        do ich=1,nch
+!        write(94,'(5x,50g14.5)') 
+!     &  (abs(yc(ich,is)-yp(ich,is)),is=1,nch)
+!        enddo
+        call flush(95)
+
+      endif ! debug
+
+c store solution
+      y(1:nch,1:nch,ip)=yp(1:nch,1:nch) 
+
+
+c Re-orthogonalize solution vectors
+!      orto =.true.
+!      if (orto) write(*,*)ir,ir-irmin,norto,r,rmorto,mod(ir-irmin,norto)
+      if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin)
+     & .and.(mod(ir-irmin,norto).eq.0)) then 
+!      if (orto.and.(r.le.rmorto).and.(mod(ir-irmin,norto).eq.0)) then 
+        write(*,'(5x,"-> orthogonalizing at r=",1f7.2)')r
+
+        if (debug) then
+        write(94,*)'|yp x yp| (before G-S) for ir,r',ir,r
+        do is=2,nch
+        write(94,'(5x,50g14.5)') 
+     &    ( abs(dot_product(yp(:,is),yp(:,ich)))
+     &      / abs(dot_product(yp(:,is),yp(:,is)))
+     &      / abs(dot_product(yp(:,ich),yp(:,ich))), ich=1,nch) 
+!         write(94,'(5x,i2,"x",i2,3x,50g14.5)') is,is-1,
+!     &    abs(dot_product(yp(:,is),yp(:,is-1)))
+        enddo
+        endif !debug
+
+  
+!      call gsorto(yp,a,nch)  ! standard Gram-Schmidt
+!      call mgsorto(yp,a,nch)  ! modified Gram-Schmidt
+!      do i=irmin,ir+1
+!      y(:,:,i)=matmul(y(:,:,i),a(:,:))
+!      enddo ! i
+
+!       write(*,*)'calling orto for ir,r=',ir,r
+       call cpu_time(ti)
+       call qrfac(yp,y,nch,ip,irmin,nr)      ! QR factorization
+       call cpu_time(tf)
+       torto=torto+tf-ti
+
+      if (debug) then
+      write(94,*)'Ortog. matrix at ir=',ir
+      do ich=1,nch
+        write(94,'(5x,50g14.5)') 
+     &  (a(ich,is),is=1,nch)
+           write(94,'(5x,50g14.5)') 
+     &  (a(ich,is),is=1,nch)
+      enddo
+      call flush(94)
+      endif 
+
+!      y(:,:,ip)=yp
+
+      if (debug) then
+      write(90,*)'y at ir,r=',ir,r
+      do ich=1,min(15,nch)
+        write(90,'(5x,i3,50g14.5)') ich,
+     &  (abs(y(ich,is,ip)), is=1,min(15,nch))
+      enddo
+      write(90,*)' '
+
+      write(90,*)'yp at ir,r=',ir,r
+      do ich=1,min(15,nch)
+        write(90,'(5x,i3,50g14.5)') ich,
+     &  (abs(yp(ich,is)), is=1,min(15,nch))
+      enddo
+      write(*,*)' '
+
+      write(90,*)'|y-yp|/y at ir,r=',ir,r
+      do ich=1,min(15,nch)
+        write(90,'(5x,i3,50g14.5)') ich,
+     &  (abs(y(ich,is,ip)-yp(ich,is))
+     &   /abs(y(ich,is,ip)), is=1,min(15,nch))
+      enddo
+      write(*,*)' '
+      endif
+
+      yp=y(:,:,ip);  call zfun(nch,ql,kch2,ip,yp,zp)
+      y0=y(:,:,i0);  call zfun(nch,ql,kch2,ip,y0,z0)
+
+
+c dot products after orthogonalization
+      if (debug) then
+        write(94,*)'|yp x yp| (after G-S)'
+        do is=1,nch
+!        write(95,'(5x,i2,"x",i2,3x,50g14.5)') 
+        write(94,'(5x,50g14.5)') 
+     &    ( abs(dot_product(yp(:,is),yp(:,ich)))
+     &      / abs(dot_product(yp(:,is),yp(:,is)))
+     &      / abs(dot_product(yp(:,ich),yp(:,ich))), ich=1,nch) 
+
+        enddo
+       endif !debug
+
+!       y(1:nch,1:nch,ir+1)=yp(1:nch,1:nch)  
+
+      if (debug) then
+        write(94,*)'Gram-Schmidt ortogonalized:'
+        do ich=1,nch
+        write(94,'(5x,50g14.5)') (yp(ich,is),is=1,nch)
+        enddo
+        write(94,*)' '
+        call flush(94)
+      endif !debug
+
+
+      endif !orto
+! ------------------------------------------------------------
+
+
+c Alternative Gramm-Schmitt orthogonalization of solution vectors
+!      orto=.false.
+!      rmorto=maxval(rturnv(:))
+!      if (orto.and.(r.lt.rmorto).and.(mod(ir,5).eq.0)) then 
+!         call gsorto(yp,a,nch)
+!      end if 
+
+!!!!!!!!!!!!!!!!!!!!!!!!! TEST
+      if (debug) then
+!       write(91,*) r,maxval(abs(y(:,:,ip)))
+       write(91,'(5x,1f6.3,3x,50g14.5)') r,(abs(y(1,ich,ip)),ich=1,nch)
+!       y(:,:,:)=y(:,:,:)/1.e5
+!       yp=y(:,:,ip)
+!       y0=y(:,:,i0)
+!       call zfun(nch,ql,kch2,ip,yp,zp)
+!       call zfun(nch,ql,kch2,ip,y0,z0)
+      endif       
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+c
+c ym <- y0 <- yp 
+c
+!      ym(:,:)=  y(1:nch,1:nch,ir)
+!      zm(:,:)
+      ym(:,:)=y0(:,:) 
+      zm(:,:)=z0(:,:)
+      y0(:,:)=yp(:,:) 
+      z0(:,:)=zp(:,:)
+
+
+      enddo !ir
+      call cpu_time(finish)
+
+!!! TEST
+!      if (maxval(abs(y(:,:,nr))).gt.1e20) then
+!        y(:,:,:)=y(:,:,:)/1.e20
+!      endif
+!!! TEST
+
+      
+c 
+c Match with asymptotic solution (derivative)
+c Using derivative and gauss5
+       call cpu_time(start)
+!      call matching(ecm,z12,nch,ql,lmax,inc,rmatch,y,wf,phase,smat,info) ! gauss5
+c Adjacent points
+      do ich=1,nch
+      if (incvec(ich)) then
+      inc=ich
+      call matching3(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,info) ! gauss5
+      endif
+            smats(icc,inc,1:nch)=smat(1:nch) 
+      enddo
+!      call matching2(ecm,z12,nch,ql,lmax,inc,rmatch,y,wf,phase,smat,info) ! LAPACK 
+
+       call cpu_time(finish)
+       tmatch=tmatch+finish-start
+      if (debug) write(klog,'(2f10.3,3x,10g14.6)') ecm,z12,ql(1),
+     &  (phase(ich),ich=1,nch) 
+
+
+      call flush(6)
+      end subroutine schcc_MGR
+
+!-----------------------------------------------------------------------
+
+c ...
+c ... Enhanced Numerov (version of IJ Thompson used in Fresco) 
+c ... 
+      subroutine schcc_erwin_MGR(nch,ecm,z12,incvec,ql,factor,dr,r0,
+     & npt,wf,phase,smat,method,info,einc,icc)
+      use xcdcc, only: smats
+      use nmrv,only: nr,h,vcoup,conv,ech,debug,rmin,hort,rvec,cutr
+      use globals, only: verb
+      use factorials
+      use constants , only: e2
+      use memory
+      implicit none
+      integer:: method
+      logical:: copen(nch),orto,raynal,info
+      integer:: nch,klog,npt,ql(nch)
+      integer:: ir,irmin,is,isp,ich,inc,l,lmax
+      integer:: i,j,k,im,ip,i0,norto,icc
+c     .........................................................
+      real*8     :: ymem,ti,tf
+      real*8 , parameter:: pi=acos(-1d0)
+      real*8 :: ecm,tkch,eta,z12,r12,ena2,ena3
+      real*8 :: dr,r,r0,rm,h2,factor,einc,kinc
+      real*8 :: rturn,rmorto,rmatch
+      real*8 :: kch(nch),kch2(nch),rturnv(nch),etav(nch)
+      real*8 :: start,finish,aux,big,small,tmin,tmax
+c     .........................................................
+      complex*16, intent(out):: wf(nch,nr)
+      complex*16, dimension(nch,nch):: y0
+      complex*16, dimension(nch,nch):: z0,zm
+      complex*16 :: y(nch,nch,npt),coupl(nch,nch),v(nch,nch)
+      complex*16 :: phase(nch),smat(nch)
+      complex*16 :: s(nch),ziv,zpv
+      complex*16 :: a(nch,nch)
+      complex*16 :: c1,c2,c
+      complex*16,parameter:: onec=(1D0,0D0),zero=(0d0,0d0)
+c ... for QR factorization
+      complex*16 :: HDIAG(nch),w0(nch,nch),wm(nch,nch)
+c ... TEST (delete after debugging)
+      complex*16:: yaux(nch,nch)
+      logical incvec(nch)
+c     ---------------------------------------------------------
+      R12 = 1D0/12D0
+      ENA2 = 2D0/5D0 * R12**2
+      ENA3 = - 4D0/35D0 * R12**3
+!      ONEC = (1D0,0D0)
+      TMAX = 20.
+      TMIN = -125.
+      big=huge(big)
+      small=epsilon(small)
+     
+      h=dr
+      h2=h*h
+      conv=factor
+      copen(:)=.true.
+      nr=npt
+      klog=99
+      rmin=0
+      lmax=maxval(ql)
+      orto=.false.
+c ... Initialize some variables 
+      y=0d0      
+      coupl=0
+c ... Set TRUE for debugging
+      debug=.false.
+c ..............................................................................
+      if (nch.lt.1) then 
+        write(*,*)'Scatcc_erwin: nch=',nch; stop
+      endif
+
+      if (ecm.lt.1e-6) then
+        write(*,*)'Scatcc_erwin: Ecm too small! =',ecm
+        stop
+      endif 
+ 
+      if (allocated(rvec)) deallocate(rvec)
+      allocate(rvec(nr))
+
+      do ir=1,nr
+        rvec(ir)=r0+(ir-1)*dr
+!        write(222,*)rvec(ir),real(vcoup(1,1,ir)),ir
+      enddo
+      rm      =rvec(nr)    !Max radius for integration
+      rmatch  =rvec(nr-2)  !Matching radius if derivative is used
+     
+   
+      norto=nint(hort/h)
+      if (abs(hort).gt.0.) orto=.true.
+
+      if (info) then
+        ymem=nch*nch*(npt+2)*lc16/1e6
+        write(*,190) ymem
+190     format(5x,"[ WFS require", 1f8.2," Mbytes ]")
+        ymem=nch*nch*lc16/1e6
+!        write(*,*)'Auxiliary arrays require 8x',
+!     &  ymem,'=',ymem*8, 'Mbyes'
+!        write(*,*)' Biggest real=',big
+      endif 
+
+      if (ecm.lt.0) then 
+      write(*,200) ecm
+200   format(4x,'Skipping negative energy:',1f7.3, ' MeV')
+      wf(:,:)=0d0
+      return
+      endif
+
+      rmorto=0
+      kinc=sqrt(conv*ecm)
+!      write(0,*) 'einc',einc,'kinc',kinc,'incvec',incvec(:)
+      do ich=1,nch
+      aux=ecm+einc-ech(ich)
+      kch2(ich)=conv*aux
+!      write(223,*)'ich,E,kch2=',ich,aux,kch2(ich)
+
+      if (aux.gt.0) then
+        copen(ich)=.true.
+        if (debug) write(99,300) ich,aux,"open"
+        kch(ich)=sqrt(conv*aux)
+        etav(ich)=conv*z12*e2/kch(ich)/2.
+        rturnv(ich) =(etav(ich)+SQRT(etav(ich)**2 
+     &              + ql(ich)*(ql(ich)+1d0)))/kch(ich) 
+        if(rturnv(ich).gt.rmorto) rmorto=rturnv(ich)
+      else
+        copen(ich)=.false.
+        if (debug) write(99,300) ich,aux,"closed"
+        kch(ich)  =sqrt(-conv*aux)
+        rturnv(ich)=rm
+        rmorto     =rm
+      endif
+300   format(3x,"Channel",i2," Final Ecm=",1f8.3," MeV ->",a6)
+      enddo
+
+
+c classical turning point for incoming channel
+      eta=conv*z12*e2/kinc/2.
+      l=1000
+      do ich=1,nch
+      if (incvec(ich)) then
+      l=min(ql(ich),l)
+      endif
+      enddo
+      RTURN =(eta+SQRT(eta**2 + L*(L+1d0)))/kinc  
+!      write(0,*) 'eta',eta,'l',l,'rturn',rturn
+
+      if (1>2) write(*,'(6(5x,i3,2x,1f8.3))')
+     &   (ich,rturnv(ich),ich=1,nch) 
+
+ 
+      call factorialgen(lmax+1)
+      call cpu_time(start)
+c 
+c Starting values and initial integration point
+c 
+!      rmin=h ;       irmin=1
+!      rmin=max(h,rturn-10.) ! CHECK h or r0 ?
+      rmin  =max(h,minval(rturnv(:)-abs(cutr)))
+      irmin=nint(rmin/h)+1
+
+!      write(*,*) 'Enhanced Numerov from ir=',irmin,' r=',rmin,' fm',
+!     & ' to  R=',Rm,'in steps of',h,' and Rmax==',rm
+
+
+      if (debug) write(95,*)'Starting value ir=,',irmin,'r=',rvec(irmin)
+      z0(:,:)=zero; zm(:,:)=zero; 
+      w0(:,:)=zero; wm(:,:)=zero
+      y0(:,:)=zero; v(:,:)=zero 
+      do ich=1,nch
+        l=ql(ich)
+!!!!! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  ZI(L,L) = H**(QNF(9,L)+1) / EXP(0.5 * FACT(QNF(9,L)+1))
+        z0(ich,ich)= 1e-10  !TEEEEEEEEEEEEEEEEEEEEEESSSSST!        
+!        z0(ich,ich)= H**(l+1.) / EXP(0.5 * FACT(l+1.))  
+!         write(*,*)'ich,z0=:',  ich,z0(ich,ich)   
+!!!!!! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                
+      enddo
+      
+      if (info) then
+      write(*,'(5x,"o Classical turning point: inner=",1f6.2," fm",
+     &  5x,"outer=",1f8.2," fm",
+     &  5x,"R-min=",1f6.2," fm")') 
+     &  minval(rturnv(:)), maxval(rturnv(:)), rmin      
+      endif
+
+      if (irmin.lt.2) write(*,*)'** ERWIN: wrong irmin=',irmin
+ 
+c Start radial integration
+      do ir=irmin,nr
+      r=rvec(ir) ! (ir-1)*h    
+      im=ir-1  ! r-h
+      i0=ir    ! r
+      ip=ir+1  ! r+h
+      if (r.lt.1e-6) r=1e-6
+
+c kinetic energy part
+c Fresco: SMAT(ich) = -LL1(K)*RI2 + (-ECM(ich) + C) * H
+      do ich=1,nch    
+      l=ql(ich)
+      s(ich)= h2*(-l*(l+1)/r**2         ! centrifugal
+     &          + kch2(ich)             ! energy
+     &        - conv*vcoup(ich,ich,ir)) ! potential
+      enddo
+    
+      do is=1,nch
+      do ich=1,nch      
+      y0(ich,is)= z0(ich,is)*
+     X      (ONEC - S(ich) * (R12 - S(ich)*(ENA2 + S(ich)*ENA3)))
+      enddo
+      enddo
+
+      w0(:,:)=zero
+      do is=1,nch
+      w0(is,is)=(ONEC - S(is) * (R12 - S(is)*(ENA2 + S(is)*ENA3)))
+      enddo 
+!      y0=matmul(w0,z0)
+
+c non-diagonal part of V matrix 
+      coupl(:,:)=-h2*conv*vcoup(:,:,ir)  
+      do ich=1,nch
+         coupl(ich,ich)=0d0
+      enddo 
+
+      w0=w0-r12*coupl
+      
+      if (1>2) then
+      DO 24 ICH=1,NCH
+	 DO 24 IS=1,NCH
+        C = COUPL(is,ich) * R12
+	 if(C/=ZERO) y0(ich,1:nch) = y0(ich,1:nch) - C * z0(is,1:nch)
+24    CONTINUE
+        DO 34 ich=1,nch ! k
+        V(ich,:)  = ZERO 
+        DO 34 is=1,nch   ! j
+	 C = COUPL(is,ich)
+ 	 if(C/=ZERO) V(ich,1:nch) = V(ich,1:nch) + C * y0(is,1:nch)
+34    CONTINUE
+      else  !..........Idem using builtin matrix multiplication 
+        V(1:nch,1:nch)  = ZERO 
+        y0=y0  - r12*matmul(coupl,z0)
+        v =   matmul(coupl,y0)
+      endif
+
+!! TEST 
+      if (debug) then
+      yaux=matmul(w0,z0)
+      write(*,*)'y0 at ir,r=',ir,r
+      do ich=1,min(15,nch)
+        write(*,'(5x,i3,50g14.5)') ich,
+     &  (y0(ich,is), is=1,min(15,nch))
+      enddo
+
+!      write(*,*)'w0*z0 at ir,r=',ir,r
+!      do ich=1,min(15,nch)
+!        write(*,'(5x,i3,50g14.5)') ich,
+!     &  (yaux(ich,is), is=1,min(15,nch))
+!      enddo
+      endif
+
+!!!!!!!!!!!!!!!!!!!!!!1
+
+
+      if (debug) then
+!      write(*,*)'coupl at ir,r=',ir,r
+!      do ich=1,min(15,nch)
+!        write(*,'(5x,i3,50g14.5)') ich,
+!     &  (coupl(ich,is), is=1,min(15,nch))
+!      enddo
+
+!      write(*,*)'V at ir,r=',ir,r
+!      do ich=1,min(15,nch)
+!        write(*,'(5x,i3,50g14.5)') ich,
+!     &  (V(ich,is), is=1,min(15,nch))
+!      enddo
+
+      write(*,*)'z0 at ir,r=',ir,r
+      do ich=1,min(15,nch)
+        write(*,'(5x,i3,50g14.5)') ich,
+     &  (z0(ich,is), is=1,min(15,nch))
+      enddo
+
+      endif ! debug
+
+
+c store solution 
+      y(:,:,ir)=y0(:,:)       
+
+
+c zm <- z0, wm <-w0
+      do is=1,nch
+      do ich=1,nch
+      ziv=z0(ich,is)
+      zpv=2.0*ziv - zm(ich,is) - v(ich,is) - s(ich)*y0(ich,is)
+      zm(ich,is)=ziv
+      z0(ich,is)=zpv
+      wm(ich,is)=w0(ich,is)
+      enddo  !ich
+      enddo  !is
+
+
+c Re-orthogonalize solution vectors ....................................
+      if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin).and.(hort.gt.0)
+     & .and.(mod(ir-irmin,norto).eq.0).and.(ir.lt.nr-10)) then 
+        write(*,'(5x,"->orthogonalizing at ir,r=",i4,1f7.2)')ir,r
+  
+      if(1>2) then
+c check orthogonality
+      a=matmul(conjg(transpose(y0)),y0)
+      write(*,*)'Unitarity (before) at ir,r=',ir,r
+      do ich=1,min(15,nch)
+        write(*,'(5x,i3,50g14.5)') ich,
+     &  (a(ich,is)/a(1,1), is=1,min(15,nch))
+      enddo
+      endif
+
+      if (1>2) then 
+      write(*,*)'y0 (before) at ir,r=',ir,r
+      do ich=1,min(15,nch)
+        write(*,'(5x,i3,50g14.5)') ich,
+     &  (y0(ich,is), is=1,min(15,nch))
+      enddo
+      endif
+
+       call cpu_time(ti)
+       call qrerwinz(y0,z0,zm,w0,nch,ir)      ! QR factorization
+
+       y(:,:,ir)=y0(:,:) ! new (orthogonolized) solution at ir
+
+      if (debug) then
+      write(*,*)'y0 (after) at ir,r=',ir,r
+      do ich=1,min(15,nch)
+        write(*,'(5x,i3,50g14.5)') ich,
+     &  (y0(ich,is), is=1,min(15,nch))
+      enddo
+
+        write(*,*)'|yp x yp| (after QR)'
+        do is=1,nch
+        write(*,'(5x,50g14.5)') 
+     &    ( abs(dot_product(y0(:,is),y0(:,ich)))
+     &      / abs(dot_product(y0(:,is),y0(:,is)))
+     &      / abs(dot_product(y0(:,ich),y0(:,ich))), ich=1,nch) 
+        enddo
+      endif
+
+       call cpu_time(tf)
+       torto=torto+tf-ti
+
+      endif !orto
+!........................................................................
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!! TEST
+      if (debug) then
+       write(91,'(5x,1f6.3,3x,50g14.5)') r,(abs(y(1,ich,ir)),ich=1,nch)
+      endif       
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!         DO 46 IT=1,NEQS
+!         DO 43 K=1,NEQS
+!            ZIV = ZI(IT,K)
+!            ZPV = ZIV + ZIV - ZM(IT,K) - V(IT,K) - SMAT(K) * FI(IT,K)
+!            ZM(IT,K) = ZIV
+!            ZI(IT,K) = ZPV
+!43            CONTINUE
+!46    CONTINUE
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+      enddo !ir
+      call cpu_time(finish)
+
+
+c 
+c Match y with asymptotic solution -> S-matrix
+c            
+      call cpu_time(start)
+!      call matching(ecm,z12,nch,ql,lmax,inc,rmatch,y,wf,phase,smat,info) ! gauss5 + derivative
+!      call matching2(ecm,z12,nch,ql,lmax,inc,rmatch,y,wf,phase,smat,info) ! LAPACK 
+      do ich=1,nch
+      if (incvec(ich)) then
+      inc=ich
+      call matching3(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,info) ! gauss5 + 2 points
+      endif
+            smats(icc,inc,1:nch)=smat(1:nch) 
+      enddo
+       call cpu_time(finish)
+       tmatch=tmatch+finish-start
+
+      if (debug) write(klog,'(2f10.3,3x,10g14.6)') ecm,z12,ql(1),
+     &  (phase(ich),ich=1,nch) 
+
+
+      call flush(6)
+      end subroutine schcc_erwin_MGR
+
+
+!-----------------------------------------------------------------------
+
+c -------------------------------------------------------
+c   Solve multichannel Schrodinger equation
+c   ecm     = kinetic energy
+c           (E= Ecm + core energy)
+c   nch     = number of channels
+c   inc     = incoming channel
+c   ql(nch) = array with l'values for nch channels
+c             (NEEDS TO BE ALLOCATED BY USER)
+c   nr      = number of radial points
+c   dr      = radial step 
+c   z1*z2   = product of charges
+c   wf      = array to store wfs(nch,nr) (out)
+c   phase   = array to store phase shifts (out)
+c   factor  = conversion factor 2*mu/hbar^2
+c   
+c   The following variables must be passed through the nmrv module:
+c    ech(nch) = channel energies (NEEDS TO BE ALLOCATED BY USER)
+C    vcoup   = matrix with couplings (nchan,nchan,nr)
+c   ----------------------------------------------------
+c   ym is the component of the solution at r-h (similarly for Z)
+c   y0 is the component of the solution at r
+c   yp                                     r+h
+c ------------------------------------------------------
+      subroutine schcc_ena_MGR(nch,ecm,z12,incvec,ql,factor,dr,r0,
+     & npt,wf,phase,smat,method,info,einc,icc)
+      use xcdcc, only: smats
+      use nmrv,only: nr,h,vcoup,conv,ech,debug,rmin,hort,rvec,rmort
+      use globals, only: verb
+      use factorials
+      use constants , only: e2
+      use memory
+      implicit none
+      integer:: method
+      logical:: copen(nch),orto,raynal,info
+      integer:: nch,klog,npt,ql(nch)
+      integer:: ir,irmin,is,isp,ich,inc,l,lmax
+      integer:: i,j,k,im,ip,i0,norto,icc
+
+      real*8 :: ecm,tkch,eta,z12,einc,kinc
+      real*8 :: dr,r,r0,rm,h2,factor
+      real*8 :: rturn,rmorto,rmatch
+      real*8 :: kch(nch),kch2(nch),rturnv(nch),etav(nch)
+      real*8 :: start,finish,aux
+
+      complex*16, intent(out):: wf(nch,nr)
+      complex*16, dimension(nch,nch):: yp,yc,y0,ym
+      complex*16, dimension(nch,nch):: zp,zc,z0,zm
+      complex*16, dimension(nch,nch):: wp,w0,wm
+
+      complex*16 :: y(nch,nch,npt),w(nch,nch,npt)
+      complex*16 :: phase(nch),smat(nch)
+      real*8 , parameter:: pi=acos(-1d0)
+      complex*16 :: a(nch,nch),c1,c2
+      real*8     :: ymem,ti,tf
+      logical incvec(nch)
+c     -------------------------------------------------------
+      y=0d0      
+      debug=.false.
+      if (method.eq.3) raynal=.true.
+      h=dr
+      h2=h*h
+      conv=factor
+      copen(:)=.true.
+      nr=npt
+      klog=99
+      rmin=0
+      lmax=maxval(ql)
+      orto=.false.
+
+      
+      if (allocated(rvec)) deallocate(rvec)
+      allocate(rvec(nr))
+      do ir=1,nr
+        rvec(ir)=r0+(ir-1)*dr
+      enddo
+      rm      =rvec(nr)    !Max radius for integration
+      rmatch  =rvec(nr-2)  !Matching radius
+
+      norto=nint(hort/h)
+      if (abs(hort).gt.0.) orto=.true.
+
+      if (verb.ge.3) then
+        ymem=nch*nch*(npt+2)*lc16/1e6
+        write(*,190) ymem
+190     format(5x,"[ WFS require", 1f8.2," Mbytes ]")
+        ymem=nch*nch*lc16/1e6
+!        write(*,*)'Auxiliary arrays require 8x',
+!     &  ymem,'=',ymem*8, 'Mbyes'
+      endif 
+
+      if (ecm.lt.0) then 
+      write(*,200) ecm
+200   format(4x,'Skipping negative energy:',1f7.3, ' MeV')
+      wf(:,:)=0d0
+      return
+      endif
+
+      rmorto=rmort
+      kinc=sqrt(conv*ecm)
+      do ich=1,nch
+      aux=ecm+einc-ech(ich)
+      kch2(ich)=conv*aux
+      if (aux.gt.0) then
+        if (debug) write(99,300) ich,aux,"open"
+        kch(ich)=sqrt(conv*aux)
+        etav(ich)=conv*z12*e2/kch(ich)/2.
+        rturnv(ich) =(etav(ich)+SQRT(etav(ich)**2 + 
+     &              ql(ich)*(ql(ich)+1d0)))/kch(ich) 
+        if(rturnv(ich).gt.rmorto) rmorto=rturnv(ich) 
+        copen(ich)=.true.
+      else
+        if (debug) write(99,300) ich,aux,"closed"
+        kch(ich)=sqrt(-conv*aux)
+        rmorto=rm
+        copen(ich)=.false.
+      endif
+300   format(3x,"Channel",i2," Final Ecm=",1f8.3," MeV ->",a6)
+
+      enddo
+
+
+c classical turning point for incoming channel
+      eta=conv*z12*e2/kinc/2.
+      l=1000
+      do ich=1,nch
+      if (incvec(ich)) then
+      l=min(ql(ich),l)
+      endif
+      enddo
+      RTURN =(eta+SQRT(eta**2 + L*(L+1d0)))/kinc  
+
+c turning point for each channel
+
+      if (debug) write(*,'(6(5x,i3,2x,1f8.3))')
+     &   (ich,rturnv(ich),ich=1,nch) 
+ 
+
+      call factorialgen(lmax+1)
+      call cpu_time(start)
+c 
+c Starting values and initial integration point
+c 
+!      rmin=h ;       irmin=1
+      rmin=max(h,rturn-10.) ! CHECK h or r0 ?
+      irmin=nint(rmin/h)+1
+
+!      write(*,*) 'Enhanced Numerov from ir=',irmin,' r=',rmin,' fm',
+!     & ' to  R=',Rm,'in steps of',h,' and matching at Rmatch=',rmatch
+
+
+      if (debug) write(95,*)'Starting value ir=,',irmin,'r=',rvec(irmin)
+      ym(:,:)=0d0; zm(:,:)=0d0; 
+      y0(:,:)=0d0; z0(:,:)=0d0;
+      do ich=1,nch
+        l=ql(ich)
+!        if (debug) write(klog,*)'ich,l,dlfac(l)',ich,l,dlfac2(l)
+ 
+!50      aux= (kch(ich)*h)**(l+1)/exp(0.5*dlfac2(l))
+!        if (aux.lt.1e-30) then
+!          rmin=rmin+5*h
+!          goto 50        
+!        endif
+
+!        irmin=nint(rmin/h) !+1
+!        y0(ich,ich)=(kch(ich)*h)**(l+1)/exp(0.5*dlfac2(l))
+!!!!! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        y0(ich,ich)=1e-10
+!!!!!! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+        if (debug) then
+!        write(95,'("Starting values:")')
+        write(95,320) (y0(ich,is),is=1,min(10,nch)) 
+320     format(5x,50("(",2g16.6,")",5x))
+        endif
+      enddo
+
+!      if (debug) write(95,*)'Initial dot product(ABS):'
+!      write(95,'(10(2x,"is=",i2,3x,1g10.5))') (is,
+!     &     abs(dot_product(y0(:,is),y0(:,is-1)))
+!     & , is=2,nch)
+
+      write(*,'(5x,"o Classical turning point: inner=",1f6.2," fm",
+     &  5x,"outer=",1f8.2," fm",
+     &  5x,"R-min=",1f6.2," fm")') 
+     &  minval(rturnv(:)), maxval(rturnv(:)), rmin      
+
+c 
+c Initial values: w(rmin) and w(rmin+h) 
+c 
+      if (irmin.lt.2) write(*,*)'wrong irmin=',irmin
+      call zfun(nch,ql,kch2,irmin-1,ym,zm)
+      wm=ym-(h2/12.)*zm
+      call zfun(nch,ql,kch2,irmin  ,y0,z0)
+      w0=y0-(h2/12.)*z0
+ 
+      do ir=irmin,nr-1  
+      r=rvec(ir) ! (ir-1)*h    
+      im=ir-1  ! r-h
+      i0=ir    ! r
+      ip=ir+1  ! r+h
+      call csh(nch,ql,kch2,i0,w0,z0,method) ! Cosh[Sqrt(sqrt(h2 F(x))]
+
+      if (debug.and.(mod(ir,10).eq.0)) then
+         write(95,'(/,"y0(x) ir=",i4,3x,"r=",1f7.2)') ir,r
+         do ich=1,min(nch,10)
+      write(95,'(5x,50g14.5)')(y0(ich,is),is=1,min(nch,10))
+         enddo
+      endif !debug
+
+      WP(:,:)=2*Z0(:,:)-WM(:,:)  
+
+      if (debug.and.(mod(ir,10).eq.0)) then
+        write(95,*)'wp at ir,r=',ir,r
+        do ich=1,min(nch,10)
+        write(95,320) (wp(ich,is),is=1,min(nch,10))
+        enddo
+        call flush(95)
+      endif !debug
+                         
+
+c calculate and store Y=(1-T)W  
+      if ((ir.ge.nr-8).or.(orto)) then      
+        call w2y(wp,yp,ql,kch2,ir,nch)
+        y(1:nch,1:nch,ip)=yp(1:nch,1:nch) 
+      endif
+
+c Re-orthogonalize solution vectors
+      if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin)
+     & .and.(mod(ir-irmin,norto).eq.0)) then 
+        write(*,*) 'orthogonalizing at ir,r=',ir,r
+
+        if (debug) then
+        write(94,*)'|yp x yp| (before G-S) for ir,r',ir,r
+        do is=2,nch
+        write(94,'(5x,50g14.5)') 
+     &    ( abs(dot_product(yp(:,is),yp(:,ich)))
+     &      / abs(dot_product(yp(:,is),yp(:,is)))
+     &      / abs(dot_product(yp(:,ich),yp(:,ich))), ich=1,nch) 
+        enddo
+        endif !debug
+
+  
+!      call gsorto(yp,a,nch)  ! standard Gram-Schmidt
+!      call mgsorto(yp,a,nch)  ! modified Gram-Schmidt
+!      do i=irmin,ir+1
+!      y(:,:,i)=matmul(y(:,:,i),a(:,:))
+!      enddo ! i
+
+       call cpu_time(ti)
+       call qrfac(yp,y,nch,ip,irmin,nr)      ! QR factorization
+!       call qrfac(wp,w,nch,ip,irmin,nr)      ! QR factorization
+
+
+
+       call cpu_time(tf)
+       torto=torto+tf-ti
+
+      if (debug) then
+      write(94,*)'Ortog. matrix at ir=',ir
+      do ich=1,nch
+        write(94,'(5x,50g14.5)') 
+     &  (a(ich,is),is=1,nch)
+           write(94,'(5x,50g14.5)') 
+     &  (a(ich,is),is=1,nch)
+      enddo
+      call flush(94)
+      endif 
+
+      if (debug) then
+      write(90,*)'y at ir,r=',ir,r
+      do ich=1,min(15,nch)
+        write(90,'(5x,i3,50g14.5)') ich,
+     &  (abs(y(ich,is,ip)), is=1,min(15,nch))
+      enddo
+      write(90,*)' '
+
+      write(90,*)'yp at ir,r=',ir,r
+      do ich=1,min(15,nch)
+        write(90,'(5x,i3,50g14.5)') ich,
+     &  (abs(yp(ich,is)), is=1,min(15,nch))
+      enddo
+      write(*,*)' '
+
+      write(90,*)'|y-yp|/y at ir,r=',ir,r
+      do ich=1,min(15,nch)
+        write(90,'(5x,i3,50g14.5)') ich,
+     &  (abs(y(ich,is,ip)-yp(ich,is))
+     &   /abs(y(ich,is,ip)), is=1,min(15,nch))
+      enddo
+      write(*,*)' '
+      endif
+
+      yp=y(:,:,ip);  !call zfun(nch,ql,kch2,ip,yp,zp)
+      y0=y(:,:,i0);  !call zfun(nch,ql,kch2,ip,y0,z0)
+      call zfun(nch,ql,kch2,ip,yp,zp)
+      wp=yp-(h2/12.)*zp
+      call zfun(nch,ql,kch2,i0,y0,z0)
+      w0=y0-(h2/12.)*z0
+
+
+!      wp=w(:,:,ip);  !call zfun(nch,ql,kch2,ip,yp,zp)
+!      w0=w(:,:,i0);  !call zfun(nch,ql,kch2,ip,y0,z0)
+
+
+c dot products after orthogonalization
+      if (debug) then
+        write(94,*)'|yp x yp| (after G-S)'
+        do is=1,nch
+!        write(95,'(5x,i2,"x",i2,3x,50g14.5)') 
+        write(94,'(5x,50g14.5)') 
+     &    ( abs(dot_product(yp(:,is),yp(:,ich)))
+     &      / abs(dot_product(yp(:,is),yp(:,is)))
+     &      / abs(dot_product(yp(:,ich),yp(:,ich))), ich=1,nch) 
+
+        enddo
+       endif !debug
+
+!       y(1:nch,1:nch,ir+1)=yp(1:nch,1:nch)  
+
+!      if (debug) then
+!        write(94,*)'Gram-Schmidt ortogonalized:'
+!        do ich=1,nch
+!        write(94,'(5x,50g14.5)') (yp(ich,is),is=1,nch)
+!        enddo
+!        write(94,*)' '
+!        call flush(94)
+!      endif !debug
+
+      endif !orto
+! ------------------------------------------------------------
+
+
+c Alternative Gramm-Schmitt orthogonalization of solution vectors
+!      orto=.false.
+!      rmorto=maxval(rturnv(:))
+!      if (orto.and.(r.lt.rmorto).and.(mod(ir,5).eq.0)) then 
+!         call gsorto(yp,a,nch)
+!      end if 
+
+!!!!!!!!!!!!!!!!!!!!!!!!! TEST
+      if (debug) then
+       write(91,'(5x,1f6.3,3x,50g14.5)') r,(abs(y(1,ich,ip)),ich=1,nch)
+      endif       
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+c
+c wm <- w0 <- wp 
+c
+      wm(:,:)=w0(:,:) 
+      w0(:,:)=wp(:,:) 
+
+      enddo !ir
+      call cpu_time(finish)
+
+
+c 
+c Match y with asymptotic solution -> S-matrix
+c            
+      call cpu_time(start)
+!      call matching(ecm,z12,nch,ql,lmax,inc,rmatch,y,wf,phase,smat,info) ! gauss5 + derivative
+!      call matching2(ecm,z12,nch,ql,lmax,inc,rmatch,y,wf,phase,smat,info) ! LAPACK 
+      do ich=1,nch
+      if (incvec(ich)) then
+      inc=ich
+      call matching3(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,info) ! gauss5 + 2 points
+            smats(icc,inc,1:nch)=smat(1:nch) 
+      endif
+      enddo
+       call cpu_time(finish)
+       tmatch=tmatch+finish-start
+       
+
+
+      if (debug) write(klog,'(2f10.3,3x,10g14.6)') ecm,z12,ql(1),
+     &  (phase(ich),ich=1,nch) 
+
+      call flush(6)
+      end subroutine schcc_ena_MGR
