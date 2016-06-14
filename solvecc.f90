@@ -282,7 +282,7 @@ c *** Channel energy
 c --------------------------------------------------------------------------
 !!! CHECK FACTORIALS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 !      nfacmax=2*nint(jtotmax+maxval(jptset(icc)%jp(:)))
-      nfacmax=100
+      nfacmax=1000
       if (debug) then
       write(*,*)'Allocating factorials for n=',nfacmax
       endif

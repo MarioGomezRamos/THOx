@@ -128,7 +128,7 @@ c *** Calculate memory sizes for memory allocation
       call memory_sizes()
 
 c *** Calculate & store factorials
-      call factorialgen(100) 
+      call factorialgen(1000) 
 
 c *** Read main input
       kin=5
