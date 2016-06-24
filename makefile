@@ -41,7 +41,7 @@ OBJ=modules.o coul90.o scatcc.o  thox.o basis.o hdiag.o ho.o lst-amos.o utils.o 
 	bincc2.o
 #coulfg4.f 
 all: $(OBJ)
-	$(FC) -o thox $(OBJ) $(LFLAGS) $(PARALLEL)  
+	$(FC) -openmp -o thox $(OBJ) $(LFLAGS) $(PARALLEL)  
 #	$(FC) -g -o thox $(OBJ) $(LFLAGS) -L./lapack64 -llapack -lrefblas
 #	$(FC) -g -o thox $(OBJ) $(LFLAGS) -L./lapack -llapack -lrefblas
 modules.o:modules.f90 
@@ -97,7 +97,7 @@ clebsg.o:clebsg.f90 modules.f90
 solvecc.o:solvecc.f90 modules.f90
 	$(FC) $(FFLAGS) -c solvecc.f90
 xsections.o:xsections.f90
-	$(FC) $(FFLAGS) -c  xsections.f90
+	$(FC) $(FFLAGS) -openmp -c  xsections.f90
 lapack.o:lapack.f 
 	$(FC) $(FFLAGS) -c lapack.f
 rmatrix.o:rmatrix.f

@@ -320,33 +320,33 @@ c ***
       allocate(smats(ncc,nchmax,nchmax)) 
       call cpu_time(start)
 !!#ifdef _OPENMP
-!$      num_threads = 4
-!$      call OMP_SET_NUM_THREADS(num_threads)
+!!$      num_threads = 4
+!!$      call OMP_SET_NUM_THREADS(num_threads)
 !!#endif
 
-!$OMP PARALLEL
-!$      write(*,*)'In parallel region (T)? ', OMP_IN_PARALLEL()
-!$      write(*,*)'Threads allocated : ', OMP_GET_NUM_THREADS()
-!$OMP END PARALLEL
+!!$OMP PARALLEL
+!!$      write(*,*)'In parallel region (T)? ', OMP_IN_PARALLEL()
+!!$      write(*,*)'Threads allocated : ', OMP_GET_NUM_THREADS()
+!!$OMP END PARALLEL
 
 !     do icc=1,ncc
       icc=0
-!$OMP PARALLEL PRIVATE(nch,jtot,l,rturn)
+!!$OMP PARALLEL PRIVATE(nch,jtot,l,rturn)
       xsr=0
       xsinel=0
-!$OMP  DO
+!!$OMP  DO
       do ijt=1,njt
       xsrj   =0      ! reaction  x-section
       xsinelj=0      ! inelastic x-section
       do partot=1,-1,-2
-!$OMP CRITICAL
+!!$OMP CRITICAL
 !        thread_id = omp_get_thread_num()
         jtot=jtmin+dble(ijt-1)
         icc=icc+1    
         nch=jptset(icc)%nchan   ! number of channels for this J/pi set
-!$        print*,'thread:',omp_get_thread_num(),
-!$     &  'icc,ncc,jtot,jptset()=',icc,ncc,jtot,jptset(icc)%jtot
-!$OMP END CRITICAL      
+!!!$        print*,'thread:',omp_get_thread_num(),
+!!$     &  'icc,ncc,jtot,jptset()=',icc,ncc,jtot,jptset(icc)%jtot
+!!$OMP END CRITICAL      
         if (jtot.ne.jptset(icc)%jtot) then
           print*,'internal error: solvecc'
         endif
@@ -471,8 +471,8 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
        call flush(6) 
 330    enddo !ijt
 !      enddo ! ncc  -------------------------------------------------
-!$OMP  END DO
-!$OMP END PARALLEL
+!!$OMP  END DO
+!!$OMP END PARALLEL
 
 
        call cpu_time(end)

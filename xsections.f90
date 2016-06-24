@@ -555,6 +555,8 @@ c Double differential x-sections dsigma/dEx dW  (NEW VERSION)
 c ----------------------------------------------------------------
       subroutine d2sigma(nth,dth,thmin,emin,emax,ncont,
      &                   icore,jsets,fileamp,doublexs,triplexs)
+     
+     
       use xcdcc,    only: elab,jpch,nex,exch,parch,famps0,binset
       use channels, only: jpiset,jpsets,nchmax,sn,qnc
       use sistema
@@ -563,7 +565,12 @@ c ----------------------------------------------------------------
       use globals,  only: debug,written,verb,kin
       use wfs,      only: nr,dr,energ,rvec,wfc,wbin
       use memory,   only: t3d,lr8
+     
+     
       implicit none
+
+      include "omp_lib.h"
+
 c     ----------------------------------------------------------------------- 
       character*40:: line,fileamp
       logical, parameter:: energy=.true.   ! NEEDED FOR FFC4 INTERPOLATION!! 
@@ -632,6 +639,9 @@ c     ..........................................................................
       complex*16,allocatable:: fin(:,:,:)
       complex*16:: fxyc2(10,50),bindk(maxsets,maxeset)
 
+!MGR---------------------------------------------------------------------
+      real*8,allocatable :: xs3body(:,:,:), energ3(:)
+!------------------------------------------------------------------------
 c ------------------------------------------------------------------------------
       namelist /framework/ sys,idet ! ,atarget not needed
       namelist /gridener/ Enlow,Enup,dEn
@@ -1165,8 +1175,26 @@ c-------------------------------------------------------------------------------
       enddo
 *     ---------------------------------------------------------------
 *     loop over core particle detection angle
-      wrt=.true. ; icount=0; if2c=0
-      write(0,*) 'Total memory needed',itc*itv*iten*lr8/1e6,'MB'
+      wrt=.false. ; icount=0; if2c=0 !MGR
+      
+      allocate(xs3body(iten,itv,itc),energ3(iten))
+      
+      xs3body=0d0
+      do ien=1,iten
+        energ3(ien)=Enlow+(ien-1)*dEn
+      enddo
+!      write(0,*) 'Ener', energ3(:)
+      write(0,*) 'Total memory needed',itc*itv*iten*lr8/1e6,'MB' !MGR      
+!$OMP PARALLEL DO FIRSTPRIVATE(ii,tcd,tc,costc,sintc,iv,tvd,tv,costv,
+!$OMP& sintv,itphim,iflag,zert,ien,En,p1L,p2L,ip,sigphi,phid,phi,cospv,
+!$OMP& sinpv,cospc,sinpc,pcL,pvL,tem,aq,bq,cq,dq,iroots,iroot,iroot1n,
+!$OMP& iroot2n,Ec,Ev,kvL,kcL,bkp,kp,ekb,eks,
+!$OMP& tmatsq,tmatsq2,ybo,xb,xbd,yb,phkb,xyt,iang,nial,mkp,co,phks,co2,
+!$OMP& si2,si,phask1,phask,phas,ilval,j,inu,aleg,ylm,fxyc,fxyc2,tmat,
+!$OMP& fin,iset,nchan,jpf,nex,nmf,iam,inc,fv,n,iii,ic,excore,ier,nieg,
+!$OMP& niel,iecv,ecv,ecmf,kcmf,th,sumps,iex,ibin,ki,kf,dk,dkb,ik,phbin,
+!$OMP& if2c,icount,imo,mo,ind,imu,mu,isig,sig,ampt,ampt2,li,ji,jci,rli,
+!$OMP& rnu,mult,xsig)  
       do 10 ii=1,itc
       tcd=tcl+(ii-1)*dtc
       tc=tcd*degrad
@@ -1675,10 +1703,11 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
       xsig=sigphi(1)*(phiu-phil)*degrad
       endif
       if(ien.eq.iten) then
-      print 315,ien,iv,ii,xsig,En,iflag
+!      print 315,ien,iv,ii,xsig,En,iflag
       endif
 *     -----------------------------------------------------------------
-      write(77,315) ien,iv,ii,xsig,En
+       xs3body(ien,iv,ii)=xsig
+!      write(77,315) ien,iv,ii,xsig,En
 !      STOP
 !      call flush(77)
 *     -----------------------------------------------------------------
@@ -1687,10 +1716,21 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
 30    continue      
 20    continue
 10    continue
+!$OMP END PARALLEL DO
       print 510
       print*,'  erelmax =',erelmax
       write(*,*)'icount=',icount,' if2c=',if2c
       print 510
+!MGR--------------------------------------------------------------------
+      do ii=1,itc
+        do iv=1,itv
+          do ien=1,iten
+            write(77,315) ien,iv,ii,xs3body(ien,iv,ii),energ3(ien)
+          enddo
+        enddo
+      enddo    
+      deallocate(xs3body,energ3)
+!-----------------------------------------------------------------------      
       call cpu_time(tf)
       t3d=tf-ti
       return 
