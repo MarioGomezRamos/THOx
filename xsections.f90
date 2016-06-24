@@ -562,7 +562,7 @@ c ----------------------------------------------------------------
       use parameters, only:  maxchan,maxsets,maxeset
       use globals,  only: debug,written,verb,kin
       use wfs,      only: nr,dr,energ,rvec,wfc,wbin
-      use memory,   only: t3d
+      use memory,   only: t3d,lr8
       implicit none
 c     ----------------------------------------------------------------------- 
       character*40:: line,fileamp
@@ -1075,10 +1075,10 @@ c-------------------------------------------------------------------------------
       ic  =jpiset(iset)%cindex(inc)
       if (ic.ne.icore) cycle
       rli=li
-      do inu=1,2*li+1
-      rnu=inu-li-1
       if (fail3(rli,sn,ji)) cycle
       if (fail3(ji,jci,jpf)) cycle
+      do inu=1,2*li+1
+      rnu=inu-li-1
       if (abs(rnu+sig).gt.ji.or.abs(rnu+sig+mu).gt.jpf) cycle
       ind=ind+1
       cgc(ind)=cleb(rli,rnu,sn,sig,ji,rnu+sig)*
@@ -1166,6 +1166,7 @@ c-------------------------------------------------------------------------------
 *     ---------------------------------------------------------------
 *     loop over core particle detection angle
       wrt=.true. ; icount=0; if2c=0
+      write(0,*) 'Total memory needed',itc*itv*iten*lr8/1e6,'MB'
       do 10 ii=1,itc
       tcd=tcl+(ii-1)*dtc
       tc=tcd*degrad
@@ -1302,15 +1303,19 @@ c-------------------------------------------------------------------------------
 *     -----------------------------------------------------------------
       Ec=(p1L*p1L)/(2.d0*mc)
       Ev=(p2L*p2L)/(2.d0*mv)
-      do j=1,3
+      
       if(idet.eq.1) then
+      do j=1,3
       kvL(j)=p2L*pvL(j)/hc                 
-      kcL(j)=pcL(j)/hc                  
+      kcL(j)=pcL(j)/hc
+      enddo                  
       else
+      do j=1,3
       kcL(j)=p1L*pcL(j)/hc         
       kvL(j)=pvL(j)/hc              
-      endif
       enddo
+      endif
+
       if (wrt)write(99,'(a,i2,a,i2,a,i2,a,i2,a,2g14.5)') 
      & ' iv=',iv,' ic=',ii,' ien=',ien,' ip=',ip,' ec,ev=',ec,ev
 *     -----------------------------------------------------------------
@@ -1675,7 +1680,7 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
 *     -----------------------------------------------------------------
       write(77,315) ien,iv,ii,xsig,En
 !      STOP
-      call flush(77)
+!      call flush(77)
 *     -----------------------------------------------------------------
 *     close the angle (core and valence thetas) and energy loops
 *     -----------------------------------------------------------------
