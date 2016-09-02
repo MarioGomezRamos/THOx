@@ -1298,8 +1298,8 @@ c-------------------------------------------------------------------------------
       do iang=1,6
       xyt(1,iang)=angsr(nial+iang-1)
       enddo
-      if (wrt)write(99,*) 'iang,nial,niag,angsr=',iang,nial,niag
-      if (wrt)write(99,*)'angrs=',angsr(1),angsr(nth),angsr(nial+iang-1)
+!      if (wrt)write(99,*) 'iang,nial,niag,angsr=',iang,nial,niag
+!      if (wrt)write(99,*)'angrs=',angsr(1),angsr(nth),angsr(nial+iang-1)
       
 *     -----------------------------------------------------------------
 *     compute polar angles (theta,phi) of relative wave vector
@@ -1359,7 +1359,10 @@ c-------------------------------------------------------------------------------
         fv(n)=ffc4((eks-emin)/dec,gsolap(iset,n,inc,:),ncont)
         enddo
         endif
-      endif  ! PS?
+!!! TEST July 16
+      else 
+        if (inc.ne.jpiset(iset)%inc) cycle
+      endif  ! PS or Bins?
 
       do iii=1,iam
       ic=jpiset(iset)%cindex(inc)
@@ -1425,6 +1428,7 @@ c *** BINs  ....................................................................
       ki=binset(iset)%klow(n)
       kf=binset(iset)%kup(n)
       dk=kf-ki
+!      if ((mkp.lt.ki).or.(mkp.gt.kf)) cycle
       if ((mkp.ge.ki).and.(mkp.le.kf)) then
         dkb=(kf-ki)/(binset(iset)%nk(n) - 1)
         ik=nint((mkp-ki)/dkb+1)
@@ -1432,7 +1436,9 @@ c *** BINs  ....................................................................
        if (wrt)write(99,'(a,1f6.2,i3,2f12.6)')'eks,iset,phbin=',
      &   eks,iset,phbin(iset)
       endif 
-      ecmf=ecmi-abs(ebind)-energ(iset,n)-excore
+!Excore removed by AMM (April 8th 2016)
+!      ecmf=ecmi-abs(ebind)-energ(iset,n)-excore
+      ecmf=ecmi-abs(ebind)-energ(iset,n)
       if(icount.eq.1)write(99,*)'n,k,bindk=',
      & n,binset(iset)%khat(n),1/sqrt(dk)
       if (ecmf.lt.0) then
@@ -1447,17 +1453,13 @@ c1      f2t=-2.*pi*hc**2/mupt*sqrt(Kcmi/Kcmf) ! conversion factor f(theta) -> T-
 c CHECK !!!! ASSUME g(k)=1 for bins !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       iex=ips(iset,n)
 ! TEST : f2t already included in famps 
-!      fxyc(ith+1,n)=f2t*famps(iex,nial+ith,iii)
-!     &             *sqrt(pi/2.)/sqrt(dk)    
-!      fxyc2(ith+1,n)= f2t*famps(iex,nial+ith,iii)
-!     & /binset(iset)%khat(n)/sqrt(dk)  
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       fxyc(ith+1,n)=famps(iex,nial+ith,iii)
      &             *sqrt(pi/2.)/sqrt(dk)    
-      fxyc2(ith+1,n)= famps(iex,nial+ith,iii)
-     & /binset(iset)%khat(n)/sqrt(dk)    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST!!!!!!!!
+!      fxyc2(ith+1,n)= famps(iex,nial+ith,iii)
+!     & /binset(iset)%khat(n)/sqrt(dk)    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST!!!!!!!!
       enddo !ith
       enddo !n 
+!      if (wrt) write(*,*)'xy=',(xyt(2,ier),ier=1,nex)
       if2c=if2c+1
       tmat(iset,inc,iii)=f2c(xb,yb,xyt,fxyc,6,nex,nord,10,maxne) ! CHECK DIMS HERE!!!!!!!!!!!!!!!!
 c1      fin(iset,inc,iii)=f2c(xb,yb,xyt,fxyc2,6,nex,nord,10,50) ! TESTING
