@@ -96,13 +96,15 @@ c Input namelists -------------------------
         end subroutine
       end interface 
       
+
+
       interface
         subroutine wfrange(iset,nchan,inc,emin,emax,
-     &             ncont,energy,wfcont)
+     &             ncont,energy,wfcont,smate,psh)
         integer :: iset,nchan,inc,ncont
         logical :: energy
-        complex*16 :: wfcont(:,:,:)
-        real*8 emin,emax 
+        complex*16 :: wfcont(:,:,:),smate(:,:)
+        real*8 emin,emax,psh(:)
         end subroutine
       end interface
 c     ------------------------------------------------------------
@@ -213,6 +215,8 @@ c *** ------------------------------------------------------------
 
 c *** Continuum WFS
 !      call continuum!(nchan)
+      call continuum_range
+
 
 c *** B(E;lambda)      
       call belam ! (kin,jtot,partot)
@@ -407,7 +411,7 @@ c
       integer::l,bastype,mlst,kin
       integer:: basold,parold,incold 
       real*8:: jn,exmin,exmax,jtold
-      real*8:: bosc,gamma
+      real*8:: bosc,gamma,kband
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
       
@@ -438,7 +442,7 @@ c
       else
          if ((jtold.eq.jtot).and.(parity.eq.parold).and.
      x   (bastype.eq.basold).and.(inc.eq.incold)) then
-         write(0,*)'Set',jpsets,' lecould be merged to previous one!'
+         write(0,*)'Set',jpsets,' could be merged with previous one!'
          else
          jtold=jtot
          parold=parity
@@ -478,11 +482,11 @@ c ***
        implicit none
        integer:: kin
        integer:: nph,parity
-       real*8 :: spin,ex
+       real*8 :: spin,ex,kband
        character*1 BLANK,PSIGN(3)      
        DATA PSIGN / '-','?','+' /, BLANK / ' ' /
 
-       namelist /corestates/ spin,parity,ex,nph
+       namelist /corestates/ spin,parity,ex,nph,kband
 
 
        nce=0 ! number of core states
@@ -490,6 +494,7 @@ c ***
 50     ex=-100.
        parity=0
        nph=0
+       kband=0
        read(kin,nml=corestates) 
        if (ex<-99) goto 100
        nce=nce+1   
@@ -504,6 +509,7 @@ c new derived variable
        qnc(nce)%parc = parity
        qnc(nce)%exc  = ex
        qnc(nce)%nphon= nph
+       qnc(nce)%kband= kband
 
        write(*,230) nce,spin,psign(parity+2),ex
 230    format(5x,"#",i2,": J/pi=",f4.1,a1,3x,'Ex=',f5.2,' MeV')
