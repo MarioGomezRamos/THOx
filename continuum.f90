@@ -256,24 +256,33 @@ c ------------------------------------------------------------
 c     ........................................................
       logical :: energy,ifcont,writewf
       character*5::jpi
+      integer:: il, pcon ! backward compatibility
       integer inc,ilout,ili,jset,partot,nchan,nk,n,ir,ik
       real*8 :: emin,emax,eout,jtot,ecm
-      real*8 :: kmin,dk,kmax,kcont
+      real*8 :: kmin,dk,de,kmax,kcont
       real*8 :: r0,conv,rm
       real*8,allocatable :: psh_el(:)
 !      real*8 :: deladd,deltai,deltap
       complex*16,allocatable:: smate(:,:),wfcont(:,:,:)
-      namelist/scatwf/ emin, emax,ifcont,nk,inc,writewf,ilout,eout,jset
+      namelist/scatwf/ emin, emax,ifcont,nk,inc,writewf,ilout,eout,jset,
+     &                 energy,
+     &                 il,pcon ! not used, backward compatibility only (AMM)
 
-      inc=0
-      jset=0
+      inc=0; il=0
+      jset=0; pcon=0
+  
       writewf=.false.
+      energy=.false.
       read(kin,nml=scatwf)
       if ((.not.ifcont).or.(nk.eq.0)) return
       if ((jset.gt.jpsets).or.(jset.eq.0)) then
        write(*,*)'jset',jset,' not valid!'
        return
       endif
+      if (il.gt.0) then
+       write(*,*)' IL deprecated; use INC instead!'
+      endif
+
 
       partot=jpiset(jset)%partot
       jtot  =jpiset(jset)%jtot
@@ -284,8 +293,16 @@ c     ........................................................
 
       rm=av*ac/(av+ac)
       conv=(2*amu/hc**2)*rm
-      kmin=sqrt(2d0*mu12*abs(emin))/hc
-      kmax=sqrt(2d0*mu12*abs(emax))/hc
+
+      kmin=sqrt(conv*abs(emin))
+      kmax=sqrt(conv*abs(emax))
+
+      if (energy) then
+        de=(emax-emin)/(nk-1)
+      else
+        dk=(kmax-kmin)/(nk-1)
+      endif
+
 
       if(allocated(smate)) deallocate(smate)
       allocate(smate(nk,maxchan),psh_el(nk))
@@ -298,16 +315,23 @@ c     ........................................................
 
 c ... Write WFS
       if (writewf) then
-      write(50,400) jpi(jtot,partot), nchan,inc !, ql(1:nchan)
+      write(50,400) jpi(jtot,partot), nchan,inc,energy !, ql(1:nchan)
 400   format("# Continuum WFS for Jp=",a5,"; Channels=",i2,
-     & ";  Inc. chan.=",i2)
+     & ";  Inc. chan.=",i2, ' Uniform Ecm=',l1)
       write(50,'(1x,i4,2x,2f8.4)') nr,dr,r0
-      write(50,'(1x,i4,2x,2f8.4)') nk,dk,kmin
-
+      if (energy) then
+       write(50,'(1x,i4,2x,2f8.4)') nk,de,emin
+      else
+       write(50,'(1x,i4,2x,2f8.4)') nk,dk,kmin
+      endif
 
       do ik=1,nk
-      kcont=kmin+ (ik-1)*dk  !new kcont for schcc
-      ecm=(hc*kcont)**2/2/mu12
+      if (energy) then
+        ecm=emin+(ik-1)*de
+      else
+        kcont=kmin+ (ik-1)*dk  !new kcont for schcc
+        ecm=(hc*kcont)**2/2/mu12
+      endif
       write(50,*)'# Continuum wf with Ecm=',Ecm
       do ir=1,nr
       write(50,'(1f8.3,2x,50f12.8)')rvec(ir),

@@ -181,6 +181,7 @@ c core state variables (deprecated; use qnc instead)
 
 c new derived type for core variables
         TYPE COREVAR  
+         real*8 :: kband
          real*8 :: jc,exc
          integer:: parc,nphon
         END TYPE
@@ -252,6 +253,7 @@ c ... to store bin information
          real*8 klow(200), kup(200), kmid(200),ebin(200),khat(200)
          real*8 emin, emax, kmin,kmax
          real*8 pshel(100,200)
+         complex*16 wk(100,200)
       END TYPE
       TYPE(BIN_INFO), allocatable::binset(:) 
 
@@ -284,7 +286,7 @@ c Scattering states of core+valence system
 
        module potentials
          use parameters, only: maxl
-         integer::ptype,lambda,kband,pcmodel
+         integer::ptype,lambda,pcmodel
          integer::cptype,lpot
          integer, parameter:: maxlamb=6
          logical:: laminc(0:maxlamb)
@@ -293,7 +295,7 @@ c Scattering states of core+valence system
          real*8,allocatable::vtran(:,:,:,:) 
          real*8,allocatable,target::vcou(:),vlcoup(:,:,:)
          complex*16,allocatable:: ccmat(:,:,:)
-         real*8 :: beta,delta
+         real*8 :: beta,delta,kband ! fixed in 2.3b
        end module potentials
 
 
@@ -346,7 +348,8 @@ c--------------------------------------------------------------------------B(Ela
         integer:: lambda,ncni,partoti,incni
         real*8,allocatable::qjci(:),qji(:),qlir(:),r(:)
 !        real*8,allocatable:: ugs2(:,:)
-        real*8,allocatable::dbde(:,:),ugs(:,:) 
+        real*8,allocatable::dbde(:,:)
+        complex*16,allocatable::ugs(:,:) 
         complex*16,allocatable:: mel(:,:)
         real*8:: zeff,besr,jtoti,sni,eneri
         integer,allocatable:: qli(:),cindexi(:)
