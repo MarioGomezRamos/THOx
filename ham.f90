@@ -303,7 +303,7 @@ c *** ---------------------------------------------------
       use sistema
       use potentials, only: vls,vlsc,vss,vcl,vcou,vlcoup,
      &lpot,vll,vtran,cptype,maxlamb,  
-     &lambda,kband,pcmodel,laminc ! v2.1          
+     &lambda,pcmodel,laminc ! v2.1          
       use constants
       use channels
       use wfs
@@ -330,6 +330,7 @@ c *** ---------------------------------------------------
       real*8:: ui,uf,vi,vf,ren
       real*8:: acoup(0:maxlamb),vcp(0:maxlamb)
       logical:: ifren=.false.
+      real*8 :: ki,kf,kband
       real*8 :: allp2 !!!! TEST
          
       ichn=spindex(nchani)
@@ -343,15 +344,19 @@ c *** ---------------------------------------------------
       jci=qjc(nchani) 
       ici=cindex(nchani)
       nphi=nphon(ici)
+      ki =qnc(ici)%kband
 
       jcf=qjc(nchanf)
       icf=cindex(nchanf)
       nphf=nphon(icf)
+      kf =qnc(icf)%kband
 
       cl=1d0
 
       fact=hc*hc/2d0/mu12
       h=dr
+
+      if (ki.eq.kf) kband=ki
 
 C ***      Matrix elements of tensor operators           ****
 c Spin-orbit for valence ------------------------------
@@ -669,9 +674,9 @@ c <lf,jf,rf,Jtot,M_f|P_{lambda}(cos(theta))|li,ji,ri,Jtot,M_i>
 c ------------------------------------------------------------
 	function crotor(lf,jf,rf,li,ji,ri,jtot,kproj,sn,lambda)
         implicit none
-	integer:: kproj,lambda,li,lf
+	integer:: lambda,li,lf
 	real*8:: ji,ri,jf,rf,jtot,sn,crotor
-	real*8:: phase,zero,one,rlambda,kk,half
+	real*8:: phase,zero,one,rlambda,kk,half,kproj
 	real*8:: cleb,sixj,pi
 	parameter(zero=0d0,one=1d0,half=0.5d0)
 
@@ -700,9 +705,9 @@ c
 	function gcoup(li,ji,ri,ni,lf,jf,rf,nf,
      &                  jtot,kproj,sn,lambda,model)
        implicit none
-	integer:: kproj,lambda,li,lf,ni,nf,model
+	integer::lambda,li,lf,ni,nf,model
 	real*8:: ji,ri,jf,rf,jtot,sn,gcoup,vibrator
-	real*8:: zero,one,rlambda,kk,half,red2
+	real*8:: zero,one,rlambda,kk,half,red2, kproj
 	real*8:: cleb,sixj,pi,ph1,ph2,rli,rlf,threej
 	parameter(zero=0d0,one=1d0,half=0.5d0)
 c      --------------------------------------------------------
@@ -766,8 +771,8 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c	use globals
       implicit none
 	real*8:: jc,j,jtot,sn,rc,r
-	integer:: lc,l,lambda,kr,model,n,nc
-	real*8:: lcr,lr,rcr,rr,lambdar,krr
+	integer:: lc,l,lambda,model,n,nc
+	real*8:: lcr,lr,rcr,rr,lambdar,krr,kr
 	real*8:: fact,rme,ph,r6,r3 !,cg
 	real*8:: ccoef,sixj,cleb
 	real*8::zero,one,pi,vibrator
