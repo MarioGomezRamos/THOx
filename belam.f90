@@ -109,9 +109,11 @@ c     ------------------------------ GS WF  -----------------------------------
         enddo !ich
         enddo !ir
         write(*,*)'GS has norm=',aux
-      else 
+      else !....................................EXTERNAL GS WF
       open(20,file=uwfgsfile)
       read(20,246)ncni,eneri
+      allocate(ugs(nr,ncni))
+      ugs(:,:)=0d0
       write(*,*)'ncni,eneri=',ncni,eneri
 !246	format('# ',i2)!,' Channels, Eigenvalue:',i2,' Enegy:',f8.4)
 ! AMoro v21b (we need to read energy too)
@@ -195,6 +197,8 @@ c     Select FINAL j/pi set and check triangularity condition -----------------.
       cindex(1:nchan)=jpiset(jset)%cindex(1:nchan)
       exc(1:nchan)   =jpiset(jset)%exc(1:nchan)
  
+      qlr(1:nchan)=ql(1:nchan)  ! final 
+
       if (allocated(edisc)) deallocate(edisc)
       allocate(edisc(nex))
       edisc(1:nex)  =energ(jset,1:nex)
