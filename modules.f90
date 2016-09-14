@@ -292,7 +292,7 @@ c Scattering states of core+valence system
          logical:: laminc(0:maxlamb)
          real*8,allocatable,target::vcl(:,:)
          real*8,allocatable::vls(:),vss(:,:),vll(:),vlsc(:)
-         real*8,allocatable::vtran(:,:,:,:) 
+         real*8,allocatable::vtran(:,:,:,:,:)
          real*8,allocatable,target::vcou(:),vlcoup(:,:,:)
          complex*16,allocatable:: ccmat(:,:,:)
          real*8 :: beta,delta,kband ! fixed in 2.3b

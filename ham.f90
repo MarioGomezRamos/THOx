@@ -202,7 +202,11 @@ c        real*8:: all,als,as0,j,vcou,vpot,deriv1,deriv2
 	   vnm=  (vcou(i)+vcl(l,i)+als*vls(i)+all*vll(i))*un*um !coulomb+nucl(only s-o) 
 
            if (cptype.eq.5) then
- 	   vnm=  vnm+(vtran(ic,ic,0,i)/sqrt(2.*jcore+1))*un*um 
+             if (partot.eq.1) then
+ 	   vnm=  vnm+(vtran(ic,ic,0,i,1)/sqrt(2.*jcore+1))*un*um
+             else
+        vnm=  vnm+(vtran(ic,ic,0,i,2)/sqrt(2.*jcore+1))*un*um
+             endif
            endif
 
        hnmaux(i)=knm+vnm
@@ -494,7 +498,7 @@ c Non-diagonal
 !     &  + ass*vss(i)           ! spin-spin  
 
        if ((li.eq.lf).and.abs(ass*vss(li,i)).gt.0) then
-!             write(*,*)'spin.spin included! ass=',ass,vss(li,i)
+!       if (i.eq.1) write(*,*)'spin.spin included! ass=',ass,vss(li,i)
              vnm=vnm + ass*vss(li,i)*un*um  ! spin-spin 
        endif
 
@@ -512,9 +516,13 @@ c Non-diagonal
 !           else
 !             cl=1d0
 !           endif
-
+               if (partot.eq.1) then
            vnm=vnm+cmic2(lir,ji,jci,lfr,jf,jcf,jtot,sn,lambdar)
-     &        *vtran(ici,icf,il,i)*un*um
+     &        *vtran(ici,icf,il,i,1)*un*um
+               else
+            vnm=vnm+cmic2(lir,ji,jci,lfr,jf,jcf,jtot,sn,lambdar)
+     &        *vtran(ici,icf,il,i,2)*un*um
+               endif
 
 !           vnm=vnm+((-1d0)**(ji+jcfr+jtot)*sixj(jf,ji,lambdar
 !     &,jcir,jcfr,jtot)*sqrt((2*jf+1.)*(2*ji+1.))*sixj(jf,ji,lambdar,

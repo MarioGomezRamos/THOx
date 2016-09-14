@@ -11,7 +11,7 @@ C           are there only because of definition of M(Ek) matrix element
 c -------------------------------------------------------------------------
       subroutine coefmat(nchan)
       use wfs, only: nr,wfsp,rvec
-      use channels, only: jtot,qj,spindex,ql,qj,qjc,cindex,nphon,sn
+      use channels,only:jtot,qj,spindex,ql,qj,qjc,cindex,nphon,sn,partot
       use sistema
       use globals
       use potentials
@@ -195,12 +195,20 @@ c spin.spin term
              cl=1d0
            endif
 
+            if (partot.eq.1) then
            faux(ir)=faux(ir)+((-1d0)**(ji+jcf+jtot)*sixj(jf,ji,lambdar
      &,jci,jcf,jtot)*sqrt((2*jf+1.)*(2*ji+1.))*sixj(jf,ji,lambdar,
      &lir,lfr,sn)*(-1d0)**(lambdar+lfr+ji+sn)*sqrt((2.*lf+1)*(2.*il+1.)
      &/4/pi)*cleb(lambdar,0d0,lfr,0d0,lir,0d0)*
-     &vtran(ici,icf,il,ir))*cl  
-!     &vtran(jci,jcf,ici,icf,il,ir))*cl     
+     &vtran(ici,icf,il,ir,1))*cl
+            else
+           faux(ir)=faux(ir)+((-1d0)**(ji+jcf+jtot)*sixj(jf,ji,lambdar
+     &,jci,jcf,jtot)*sqrt((2*jf+1.)*(2*ji+1.))*sixj(jf,ji,lambdar,
+     &lir,lfr,sn)*(-1d0)**(lambdar+lfr+ji+sn)*sqrt((2.*lf+1)*(2.*il+1.)
+     &/4/pi)*cleb(lambdar,0d0,lfr,0d0,lir,0d0)*
+     &vtran(ici,icf,il,ir,2))*cl
+            endif
+!     &vtran(jci,jcf,ici,icf,il,ir))*cl
             enddo !il
         if (abs(faux(ir)).lt.small) faux(ir)=small ! avoid underflow
           enddo ! ir
@@ -289,7 +297,7 @@ c     ........................................................
       nchan =jpiset(jset)%nchan
       ql (1:nchan)   =jpiset(jset)%lsp(1:nchan)
       r0=rvec(1)
-      write(50,400) jpi(jtot,partot), nchan,inc
+!      write(50,400) jpi(jtot,partot), nchan,inc
 
       rm=av*ac/(av+ac)
       conv=(2*amu/hc**2)*rm
