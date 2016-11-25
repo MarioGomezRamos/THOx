@@ -372,7 +372,7 @@ c spin-orbit for core (added to v2.0.2 version by AMoro)
 
 c spin.spin term 
       ass= coefss(li,sn,ji,qjc(nchani),lf,sn,jf,qjc(nchanf),jtot)
-!      if (abs(ass).gt.0) write(0,*)'ass=',ass
+      
 
 c l.l term -----------------------------------------------
        all=xl*(xl+1.d0)
@@ -724,7 +724,6 @@ c      --------------------------------------------------------
 	rli=li
 	rlf=lf
 	pi=acos(-one)
- 
 
 ! <(lsj||Y_{lambda} || (l's)j'>  
 	ph2=(-1)**(rlambda+sn+jf+2*rli)
@@ -922,6 +921,7 @@ c Build and diagonalize full Hamiltonian
       integer:: i,ir,m,n,ip,n1,m1,inchani,inchanf,ninc
       integer:: incn,np,nho,nset
       real*8:: norm,r,norm2,rms,rl,rmstot,ex
+      real*8,parameter:: uno=1.0
       real*8,allocatable:: faux(:),ebaux(:)
 !      integer,allocatable:: iord(:)
       integer:: ifail
@@ -1110,6 +1110,8 @@ c     (changed in version 2.3 to complex)
         endif
         enddo ! inchanf
 
+        wfeig(i,:,:)=wfeig(i,:,:)*sign(uno,wfeig(i,1,1))
+
         ex=ebin(i)
 c store wfs and energies for all j/pi sets
         if((ex.ge.exmin).and.(ex.le.exmax)) then
@@ -1133,7 +1135,7 @@ c changed in version 2.3 for complex bins
        jpiset(nset)%nex=ninc
 c this is included in basis.f90, so it should be redundant here
        if (nchan.gt.nchmax) nchmax=nchan
-       write(*,'(/,5x,"[",i3, " out of", i3,
+       write(*,'(/,5x,"[",i3, " out of", i4,
      & " eigenvalues retained ]")')  ninc,hdim
 
 !      write(80,'(11f12.6)')1d0*nho,(ebin(i),i=1,10)

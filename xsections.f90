@@ -3,23 +3,23 @@ c **  Scattering amplitudes & cross sections
 c *** --------------------------------------------------------------
       subroutine xsecs(kin,ncc,iexgs)
       use xcdcc,    only: smats,elab,jpch,jtmin,jtmax,nex,exch,parch,
-     &                    famps0,jbord,jump
+     &                    famps0,jbord,jump,binset
       use channels, only: jptset,jpiset,jpsets
       use factorials
       use sistema
       use constants
       use parameters, only:  maxchan,maxsets
-      use globals,  only: debug,written,verb
+      use globals,  only: debug,written,verb,mu12
       use nmrv,     only: hort
       use wfs,      only: nr,dr,energ,rvec,wfr
       implicit none
-      logical :: doublexs,triplexs,jsets(maxsets)
+      logical :: doublexs,triplexs,jsets(maxsets),kinset(maxsets)
 c     ---------------------------------------------------------
       integer, parameter :: klog=99
       integer   , parameter:: kamp=136, kxs=300,kfam=137,
      &                        ksmat=170, !ksj=157,
      &                        nearfa=1
-      integer :: istat,kin
+      integer :: istat,kin,iset,n
       integer :: inc,iexgs,icc,ncc,nch,ni,nf,lmax,iex,lfmax,ith,icore
       integer :: partot,nth,njt,parold,maxleg,ner
       integer :: iam,im,imp,mlp,li,lf,nmi,nmf,mi,mf,ijt,l,nmfmax
@@ -31,6 +31,7 @@ c     ------------------------------------------------------------
       real*8  :: jtot,jpgs,jpi,jpf,jpold,jtarg
       real*8  :: kcmi,kcmf,exc,vi,vf,tkch
       real*8  :: ecmi,ecmf,etai,etaf,mupt,ermin,ermax
+      real*8  :: excore,ei,ef,ki,kf
       real*8  :: thmin,thmax,dth,cth,sth,s2,th,thrad
       real*8, allocatable :: pl(:,:),delci(:),delcf(:)
       real*8  :: rm,rmp,rmlp,lri,lrf
@@ -276,7 +277,8 @@ c1        lfv(lf)=lf
     
 
 !!!!!!!!!!!!!!!!!!!!!!!!! INTERPOLATION !!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (.true.) then
+!      if (.true.) then
+      if (jump(1).gt.0.5d0) then ! fixed 21/nov/16
 !First we need to know the points that are already calculated
       njtotcalc=0
       do ijtot=0,njtot
@@ -353,6 +355,7 @@ c1        lfv(lf)=lf
 
 
 c write angle-indep amplitudes ----------------------------------------
+       if (verb.ge.3) then
        write(kamp,300) iex,exc,jpf,parity(parch(iex)+2)
        do lf=0,lfmax
 !225    WRITE(kamp,226) LF,((AMPL(lf,im,imp)*phcf,imp=1,nmf), im=1,nmi)
@@ -365,6 +368,7 @@ c write angle-indep amplitudes ----------------------------------------
         enddo
        enddo
        enddo ! lf
+       endif !write?
 
 
 c Angle-dependent amplitudes: f(theta,m,mp) (Fresco CPC eq. (3.31)
@@ -538,6 +542,37 @@ c Generate an approximate distribution dsigma/dE
 c need to fix the calculation of widths!!!!!
 !      call budist(exch,nex,sigex)
 !      write(*,*)'call d2sigma with ner',ner
+
+
+c Simple ds/de for bins 
+      open(131,file='dsde_bin.xs')
+      iex=0
+      xstot=0
+      do iset=1,jpsets
+      xs=0; 
+      nex=jpiset(iset)%nex
+      inc=jpiset(iset)%inc
+      excore =jpiset(iset)%exc(inc) ! core energy 
+      do n=1,nex
+      if(n.eq.1)write(131,*)'# Set',iset,'j=',jpiset(iset)%jtot
+      iex=iex+1
+      if (jpiset(iset)%nho.ne.0) cycle
+      ki=binset(iset)%klow(n)
+      kf=binset(iset)%kup(n)
+      ei=hc**2/2./mu12*ki**2
+      ef=hc**2/2./mu12 *kf**2
+      exc=excore+ binset(iset)%ebin(n) 
+      write(131,'(1x,1f10.3,2x,2f12.6,1x,i3)') 
+     & exc,sigex(iex)/(ef-ei),sigex(iex),iex 
+      xs=xs + sigex(iex)
+      enddo ! n
+      xstot= xstot + xs 
+      write(131,'(5x,a,1f10.4,a)') '# -> in this set xsec=',xs,' mb'
+      write(131,*)'&'
+      enddo ! iset
+      write(131,*)'   # Total Bins xs=',xstot,' mb'
+      close(131)
+
       
 c Double x-sections 
 1000  if ((doublexs).or.(triplexs))
@@ -565,8 +600,6 @@ c ----------------------------------------------------------------
       use globals,  only: debug,written,verb,kin
       use wfs,      only: nr,dr,energ,rvec,wfc,wbin
       use memory,   only: t3d,lr8
-     
-     
       implicit none
 
       include "omp_lib.h"
@@ -598,20 +631,20 @@ c     -------------------------------------------------------------------------
 c     -------------------------------------------------------------------------
 c     Triple x-sections
 c     -------------------------------------------------------------------------
-      logical zert,fail3,wrt
+      logical zert,fail3,wrt,kinset(maxsets)
       character*3 :: sys ! 'com' or 'lab'
 c    ......................................................................
       integer imu,imo,ival,j,iii,ii,iflag,iroot,iroot1n,iroots,iroot2n
       integer iten,isig,ip,inu,iang,ilval,itphi,iv,itv,itphim,itc,lmax
-      integer ind,ien,nchann,niag,nial,ibin,nieg,niel,ik,maxne
-      integer, parameter:: ncleb=1000, nord=2
+      integer ind,ien,nchann,niag,nial,ibin,nieg,niel,ik,maxne,nk
+      integer, parameter:: ncleb=2000, nord=2
 c     .....................................................................
       real*8,allocatable:: angsr(:)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
       real*8,allocatable:: xyt(:,:)
 !      real*8 xyt(2,ncont)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      real*8:: Kthr,dk,dkb,kmax
+      real*8:: Kthr,dk,dkb,kmax,a,b
       real*8:: dot,m,plmrec,ylmc2,plm_nr
       real*8:: dphir,dtc,dtv,phiu,tcl,tvl,tcu,tvu,dtcr,dtvr
       real*8:: acc,degrad,mtot,totp
@@ -626,7 +659,7 @@ c     .....................................................................
       real*8:: cplm(0:10,21),cgc(ncleb)
 c     ..........................................................................
       complex*16 :: resc,caux,tmat_aux,faux,cfival,ffc4
-      complex*16:: ampt,xi,f2c,sumps,phbin(maxsets)
+      complex*16:: ampt,xi,f2c,sumps,phbin(maxsets),wkfac(maxsets)
       complex*16:: phask1,phask,phas,ylm(0:10,21)
       complex*16,allocatable:: tmat(:,:,:)
       complex*16,pointer:: overlap(:)
@@ -671,22 +704,34 @@ c     from an external file, specified by the user
       endif
       write(*,'(3x," Reading f-amps from file ",a20)')fileamp
       open(kfam,file=fileamp,status='old')
-      read(kfam,*,err=900) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
+      read(kfam,'(a)',err=900) line 
+      write(*,'(a)') line
+      read(line,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab     
+!      read(kfam,*,err=900) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
+!     & ,a,b
+        write(*,*) 'ie,jpf,mth,elab,a=',iex,jpf,mth,elab,a
       rewind(kfam)
 
       allocate(famps0(maxstat,mth,nmi*nmfmax))
       iex=0
+      famps0(:,:,:)=0
       do iset=1,jpsets  
       nex=jpiset(iset)%nex
       jpf=jpiset(iset)%jtot
       nmf=nint(2.*jpf+1.)
       nm=nmi*nmf
+      write(*,'(a,i3,a,i3,a,1f4.1)') 'Expected: iset=',iset, 
+     & '  nex=', nex, ' jpf=',jpf
       do n=1,nex
       iex=iex+1
       if (iex.gt.maxstat) stop'increase dimension of famps0' ! temporary solution
 !      write(*,*)'expected jpf=',jpf
-      read(kfam,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
-!      write(*,*) 'ie,jpf,mth=',iex,jpf,mth
+      read(kfam,'(a)',err=900) line
+      read(line,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab    
+!      read(kfam,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
+!     & ,a,b
+      write(*,'(a,i3,a,i3,a,1f4.1)') 'Read: ie=',iex, 
+     & ' n=',n,' jpf=',jpf
 
       if (iex.eq.1) write(*,*) ' amplitudes are for elab=',elab
       if(nth.ne.mth) then
@@ -699,8 +744,10 @@ c     from an external file, specified by the user
 228   format(1P,6E12.4)
       enddo !states
       enddo !ith
+      write(*,*)' ' 
       enddo !iset
-650   write(*,'(5x,"[f amplitudes read for ",i3," states]")')iex
+650   write(*,'(5x,"[f amplitudes read for ",i3," states and",i4,
+     & " angles ]")')iex,nth
       endif
 c     -------------------------------------------------------------------------
  
@@ -732,8 +779,8 @@ c *** Assign global index to states of all j/pi sets iPS=iPS(iset,n)
       enddo
 
 
-c *** Sum discrete inel/breakup angular distributions      
-      open(90,file='dsdw_ps.xs',status='unknown')
+c *** Sum discrete breakup angular distributions      
+      open(90,file='dsdw_bu.xs',status='unknown')
       do ith=1,nth
       raux=0
       do iset=1,jpsets
@@ -822,7 +869,7 @@ c *** Overlaps between PS's and Scattering states  -----------------------------
       jf  =jpiset(iset)%jc(ich)
       do ir=1,nr   
       gaux(ir)=wfc(iset,n,ich,ir)*wfcont(iecv,ich,ir)*rvec(ir)*
-     &         (-1)**(li+jci+lf+jcf) !nfactl1+xfactI1+nfactl2+xfactI2)
+     &         (-1)**(li+jci+lf+jcf) ! AMM: I think this phase is always 1! 
       enddo !ir
 
       call simc(gaux,resc,1,nr,dr,nr)
@@ -869,7 +916,7 @@ c *** -------------- PRINT OVERLAPS FOR TESTING --------------------------------
 c-------------------------------------------------------------------------------
 
 
-c *** Compute DOUBLE x-sections dsigma/dedw
+c *** Compute DOUBLE x-sections dsigma/dedw FOR SELECTED CORE STATE ICORE
       if (ncont.gt.0) then
         allocate(dsdew(ncont,nth))
       else  
@@ -880,9 +927,10 @@ c *** Compute DOUBLE x-sections dsigma/dedw
       raux=0.5/(pi**3)/hc**6*mupt**2*mucv/nmi
       raux=raux*10 ! fm^2 -> mb
 
+      excore=qnc(icore)%exc
       write(*,'(3x,a,i3,a,1f7.3,a)')
      & '=> Double x-sections for final core state',
-     &  icore,' with energy=',qnc(icore)%exc, ' MeV'
+     &  icore,' with energy=',excore, ' MeV'
 
       do iecv=1,ncont
       ecv=emin+(iecv-1)*dec
@@ -941,22 +989,28 @@ c *** Compute DOUBLE x-sections dsigma/dedw
       enddo ! iecv (valence-core relative energy)  
 
 
-c Integrate in ENERGY, to get dsigma/dOmega
+
+
+c Integrate in ENERGY, to get dsigma/dOmega for core state ICORE
       open(90,file='dsdw_conv.xs',status='unknown')
+      open(91,file='dsdwe_conv.xs',status='unknown')
       do ith=1,nth
       raux=0.
       th = thmin + dth*(ith-1)
+      write(91,'(a,1f8.4)') '#thcm=',th
       do iecv=1,ncont
-      raux=raux + dsdew(iecv,ith)*dec    
+      ecv=emin+(iecv-1)*dec
+      raux=raux + dsdew(iecv,ith)*dec
+      write(91,'(1f10.4,1g14.6)') ecv, dsdew(iecv,ith)      
       enddo !iecv
       write(90,*) th, raux
       enddo !ith
       call flush(90)
-      close(90)
+      close(90); close(91)
 
 
 
-c Integrate in ANGLE, to get dsigma/dE
+c Integrate in ANGLE, to get dsigma/dE  for core state ICORE
       open(92,file='dsde_conv.xs',status='unknown')
       xstot=0
       do iecv=1,ncont
@@ -981,6 +1035,8 @@ c     (inspired in cdcn code by JAT)
 c---------------------------------------------------------------------------------
       if (.not.triplexs) return
       write(*,'(//,3x, "** TRIPLE DIFFERENTIAL CROSS SECTIONS **",/ )')
+
+      open(99,file='thox.log')
       
       read(kin,nml=framework)
       write(77,'(a)') sys
@@ -998,6 +1054,10 @@ c-------------------------------------------------------------------------------
 !!!! REDEFINE Mp as IN TESTN 
       mp=mc+mv
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      excore=qnc(icore)%exc
+      write(*,'(5x,a,i3,a,1f7.3,a)')
+     & '=> Triple x-sections for final core state',
+     &  icore,' with energy=',excore, ' MeV'
 
 
       allocate(angsr(nth))
@@ -1195,6 +1255,9 @@ c-------------------------------------------------------------------------------
 !$OMP& niel,iecv,ecv,ecmf,kcmf,th,sumps,iex,ibin,ki,kf,dk,dkb,ik,phbin,
 !$OMP& if2c,icount,imo,mo,ind,imu,mu,isig,sig,ampt,ampt2,li,ji,jci,rli,
 !$OMP& rnu,mult,xsig)  
+
+!      write(*,*)'itc,itv,iten=',itc,itv,iten
+      
       do 10 ii=1,itc
       tcd=tcl+(ii-1)*dtc
       tc=tcd*degrad
@@ -1444,6 +1507,8 @@ c-------------------------------------------------------------------------------
       enddo
       fxyc(:,:)=0;  fxyc2=0
       tmat(:,:,:)=0; fin=0;
+      kinset(:)=.false.
+      wkfac(:)=0
 *     -------------------------------------------- 
 *     interpolate the sum \sum_i gsolap(i)*tmat(i)
 *     --------------------------------------------
@@ -1456,7 +1521,11 @@ c-------------------------------------------------------------------------------
       iam=nmi*nmf 
       if (iam.lt.0) stop 'iam<0! '
       do inc=1,nchan
-      if ((jpiset(iset)%nho).gt.0) then ! PS's -> need overlaps
+      ic=jpiset(iset)%cindex(inc)
+      if (ic.ne.icore) cycle
+      if (wrt) write(99,*)'ic present in set',iset
+
+      IF ((jpiset(iset)%nho).gt.0) then ! PS's -> need overlaps
         if (eks.gt.emax) then
         fv(1:nex)=0
         else
@@ -1464,12 +1533,43 @@ c-------------------------------------------------------------------------------
         fv(n)=ffc4((eks-emin)/dec,gsolap(iset,n,inc,:),ncont)
         enddo
         endif
-      endif  ! PS?
+!!! TEST July 16
+      ELSE                              ! BINs
+!        write(99,*)'inc=',inc,jpiset(iset)%inc
+        if (inc.ne.jpiset(iset)%inc) cycle  ! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        write(0,*)'iset,inc',iset,inc
+!       if (mkp > binset(iset)%kup(nex)) cycle
+      ik=0
+! determine and store bin w(k) factor for this j/pi set
+      do n=1,nex
+      ki=binset(iset)%klow(n)
+      kf=binset(iset)%kup(n)
+      dk=kf-ki
+      nk=binset(iset)%nk(n)
+      dkb=(kf-ki)/(nk - 1)
 
+      if ((mkp.ge.ki).and.(mkp.le.kf)) then
+        ik=nint((mkp-ki)/dkb+1)     
+!        write(0,*)'ik=',ik
+        if (ik.gt.nk) stop 'ik too large'
+        if (ik.le.0) stop 'ik <=0!!'
+        kinset(iset)=.true.
+!        phbin(iset)=exp(xi*binset(iset)%pshel(n,ik))
+        wkfac(iset)=binset(iset)%wk(n,ik)
+       if (wrt)write(99,'(a,1f6.2,i3,4f12.6)')'eks,iset,phbin=',
+     &   eks,iset,phbin(iset)
+       if (wrt)write(99,*)'iset,ik,wkfac=',mkp,iset,ik,wkfac(iset)
+      endif !mkp within this bin
+      enddo !n 
+
+      endif  ! PS or Bins?
+
+c Interpolate m-dependent amplitudes
       do iii=1,iam
-      ic=jpiset(iset)%cindex(inc)
-      if (ic.ne.icore) cycle
-      excore =jpiset(iset)%exc(inc) !!!! can be placed before!!!!!!!!!!!!!!1
+! AMM Sept 16: moved upwards
+!      write(99,*)
+!      ic=jpiset(iset)%cindex(inc)
+!      if (ic.ne.icore) cycle
 
 c *** PS's .......................................................
       if ((jpiset(iset)%nho).gt.0) then 
@@ -1518,28 +1618,25 @@ c1 ------------------------------------
 !          write(99,*)' -> tmat=',tmat(iset,inc,iii)
       endif
 
-      else 
+      ELSE 
 c *** BINs  .......................................................................
       ibin=0
+      if (kinset(iset)) then 
+!      if (abs(wkfac(iset)).lt.1e-6) 
+!     &    write(99,*)'iset,wkfac=',iset,wkfac(iset)
 !       if (eks < binset(iset)%emin-5) cycle
 !      if (eks > binset(iset)%emax+5) cycle
 !      if (mkp < binset(iset)%klow(1))   cycle
-      if (mkp > binset(iset)%kup(nex)) cycle
+!      if (mkp > binset(iset)%kup(nex)) cycle
 
       do n=1,nex
-      ki=binset(iset)%klow(n)
-      kf=binset(iset)%kup(n)
-      dk=kf-ki
-      if ((mkp.ge.ki).and.(mkp.le.kf)) then
-        dkb=(kf-ki)/(binset(iset)%nk(n) - 1)
-        ik=nint((mkp-ki)/dkb+1)
-        phbin(iset)=exp(xi*binset(iset)%pshel(n,ik))
-       if (wrt)write(99,'(a,1f6.2,i3,2f12.6)')'eks,iset,phbin=',
-     &   eks,iset,phbin(iset)
-      endif 
-      ecmf=ecmi-abs(ebind)-energ(iset,n)-excore
-      if(icount.eq.1)write(99,*)'n,k,bindk=',
-     & n,binset(iset)%khat(n),1/sqrt(dk)
+!      ki=binset(iset)%klow(n)
+!      kf=binset(iset)%kup(n)
+!      dk=kf-ki
+!      nk=binset(iset)%nk(n)
+      ecmf=ecmi-abs(ebind)-energ(iset,n)
+      if(wrt) write(99,'(a,i3,6f12.6)')'n,k,bindk=',
+     & n,binset(iset)%khat(n),wkfac(iset) !phbin(iset)/sqrt(dk)
       if (ecmf.lt.0) then
           write(*,*) 'Ecm=',Ecmf,'Ecv=',Ecv; stop
       endif
@@ -1547,21 +1644,21 @@ c *** BINs  ....................................................................
       Kcmf=sqrt(2.d0*mupt*ecmf)/hc     
 c1      f2t=-2.*pi*hc**2/mupt*sqrt(Kcmi/Kcmf) ! conversion factor f(theta) -> T-mat
       xyt(2,n)=abs(Kcmf-Kthr)
-      call flush(99)
+!      call flush(99)
       do ith=0,5
-c CHECK !!!! ASSUME g(k)=1 for bins !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      iex=ips(iset,n)
-! TEST : f2t already included in famps0 
-!      fxyc(ith+1,n)=f2t*famps0(iex,nial+ith,iii)
-!     &             *sqrt(pi/2.)/sqrt(dk)    
-!      fxyc2(ith+1,n)= f2t*famps0(iex,nial+ith,iii)
-!     & /binset(iset)%khat(n)/sqrt(dk)  
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      fxyc(ith+1,n)=famps0(iex,nial+ith,iii)
-     &             *sqrt(pi/2.)/sqrt(dk)    
-      fxyc2(ith+1,n)= famps0(iex,nial+ith,iii)
-     & /binset(iset)%khat(n)/sqrt(dk)    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST!!!!!!!!
+        iex=ips(iset,n)
+        fxyc(ith+1,n)=famps0(iex,nial+ith,iii)
+     &               *sqrt(pi/2.)*wkfac(iset) ! includes phase e^(-i delta_el)
+!     &             *sqrt(pi/2.)/sqrt(dk)  * phbin(iset)
       enddo !ith
+
+      if(wrt)write(99,'(a,4i4,14g12.6)') 'iset,n,nial,ik,',
+     &    iset,n,nial,ik,fxyc(1:6,n)
+
+      if(wrt)write(99,'(a,i3,20e12.4)') '3 famp,iii=',iii,
+     &  (famps0(iex,nial+ith,iii),ith=0,5)
+
+
       enddo !n 
       if2c=if2c+1
       tmat(iset,inc,iii)=f2c(xb,yb,xyt,fxyc,6,nex,nord,10,maxne) ! CHECK DIMS HERE!!!!!!!!!!!!!!!!
@@ -1570,18 +1667,22 @@ c1      fin(iset,inc,iii)=f2c(xb,yb,xyt,fxyc2,6,nex,nord,10,50) ! TESTING
           write(99,*)'iii=',iii,'xb,yb=',xb,yb
           write(99,'("xyt(1,:)=",20g12.5)') (xyt(1,ith),ith=1,6)
           write(99,'("xyt(2,:)=",20g12.5)') (xyt(2,ier),ier=1,nex)
-          write(99,'("fxyc2(1,:)=",12g12.5)') fxyc2(1,1:nex)
-!          write(99,'("fxyc2(2,:)=",12g12.5)') fxyc2(2,1:nex)
-!          write(99,*)' -> fin=',fin(iset,inc,iii)
+          write(99,'("fxyc(1,:)=",12g12.5)') fxyc(1,1:nex)
+          write(99,'("fxyc(2,:)=",12g12.5)') fxyc(2,1:nex)
           write(99,*)
-      endif
-
+          endif
+!          if(abs(tmat(iset,inc,iii)).gt.1e5) then
+!           write(*,*)'Big tmat for iset,inc,iii=',iset,inc,iii,
+!     &     tmat(iset,inc,iii)
+!          endif
+      else 
+         tmat(iset,inc,iii)=0
+      endif ! k in this set?
+         
       endif ! Bins or PS's     
 c    ...............................................................................
-555   icount=icount+1
-      if (icount.gt.10) wrt=.false.
-      enddo ! inc channel
       enddo ! iii
+      enddo ! inc channel
       enddo ! jpset
 *     ----------------------------------------------------------------- 
 *     |t-matrix|**2 summed on spin projections / (2sp+1)
@@ -1630,7 +1731,9 @@ c    ...........................................................................
 !      if (abs(raux-cgc(ind)).gt.1e-3) then
 !      write(99,*)'cgc mismatch!: rli,rnu,sig,mu,jpf=',rli,rnu,sig,mu,jpf     
 !      endif
-      ampt=ampt+(-xi)**li*cgc(ind)*ylm(li,inu)*phbin(iset)*  ! NOTE phbin() inserted here!!!!!
+!AMMoro Sept 16
+!      ampt=ampt+(-xi)**li*cgc(ind)*ylm(li,inu)*  ! NOTE phbin() inserted here!!!!!
+      ampt=ampt+(-xi)**li*cgc(ind)*ylm(li,inu)* ! phbin(iset)*  ! NOTE phbin() inserted here!!!!!
      .tmat(iset,inc,iam)*exp(xi*nint(mo-rnu-sig-mu)*phKb)
 
 !TESTING
@@ -1641,11 +1744,11 @@ c1     & fin(iset,inc,iam)*exp(xi*nint(mo-rnu-sig-mu)*phKb)
       enddo ! inc
       enddo ! j/pi
       tmatsq=tmatsq+abs(ampt)**2
-      tmatsq2=tmatsq2+abs(ampt2)**2   !!! TESTING
+c2      tmatsq2=tmatsq2+abs(ampt2)**2   !!! TESTING
       enddo ! isigma
       enddo ! imu
       enddo ! imo
-      tmatsq2=tmatsq2*((2.d0*pi)**3)/dble(nmi)
+c2      tmatsq2=tmatsq2*((2.d0*pi)**3)/dble(nmi)
       tmatsq=(4.d0*pi/mkp)**2*tmatsq/dble(nmi)
 c1      if (icount.lt.100)
 c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
@@ -1889,9 +1992,8 @@ c     -----------------------------------------------
       open(15,file='dsde_ps.xs') 
 !      d1=2.d0*ENEX(2) - 1.5d0*ENEX(1) - 0.5d0*ENEX(3)
       d1=enex(nb+1)
-      print*,'d1=',d1
-      write(15,50) ENEX(nb+1)-be,sigset(nb+1)/d1,
-     X	      enex(1)+d1/2.d0,d1 
+!      print*,'d1=',d1
+      write(15,50) ENEX(nb+1)-be,sigset(nb+1)/d1,enex(1)+d1/2.d0 
       write(18,50) ENEX(nb+1)-be,sigset(nb+1),
      X     enex(nb+1)+d1/2.d0 
 

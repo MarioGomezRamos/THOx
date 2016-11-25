@@ -1,0 +1,12 @@
+     En wf2quad:
+      if(coef.lt.0.d0) then  ->  if(iq.eq.0.and.coef.lt.0.d0) then
+ 
+ 
+     makevcoup (solvecc.f90)
+     In v2.4:
+     r1=sqrt((2.*lri+1.)*(2.*lrf+1.)*(2.*jpi+1.)*(2.*jpf+1.))
+     &  *(-1)**(jpf+jtot)
+ 
+     In openmp
+      r1=sqrt((2.*lri+1.)*(2.*lrf+1.)*(2.*jpi+1.)*(2.*jpf+1.))
+     &  *(-1)**(jpi+jlpi)     

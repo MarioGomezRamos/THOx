@@ -63,9 +63,8 @@ c ... initialize variables --------------------------------------------------
       jtmin=-1; jtmax=-1
       jump=0; jbord=0; 
 c ----------------------------------------------------------------------------
-!      write(*,'(//,5x,"******  REACTION CALCULATION ******")')
-!      read(kin,nml=reaction)
 
+      if ((mp+mt).lt.1e-6) return      
       ecmi=elab*mt/(mp+mt)
       mupt=mp*mt/(mp+mt)*amu
       kcmi=sqrt(2*mupt*ecmi)/hc
@@ -196,7 +195,7 @@ c ... BUILD CC SETS
       icc=icc+1 ! CC set (total J/pi)
       if (verb.ge.3)
      &    write(*,400) icc,jtot,parity(partot+2)
-400   format(/,4x,"CC set ",i3,' with J/pi=',1f5.1,a1)
+400   format(/,4x,"CC set ",i4,' with J/pi=',1f5.1,a1)
       do iex=1,nex
       jp   =jpch(iex)
       parp =parch(iex)
@@ -272,7 +271,7 @@ c *** Channel energy
       write(*,'(8x,  "=> Max JTOT =",f5.1)') jtotmax 
       
 !!!! TEMPORARY SOLUTION
-      if (ncc.gt.2000) then
+      if (ncc.gt.3000) then
         write(*,*)'too many J/pi sets!.Increase dim of jptset'
         stop
       endif
@@ -281,8 +280,10 @@ c *** Channel energy
 
 c --------------------------------------------------------------------------
 !!! CHECK FACTORIALS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-!      nfacmax=2*nint(jtotmax+maxval(jptset(icc)%jp(:)))
-      nfacmax=1000
+      print*,'Generating factorials for',
+     & 2*nint(jtotmax+maxval(jptset(icc)%jp(:)))+lamax
+      nfacmax=2*nint(jtotmax+maxval(jptset(icc)%jp(:)))+lamax
+!      nfacmax=200
       if (debug) then
       write(*,*)'Allocating factorials for n=',nfacmax
       endif
@@ -598,7 +599,8 @@ c -----------------------------------------------------
       end select
 
       call cpu_time(tf)
-      write(*,'(5x,"[ CC solved in",1f8.3," sec ]")') tf-ti
+      if (verb.ge.3) 
+     &write(*,'(5x,"[ CC solved in",1f8.3," sec ]")') tf-ti
 !      tcc=tcc+finish-start
       smats(icc,inc,1:nch)=smat(1:nch)
 
@@ -728,7 +730,7 @@ c     Deallocate variables
 
 c *** Calculate coupling matrix for CC set
       subroutine makevcoup(icc,nch)
-      use xcdcc,     only: lamax,ffc,nrcc,nex,hcm,parch,rvcc
+      use xcdcc,     only: lamax,ffc,nrcc,nex,hcm,parch,rvcc,realwf
       use channels,  only: jptset
       use nmrv,      only: vcoup
       use sistema
@@ -775,7 +777,10 @@ c     .............................................................
       idti =jptset(icc)%idt(ni) !MGR
       jlpi=jptset(icc)%jlp(ni)  !MGR
       pari=parch(idi)
-      do nf=ni,nch !Upper triangle available here only!!!
+!      do nf=ni,nch !Upper triangle available here only!!! ! Changed for complex internal wfs
+       do nf=1,nch 
+      if (realwf.and.nf.lt.ni) cycle
+
       lf=jptset(icc)%l(nf)
       lrf=lf
       jpf=jptset(icc)%jp(nf)
@@ -797,8 +802,12 @@ c     .............................................................
 !      r1=sqrt((2.*lri+1.)*(2.*lrf+1.)*(2.*jpi+1.)*(2.*jpf+1.))
 !     &  *(-1)**(jpf+jtot)
 
+! AMM: Based on v2.4 changes: CHECK!!!!!!!!!!!!!!!!!!!!
+!      r1=sqrt((2.*lri+1.)*(2.*lrf+1.)*(2.*jpi+1.)*(2.*jpf+1.))
+!     &  *(-1)**(jpi+jlpi)
+
       r1=sqrt((2.*lri+1.)*(2.*lrf+1.)*(2.*jpi+1.)*(2.*jpf+1.))
-     &  *(-1)**(jpi+jlpi)
+     &  *(-1)**(jpf+jlpf)
 
 
       do lam=0,lamax
@@ -814,23 +823,28 @@ c     .............................................................
 
       r13=r1*r2*r3
 ! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!
-      phc=(0d0,1d0)**(lrf-lri)
-
+      phc=(0d0,1d0)**(lri-lrf)  ! Phase in i^(Li-Lf) < f | V | i>  
+! TEST 5/nov/16
+!      phc=(0d0,1d0)**(lrf-lri)  ! Phase in i^(Li-Lf) < f | V | i>  
 
       ix=ix+1
       coef=(-1)**lamr*(2.*lamr+1.)*r13
       frconv=(-1)**lamr*(2d0*lamr+1)*sqrt(2*jpi+1)*sqrt(2*jpf+1) ! FFC=FRCONV*FFR(fresco)
+
+!!!! DEBUG
       if (verb.ge.4) then     
       write(*,300) ix,ni,idi,li,jpi,parity(pari+2),
      &                nf,idf,lf,jpf,parity(parf+2),
      &             lam,r1,r2,r3,coef,coef/frconv,phc !,ffc(idi,idf,lam,1)
 300   format(5x,"IX=",i4," Ch. IEX L, Jpi=",3i3,f4.1,a1,
      &     " =>",3i3,f4.1,a1,3x,
-     &     'with LAM=',i3,4x,'r1-3='3f8.3,
+     &     'with LAM=',i3,4x,'r1-3=',3f8.3,
      &     2x,'COEF=',1f7.3,' COEF(FR)=',1g10.4,
      &  ' phc=',2f8.4)
 !     &     2x,'COEF=',1f7.3,' F(1)=',2g10.4)
       endif
+!!!!!!!!!!!
+
       do ir=1,nrcc      
       ri=rvcc(ir)
       vaux= phc*coef*ffc(idi,idf,lam,ir)
@@ -841,18 +855,11 @@ c     .............................................................
      &  and.(lam.eq.0)) then
         vcoup(ni,ni,ir)=vcoup(ni,ni,ir) + VCOUL(ri,zp,zt,Rcc)
       endif
-
-      if (ni.ne.nf) vcoup(nf,ni,ir)=vcoup(ni,nf,ir)*conjg(phc)/phc
-      
-      if (debug) then 
-      if (icc.eq.1) then
-       if (ir.eq.1) write(97,'("#",2i3,2i4,i3,2g12.4)') 
-     & ni,nf,idi,idf,lam,coef,coef/frconv
-        write(97,'(f8.3,10g16.4)')rvcc(ir),vcoup(ni,nf,ir),
-     &   vcoup(nf,ni,ir)
-        if (ir.eq.nrcc) write(97,*)'&'
-      endif ! icc.eq.1 
-      endif ! debug
+!!! TEST 11/Oct)
+      if (realwf.and.(ni.ne.nf)) then
+        vcoup(nf,ni,ir)=vcoup(ni,nf,ir)*conjg(phc)/phc
+      endif
+!!!!!!!!!!!!      
 
       enddo !ir
       enddo !la
@@ -1087,7 +1094,7 @@ c     used to solve the CC equations
       subroutine int_ff()
 c *** --------------------------------------------------------------------      
       use xcdcc,   only: hcm,ffc,lamax,nex,nrcc,jpch,Ff,lambmax,
-     &                   nrad3,rstep,parch,rmaxcc,rvcc
+     &                   nrad3,rstep,parch,rmaxcc,rvcc,realwf
       use channels,only: jpiset,jpsets
       use wfs     ,only: idx
       use memory
@@ -1119,7 +1126,7 @@ c ... Memory requirements
       enddo     
  
       write(*,170) nrcc, hcm,rmaxcc,hcm
-170   format(/,5x,"=>  Interpolating F(R) in grid with ",i4, ' points:',
+170   format(/,5x,"=>  Interpolating F(R) in grid with ",i5, ' points:',
      &           2x,"[ Rmin=",1f5.2,2x," Rmax=",
      &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
 
@@ -1133,7 +1140,11 @@ c ... Memory requirements
       do m1=1,nex
       par1= parch(m1)
       jp1 = jpch(m1)
-      do m2=m1,nex
+! Changed in v2.4 !!!!!!!!!!!!!!!!!!!!
+!      do m2=m1,nex
+      do m2=1,nex
+      if (realwf.and.(m2.lt.m1)) cycle
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       jp2 = jpch(m2)
       par2= parch(m2)
        do lam= nint(dabs(jp1-jp2)),min(nint(jp1+jp2),lambmax) !nint(jp1+jp2)
@@ -1264,7 +1275,8 @@ c *** ---------------------------------------------------------------
 C     READ FORMFACTORS AND BUILD COUPLING MATRIX in integration grid  
       subroutine read_ff()
 c *** ---------------------------------------------------------------      
-      use xcdcc, only: hcm,nrcc,ffc,lamax,nex,nrcc,jpch,Ff,rmaxcc,rvcc
+      use xcdcc, only:hcm,nrcc,ffc,lamax,nex,nrcc,jpch,Ff,rmaxcc,
+     &                rvcc,realwf
       use globals, only: debug,verb
       use memory
       implicit none

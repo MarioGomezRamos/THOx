@@ -838,6 +838,9 @@ c without h^2/(2m*b^2) factor
 ! ln(i!) and ln((2i+1)!)
       use factorials
       implicit real*8 (a-h,o-z)
+      real*8 big
+      big=huge(big)
+      logbig=log(big)
       dlfac(0)=0.
       fact(0)=1.
       dlfac2(0)=0
@@ -846,7 +849,10 @@ c without h^2/(2m*b^2) factor
       do 1 i=1,n 
 	a=i
 	dlfac(i)=dlfac(i-1)+log(a)
-        fact(i)=dexp(dlfac(i))
+! To avoid overflow
+        if (dlfac(i).lt.logbig)then 
+        fact(i)=exp(dlfac(i))
+        endif
 1     if (i.ge.2) dlfac2(i)=dlfac2(i-2)+log(a)
 
 	dl2fac(0)=0.d0

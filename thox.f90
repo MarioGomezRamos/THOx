@@ -1,6 +1,6 @@
-c Calculates THO functions for a two-body system (core+valence) with core excitation
+c THOx: A CDCC code with core and target excitations 
 c
-c by JA Lay and AM Moro (2011)
+c by A.M. Moro, J.A. Lay, M.Gomez-Ramos, R. de Diego (2011-2016)
 c
 
 c v1.1 adding B(Elambda) 8/7/11
@@ -23,7 +23,7 @@ c                  for (X)CDCC calculations, using DCE subroutine
 c v2.2e Problems with reading fort.30 potentials solved, continue to read core+target potentials
 c v2.3 AMM: CC bins included for the first time!
 c           Change input ordering 
-
+c v2.4 AMM: 3-body observables with CC bins implemented
       program thox
       use globals
       use sistema
@@ -42,11 +42,12 @@ c           Change input ordering
      
       parameter (eps=1e-6)
 
-      logical fail3,checkorth,ifphase,dummy,tres
+      logical fail3,checkorth,ifphase,dummy,tres,realcc
       integer:: nfmax,mlst
       real*8 ::  lambda,r,norm
       integer :: al
       CHARACTER*1 BLANK,PSIGN(3)
+      character*40 filename
       integer :: nset,nho, nchsp
 
 !!! TEST 
@@ -83,7 +84,8 @@ c Input namelists -------------------------
 
       interface 
         subroutine cfival(lrf,lfv,gaux,nlf,alpha)
-        real*8 lrf,lfv(:),gaux(:),alpha
+        real*8 lrf,lfv(:),alpha
+        complex*16:: gaux(:)
         integer nlf
         end subroutine
       end interface
@@ -114,7 +116,7 @@ c     ------------------------------------------------------------
 c *** Defined global constants
       call initialize() 
       write(*,'(50("*"))')
-      write(*,'(" ***",8x,"THOx+DCE+CC code: version 2.3",8x, "***")')
+      write(*,'(" ***",8x,"THOx+DCE+CC code: version 2.4",8x, "***")')
       write(*,'(50("*"),/)')
 
 c *** Print physical constants
@@ -176,7 +178,7 @@ c Pauli-forbidden states to be removed
 
       do nset=1,jpsets
       dummy=.false.
-      call read_jpiset(nset,bastype,nk,tres,ehat)
+      call read_jpiset(nset,bastype,nk,tres,ehat,filename)
 
       jtot    =jpiset(nset)%jtot
       partot  =jpiset(nset)%partot
@@ -207,13 +209,18 @@ c *** Check orthonormality
 c *** Overlap between THO and scattering wfs
         call solap
 c *** ------------------------------------------------------------
-      case(2) ! Bins   
+      case(2,3,4) ! Bins   
         call makebins(nset,nk,tres,ehat)
+
+c *** ------------------------------------------------------------
+      case(5) ! External   
+       call readwfs(filename,nset,nchan)
+
       end select 
       
       enddo ! loop on j/pi sets
 
-c *** Continuum WFS
+c *** Continuum WFS (scatwf namelist)
 !      call continuum!(nchan)
       call continuum_range
 
@@ -371,7 +378,7 @@ c
       use memory
       write(*,*)''
       write(*,*)'Timings:'
-      write(*,*)' CC integration :',tcc,  ' secs'
+      if (tcc.gt.1e-4) write(*,*)' CC integration :',tcc,  ' secs'
       if (tzfun.gt.1e-4) write(*,*)' Calculation of zfun:',tzfun,' secs'
       if (torto.gt.1e-4) write(*,*)' Stabilization:',torto,' secs'
       if (tcsh.gt.1e-4) write(*,*)' Cosh :',tcsh,' secs'
@@ -404,35 +411,46 @@ c Pre-read input to set dimensions
 c
       subroutine preread(kin)
       use channels 
-      use parameters, only: maxl
+      use parameters, only: maxl,maxeset,maxchan
+      use xcdcc, only: realwf
+      use wfs, only: energ,wfc,nr
 !      use potentials, only: vl0,vcp0
       implicit none
       logical :: tres,ehat
-      integer::l,bastype,mlst,kin
+      integer::l,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
-      real*8:: jn,exmin,exmax,jtold
+      real*8:: jn,exmin,exmax,jtold,rmin,rmax,dr,rlast,rint
       real*8:: bosc,gamma,kband
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
-      
-      
+      character*40 filewf
+
+      namelist /grid/ ng, rmin,rmax,dr,rlast,rint
+            
       namelist/jpset/ jtot,parity,lmax,
      &                bastype,nfmax,exmin,exmax,
      &                nho,bosc,     ! HO
      &                gamma,mlst,   !THO Amos 
      &                nsp,  ! sp eigenvalues to keep for full diag
      &                bas2,
-     &                nk, nbins,inc,tres,ehat
+     &                nk, nbins,inc,tres,ehat,filewf
 
       
       jpsets=0
       maxl=0
+      realwf=.true.
+
+      read(kin,nml=grid)
+      if (dr>0) then
+           nr=ceiling((rmax-rmin)/dr)+1
+      endif
       
 300   bastype=-1    
       tres=.false.
       inc=1
       read(kin,nml=jpset) 
       if (bastype.lt.0) goto 350
+!      if (bastype.eq.2) realwf=.false. ! complex bins
       jpsets=jpsets+1
       if (jpsets.eq.1) then
          jtold=jtot
@@ -470,6 +488,15 @@ c
 
       allocate(jpiset(jpsets)) ! sets, chans/set
       allocate(spchan(jpsets,maxchan))
+
+      if (.not.allocated(wfc)) then
+        write(*,*)'allocate wfc:',maxeset,maxchan,nr
+        nchmax=0
+        allocate(wfc(jpsets,maxeset,maxchan,nr))
+        allocate(energ(jpsets,maxeset))
+      endif
+
+
       rewind(kin)
       end subroutine
 
@@ -578,8 +605,12 @@ c           enddo
              write(*,170) nr, rmin,rmax,dr
 170     format(1x,"- Using uniform grid with ",i4, ' points:',
      &           2x,"[ Rmin=",1f6.3,2x," Rmax=",
-     &           1f6.1,1x," Step=",1f6.3, " fm ]",//)
-         if (rint>0) write(0,*)'rint=',rint,' fm'
+     &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
+         if ((rint>0).and.(rint.gt.rmax)) then
+          write(*,172)rint, rmax
+172       format(1x,"[ WFS calculated up to",1f6.1,
+     & " fm and extrapolated up to ", 1f6.1," fm ]",//)
+         endif
 	endif
        end subroutine 
 
