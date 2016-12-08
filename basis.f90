@@ -1,7 +1,7 @@
 c 
 c *** Calculate valence/core configurations compatible with Jtot/pi
 c     nchan={Ic,lsj} configurations  
-      subroutine read_jpiset(iset,bastype,nk,tres,ehat)
+      subroutine read_jpiset(iset,bastype,nk,tres,ehat,filewf)
       use channels
       use globals,only: kin
       use wfs    ,only: exmin,exmax
@@ -13,6 +13,7 @@ c     nchan={Ic,lsj} configurations
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
       CHARACTER*1 BLANK,PSIGN(3)      
+      character*40 filewf
       DATA PSIGN / '-','?','+' /, BLANK / ' ' /
 
 
@@ -27,20 +28,23 @@ c     nchan={Ic,lsj} configurations
      &                nbins, ! nb of bins
      &                inc,   ! incoming channel (bins)
      &                tres,  ! weight by T-matrix 
-     &                ehat   ! (logical, default T) to use mean bin energies (otherwise midpoint), 
+     &                ehat,  ! (logical, default T) to use mean bin energies (otherwise midpoint), 
+     &                filewf  ! external file for wfs
+!     &                realcc ! if TRUE, calculate real multichannel states instead of scat. states
 
 
-      nfmax=0; exmin=-1e-20; exmax=1e20; inc=1; tres=.false.; nho=0; 
-      ehat=.false.
+      nfmax=0; exmin=-1e-20; exmax=1e20; inc=1; tres=.false.; nho=0;
+      ehat=.false. ; filewf=""
       read(kin,nml=jpset) 
       partot=parity !composite parity
-      jpiset(iset)%nho   =nho
-      jpiset(iset)%nsp   =nsp
-      jpiset(iset)%partot=parity
-      jpiset(iset)%jtot=jtot
-      jpiset(iset)%exmin=exmin
-      jpiset(iset)%exmax=exmax
-      jpiset(iset)%inc=inc
+      jpiset(iset)%nho     = nho
+      jpiset(iset)%nsp     = nsp
+      jpiset(iset)%partot  = parity
+      jpiset(iset)%jtot    = jtot
+      jpiset(iset)%exmin   = exmin
+      jpiset(iset)%exmax   = exmax
+      jpiset(iset)%inc     = inc
+      jpiset(iset)%bastype = bastype
 
       write(*,'(/)') 
       write(*,*)  '******************************************'
@@ -59,11 +63,13 @@ c determine allowed single-particle configurations
       nchan=0
 !      write(99,*)'read_jpi: nce,nchsp=',nce,nchsp
       do ic=1,nce
+!        ex    = exc1(ic)
+!        jcore = jc(ic)
+         ex    = qnc(ic)%exc    
+         jcore= qnc(ic)%jc   
       do ichsp=1,nchsp
         l     = qspl(ichsp); xl=l
         jn    = qspj(ichsp)
-        jcore = jc(ic)        
-        ex    = exc1(ic)
 !        write(*,*) 'chan=',ichsp,l,jn,jcore
         if ((-1)**l*parc(ic).ne.partot) cycle      
         if (fail3(jn,jcore,jtot))       cycle
@@ -87,7 +93,7 @@ c determine allowed single-particle configurations
         jpiset(iset)%lsp(nchan)   =l  
         jpiset(iset)%jsp(nchan)   =jn
         jpiset(iset)%jc(nchan)    =jcore
-        if (bastype.eq.2) jpiset(iset)%nex =nbins
+        if (bastype.ne.1) jpiset(iset)%nex =nbins
 
 c deprecated variables
         spindex(nchan)=ichsp  
@@ -98,7 +104,7 @@ c deprecated variables
         exc(nchan)=ex               !I redefined it to have the excitation energy for each nchan
         qpar(nchan)=parc(ic)
 
-      write(*,240) nchan,jcore,l,sn,jn,exc(nchan),ichsp,ic
+      write(*,240) nchan,jcore,l,sn,jn,ex,ichsp,ic
 240	format(5x,'Channel #',i2,' : Ic=',f4.1,' (',i2,f4.1,')',f4.1
      &,' Ex=',f6.3,' MeV with sp config #',i1,' and core #',i1)
        enddo !ichsp
@@ -233,8 +239,16 @@ c -------------------------------------------------------------
 
 
 c -------------------------------------------------------------
-       case(2) ! Bins
+       case(2) ! CC bins
        write(*,*)' ** BIN wfs ** '
+
+c -------------------------------------------------------------
+       case(4) ! Real CC Bins
+       write(*,*)' ** Real CC BIN wfs ** '
+
+c -------------------------------------------------------------
+       case(5) ! External 
+       write(*,*)' ** External wfs ** '
 
 c -------------------------------------------------------------
        case default ! undefined bastype

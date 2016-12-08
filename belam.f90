@@ -22,7 +22,7 @@ c     --------------------------------------------------------------------------
       real*8:: Elamcorem,rotor
       real*8:: wid,qjcir,qjcr,cleb,sixj,coef
       real*8:: mec(maxcore,maxcore,maxlamb) 
-      real*8:: econt,kcont,test,rme,geom
+      real*8:: econt,kcont,test,rme,geom,excore
       real*8:: jci,jcf,bec,alpha
       real*8:: mvc,mv, rm,conv,solap,rlam,dk
       real*8:: dkrdk,krel   !depends on wfcont and solap definitions
@@ -30,9 +30,12 @@ c     --------------------------------------------------------------------------
       real*8, allocatable:: edisc(:) ! discrete energies (PS's or Bins)
       real*8, allocatable:: uext(:,:)
       real*8, allocatable:: qlr(:)
+      real*8, allocatable:: psh(:)
 c     --------------------------------------------------------------------------
-      complex*16:: Elamcont,zero,resc,mecc,psh(nchmax)
+      complex*16:: Elamcont,zero,resc,mecc
       complex*16:: gaux(nr),faux(nr)!,test
+      complex*16,allocatable:: smate(:,:),wfscat(:,:,:)
+!      complex*16,allocatable :: ugs(:,:)
       integer coremodel,qc,ic,icp,nctrans
       CHARACTER*1 PSIGN(3)
       DATA PSIGN / '-','?','+' / 
@@ -53,7 +56,8 @@ c     --------------------------------------------------------------------------
       jset=0
       read(kin,nml=belambda)
       if (.not.ifbel) return
-
+      allocate(smate(nk,maxchan),psh(nk))
+      smate(:,:)=0. ; psh(:)=0
 c     ----------------- Core RME specified by user -----------------------------
       if (coremodel.eq.1) then
       mec=0d0
@@ -105,9 +109,11 @@ c     ------------------------------ GS WF  -----------------------------------
         enddo !ich
         enddo !ir
         write(*,*)'GS has norm=',aux
-      else 
+      else !....................................EXTERNAL GS WF
       open(20,file=uwfgsfile)
       read(20,246)ncni,eneri
+      allocate(ugs(nr,ncni))
+      ugs(:,:)=0d0
       write(*,*)'ncni,eneri=',ncni,eneri
 !246	format('# ',i2)!,' Channels, Eigenvalue:',i2,' Enegy:',f8.4)
 ! AMoro v21b (we need to read energy too)
@@ -174,8 +180,8 @@ c     Select FINAL j/pi set and check triangularity condition -----------------.
       jtot  =jpiset(jset)%jtot
       nex   =jpiset(jset)%nex
       nchan =jpiset(jset)%nchan
-      write(*,*)'Final channel',jset,' has j=',jtot, 'par=',partot,
-     & 'and',nchan,' chan(s)'
+      write(*,*)'Final channel',jset,': j=',jtot, 'par=',partot,
+     & ' chans:',nchan,' nex=',nex
       allocate(qlr(nchan))
       qjc(:)=0; 
       ql(:)=0; 
@@ -191,6 +197,8 @@ c     Select FINAL j/pi set and check triangularity condition -----------------.
       cindex(1:nchan)=jpiset(jset)%cindex(1:nchan)
       exc(1:nchan)   =jpiset(jset)%exc(1:nchan)
  
+      qlr(1:nchan)=ql(1:nchan)  ! final 
+
       if (allocated(edisc)) deallocate(edisc)
       allocate(edisc(nex))
       edisc(1:nex)  =energ(jset,1:nex)
@@ -228,7 +236,7 @@ c     --------------------------------------------------------------------------
 
 !        Elamcorem=Elamcorem*delta/(abs(delta))                   !we have to add the other part of the sign yet (from the clebsch gordam)
         write(*,*)'- M(Elambda)_core=',Elamcorem,'  from experimental 
-     &B(Elambda)_core=',BElcore
+     &            B(Elambda)_core=',BElcore
         write(*,*)'WARNING: Not still full implemented and tested'
       else
         if (rms.ne.0d0) then
@@ -292,7 +300,7 @@ c--------------------------------------------
 
 !c Overlap between radial parts for n and m channels
 !        faux(:)=rvec(:)*ugs(:,n)*wfeig(i,m,:) !the gs has already an r
-        faux(:)=rvec(:)*ugs(:,n)*wfc(jset,i,m,:) !the gs has already an r
+        faux(1:nr)=rvec(1:nr)*ugs(1:nr,n)*wfc(jset,i,m,1:nr) !the gs has already an r
         call simc(faux,solap,1,nr,dr,nr)    !it will improve if we go only until rlast
 
 !c Core reduced matrix element (model dependent) -------------------------------
@@ -334,12 +342,13 @@ c VALENCE contribution
          
 c < n | r^lambda | m > 
 !        faux(:)=rvec(:)**(1+lambda)*ugs(:,n)*wfeig(i,m,:) !the gs have already an r
-        faux(:)=rvec(:)**(1+lambda)*ugs(:,n)*wfc(jset,i,m,:) !the gs have already an r
-        call simc(faux,rlam,1,nr,dr,nr)    !it will improve if we go only until rlast
+       faux(1:nr)=rvec(1:nr)**(1+lambda)
+     &            *ugs(1:nr,n)*wfc(jset,i,m,1:nr) !the gs have already an r
+       call simc(faux,rlam,1,nr,dr,nr)    !it will improve if we go only until rlast
 
-         mv=zeff*rlam*
+       mv=zeff*rlam*
      & matel(lambdar,sn,qjc(m),jtoti,qji(n),qlir(n),jtot,qj(m),qlr(m))
-         mvc=mvc+mv
+       mvc=mvc+mv
 
 ! 2.0.4
 !        mel(iord(i),m)=mel(iord(i),m)+cmplx(zeff*matel(
@@ -369,70 +378,81 @@ c        written(95)=.true.
         besum=besum+BEl
         write(*,300)edisc(i),lambda,i,BEl,2*lambda
 300     format(4x,"Ex=",f8.4,"  B(E",i1,"; gs ->",i4,
-     &")=",f8.4," e^2fm^",i1)
+     &")=",f8.4," e2.fm",i1)
 !        test=0d0
         enddo !i=1,nex
 
 	written(95)=.true.
 
         write(*,*)'- From Pseudo-States:'
-        write(*,'(30x,"Total BE=",1f10.6," e^2 fm^",i1)')besum,2*lambda
+        write(*,'(30x,"Total BE=",1f10.6," e2.fm",i1)')besum,2*lambda
         write(*,*)'- From Sum Rule: (only for SP excitation!)'
         call sumrule
-        write(*,'(30x,"Total BE=",1f10.6," e^2 fm^",i1)')besr,2*lambda 
+        write(*,'(30x,"Total BE=",1f10.6," e2.fm",i1)')besr,2*lambda 
 !        write(*,*)"(** sum rule only intended for sp excitations)"
 
 
 c------------------------------------------------
 c B(Elambda) from scattering states (version by AMM)
 c------------------------------------------------ 
+      written(96)=.true.
       rm=av*ac/(av+ac)
       conv=(2*amu/hc**2)*rm
       kmin=sqrt(2d0*mu12*abs(emin))/hc
       kmax=sqrt(2d0*mu12*abs(emax))/hc
-      if (allocated(wfcont)) deallocate(wfcont)
       ili=1
       il =nchan
-      allocate(wfcont(nk,il,nchan,nr))
 
 !!!!!!! NEED TO BE REVISED FOR OPEN CHANNELS WITH EXCITED CORE
-      write(*,*)'cont wf for jset,ili,il=',jset,ili,il
-      write(*,*)'emin,emax=',emin,emax
-      do iil=ili,il !open channels
-      call wfrange(jset,nchan,iil,emin,emax,nk,energy,
-     &             wfcont(:,iil,:,:),psh)
-      wfcont(:,iil,:,:)=sqrt(2./pi)*wfcont(:,iil,:,:) ! set norm to delta(k-k')
-      enddo
+!      write(*,*)'cont wf for jset,ili,il=',jset,ili,il
+!      write(*,*)'emin,emax=',emin,emax
+!      do iil=ili,il !open channels
+!      call wfrange(jset,nchan,iil,emin,emax,nk,energy,
+!     &             wfcont(:,iil,:,:),smate,psh)
+!      wfcont(:,iil,:,:)=sqrt(2./pi)*wfcont(:,iil,:,:) ! set norm to delta(k-k')
+!      enddo
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if (nk.gt.1) then
+      if (nk.gt.1) then
          dk=(kmax-kmin)/(nk-1)
-        else
+      else
          dk=(kmax-kmin)
-        endif
-        besum=0d0
-        if (.not.allocated(dbde)) allocate(dbde(il,nk))
-        do ik=1,nk
-         kcont=kmin+ (ik-1)*dk  !new kcont for schcc
-         econt=(hc*kcont)**2/2/mu12
+      endif
+      besum=0d0
+      if (.not.allocated(dbde)) allocate(dbde(il,nk))
+      dbde(:,:)=0.
+      do iil=ili,il ! incoming channels
+        if (allocated(wfscat)) deallocate(wfscat)
+         allocate(wfscat(nk,nchan,nr))
+
+         write(96,*)'# inc. channel=',iil
+         excore =jpiset(jset)%exc(iil) ! core exc. energy for this inc. chan.
+         call wfrange(jset,nchan,iil,emin,emax,nk,energy,
+     &             wfscat(:,:,:),smate,psh)
+         wfscat(:,:,:)=sqrt(2./pi)*wfscat(:,:,:) ! set norm to delta(k-k')
+
+      do ik=1,nk
          Elamcont=zero
          Elamcore=0d0
          mecc=(0d0,0d0)
          BEl=0d0
-        do iil=ili,il !open channels
-		krel=sqrt(2d0*mu12*(econt-exc(iil)))/hc
-		if (krel.gt.eps) then
-		  dkrdk=kcont/krel
-		  else
-		  dkrdk=1d0
-		endif
+         kcont=kmin+ (ik-1)*dk  !new kcont for schcc
+         econt=(hc*kcont)**2/2/mu12
 
-        Elamcont=zero
+!         do iil=ili,il !open channels 
+!           excore =jpiset(jset)%exc(iil) 
+!            krel=sqrt(2d0*mu12*(econt-excore))/hc            
+!	    if (krel.gt.eps) then
+!		dkrdk=kcont/krel
+!	    else
+!		dkrdk=1d0
+!            endif
+!        Elamcont=zero
         itran=0
         do m=1,nchan 
         do n=1,ncni  ! init  channels
 !c CORE contribution
-        qjcir=1d0*qjci(n)
-        qjcr=1d0*qjc(m)
+        qjcir=qjci(n)
+        qjcr =qjc(m)
         geom=(-1.)**(lambda+qj(m)+qjci(n)+jtot)
      &      *sqrt((2.*jtoti+1.)*(2.*qjc(m)+1.))
      &      *sixj(jtot,jtoti,lambdar,qjcir,qjcr,qj(m))
@@ -441,7 +461,8 @@ c------------------------------------------------
         if ((qj(m).eq.qji(n)).and.(qli(n).eq.ql(m))) then
 
 !c Overlap between radial parts for n and m channels
-        gaux(:)=ugs(:,n)*wfcont(ik,iil,m,:)*sqrt(dkrdk) !only one incoming channel
+!        gaux(:)=ugs(:,n)*wfcont(ik,iil,m,:)*sqrt(dkrdk) !only one incoming channel
+        gaux(:)=ugs(:,n)*wfscat(ik,m,:) !only one incoming channel
         call simc(gaux(:),resc,1,nr,dr,nr)
 
 !c Core reduced matrix element (model dependent)        
@@ -449,9 +470,9 @@ c------------------------------------------------
         case(0) ! ----------->  rotor
         if (rms.eq.0d0) then
         rme=Elamcorem*cleb(qjcir,0d0,lambdar,0d0,qjcr,0d0)*    ! this is only for K=0, but this is the same. (old version)
-     &sqrt((2*qjcir+1)/(2*qjcr+1))*(-1)**(2*lambda)
+     &      sqrt((2*qjcir+1)/(2*qjcr+1))*(-1)**(2*lambda)
         else
-        rme=rotor(qjcir,qjcr,0d0,lambdar,rms,delta,zc)    ! this is only for K=0, but this is the same.
+            rme=rotor(qjcir,qjcr,0d0,lambdar,rms,delta,zc)    ! this is only for K=0, but this is the same.
         endif
         
         case(1) !----------->  external M(E) 
@@ -487,7 +508,8 @@ c VALENCE contribution
          
 c < n | r^lambda | m > 
        gaux(1:nr)=rvec(1:nr)**(lambda)
-     &           *ugs(1:nr,n)*wfcont(ik,iil,m,1:nr)*sqrt(dkrdk)
+     &           *ugs(1:nr,n)*wfscat(ik,m,1:nr)
+!     &           *ugs(1:nr,n)*wfcont(ik,iil,m,1:nr)*sqrt(dkrdk)
        call simc(gaux,resc,1,nr,dr,nr)   
 
        Elamcont = Elamcont  
@@ -503,11 +525,13 @@ c < n | r^lambda | m >
      &      + (2*jtot+1)*abs(Elamcont)**2/(2*jtoti+1)
      &      *mu12*kcont/hc**2/(2*pi)**3
         Elam=0d0
-        enddo ! iil
-	 written(96)=.true.
-        write(96,*) econt,BEl,dbde(1,ik)
+
+        write(96,*) econt+excore,BEl,dbde(1,ik)
         besum=besum+BEl*hc**2*kcont/mu12*dk    !de=de/dk*dk
         enddo ! ik
+        write(*,*)'inc,besum=',iil,besum
+        write(96,*)'&'
+        enddo ! iil
         write(*,*)'- From Continuum wfs:'
         write(*,'(30x,"Total BE=",1f10.6," e^2 fm^",i1)')besum,2*lambda
 
@@ -705,9 +729,11 @@ c-----------------------------------------------------------------------------
         use belambdamod
         implicit none
         integer:: n,m,c,q
-        real*8:: cr,matel,threej,faux(nr),res,lambdar
+        real*8:: cr,matel,threej,lambdar
         real*8:: cleb,qr,sum3j
+        complex*16::faux(nr),res
         logical:: fail3
+
 
 
         lambdar=1d0*lambda
@@ -720,8 +746,8 @@ c-----------------------------------------------------------------------------
            cr=1d0*c
            if (.not.fail3(qji(n),cr,qji(m))) then
               if (.not.fail3(qlir(n),cr,qlir(m))) then            
-              faux(:)=rvec(:)**(2*lambda)*ugs(:,n)*ugs(:,m) 
-              call sim(faux,res,1,nr,dr,nr)
+              faux(1:nr)=rvec(1:nr)**(2*lambda)*ugs(1:nr,n)*ugs(1:nr,m) 
+              call simc(faux,res,1,nr,dr,nr)
                  
 !              besr=besr+matel(cr,sn,qjci(m),jtoti,qji(n),
 !     &qlir(n),jtoti,qji(m),qlir(m))*res*sqrt(2*cr+1)*

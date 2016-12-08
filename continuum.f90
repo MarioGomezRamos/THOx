@@ -11,7 +11,7 @@ C           are there only because of definition of M(Ek) matrix element
 c -------------------------------------------------------------------------
       subroutine coefmat(nchan)
       use wfs, only: nr,wfsp,rvec
-      use channels, only: jtot,qj,spindex,ql,qj,qjc,cindex,nphon,sn
+      use channels,only:jtot,qj,spindex,ql,qj,qjc,cindex,nphon,sn,partot
       use sistema
       use globals
       use potentials
@@ -23,8 +23,8 @@ c -------------------------------------------------------------------------
       integer  ici,icf,il
       integer  nchani,nchanf,nchan,li,lf,nphi,nphf
 c     -----------------------------------------------------------------------
-      real*8:: fact,ji,jf,xl,jci,jcf,coefss
-      real*8:: all,ass,als,allp,ccoef,vcp,rm,conv,faux(nr),zero
+      real*8:: fact,ji,jf,xl,jci,jcf,coefss,corels
+      real*8:: all,ass,als,alsc,allp,ccoef,vcp,rm,conv,faux(nr),zero
       real*8:: lambdar,sixj,cleb,lfr,lir,cl
       real*8:: allp2, gcoup,big,small
 c     -----------------------------------------------------------------------
@@ -121,6 +121,11 @@ c spin.spin term
         faux(1:nr)=faux(1:nr)+ ass*vss(li,1:nr)
       endif
 
+c spin-orbit for core (added to v2.0.2 by AMoro)
+      alsc=corels(li,sn,ji,qjc(nchani),lf,sn,jf,qjc(nchanf),jtot)
+      faux(1:nr)=faux(1:nr)+ alsc*vlsc(1:nr)
+
+
 c add particle-core coupling for each lambda
        do il=1,maxlamb
       if (.not.laminc(il)) cycle  
@@ -190,12 +195,20 @@ c spin.spin term
              cl=1d0
            endif
 
+            if (partot.eq.1) then
            faux(ir)=faux(ir)+((-1d0)**(ji+jcf+jtot)*sixj(jf,ji,lambdar
      &,jci,jcf,jtot)*sqrt((2*jf+1.)*(2*ji+1.))*sixj(jf,ji,lambdar,
      &lir,lfr,sn)*(-1d0)**(lambdar+lfr+ji+sn)*sqrt((2.*lf+1)*(2.*il+1.)
      &/4/pi)*cleb(lambdar,0d0,lfr,0d0,lir,0d0)*
-     &vtran(ici,icf,il,ir))*cl  
-!     &vtran(jci,jcf,ici,icf,il,ir))*cl     
+     &vtran(ici,icf,il,ir,1))*cl
+            else
+           faux(ir)=faux(ir)+((-1d0)**(ji+jcf+jtot)*sixj(jf,ji,lambdar
+     &,jci,jcf,jtot)*sqrt((2*jf+1.)*(2*ji+1.))*sixj(jf,ji,lambdar,
+     &lir,lfr,sn)*(-1d0)**(lambdar+lfr+ji+sn)*sqrt((2.*lf+1)*(2.*il+1.)
+     &/4/pi)*cleb(lambdar,0d0,lfr,0d0,lir,0d0)*
+     &vtran(ici,icf,il,ir,2))*cl
+            endif
+!     &vtran(jci,jcf,ici,icf,il,ir))*cl
             enddo !il
         if (abs(faux(ir)).lt.small) faux(ir)=small ! avoid underflow
           enddo ! ir
@@ -211,8 +224,7 @@ c spin.spin term
        if (abs(faux(ir)).lt.small) faux(ir)=0.0
        ccmat(nchani,nchanf,ir)=cmplx(faux(ir),zero)*conv
        enddo
-       
-      
+     
 
 !       ccmat(nchani,nchanf,1:nr)=cmplx(faux(1:nr)*conv 
 !     X      * (-1)**NINT((JCI-JCF - ABS(JCI-JCF))/2.),0d0)
@@ -237,6 +249,106 @@ C           are there only because of definition of M(Ek) matrix element
 
 
 
+c ------------------------------------------------------------
+c ** Calculate scattering states by differential integration
+c ------------------------------------------------------------
+      subroutine continuum_range
+      use globals, only: mu12,egs,kin,written,verb
+      use sistema
+      use parameters, only: maxchan
+      use constants
+      use channels, only: jpiset,ql,jpsets
+      use wfs     , only: nr,dr,rvec
+      implicit none
+c     ........................................................
+      logical :: energy,ifcont,writewf
+      character*5::jpi
+      integer:: il, pcon ! backward compatibility
+      integer inc,ilout,ili,jset,partot,nchan,nk,n,ir,ik
+      real*8 :: emin,emax,eout,jtot,ecm
+      real*8 :: kmin,dk,de,kmax,kcont
+      real*8 :: r0,conv,rm
+      real*8,allocatable :: psh_el(:)
+!      real*8 :: deladd,deltai,deltap
+      complex*16,allocatable:: smate(:,:),wfcont(:,:,:)
+      namelist/scatwf/ emin, emax,ifcont,nk,inc,writewf,ilout,eout,jset,
+     &                 energy,
+     &                 il,pcon ! not used, backward compatibility only (AMM)
+
+      inc=0; il=0
+      jset=0; pcon=0
+  
+      writewf=.false.
+      energy=.false.
+      read(kin,nml=scatwf)
+      if ((.not.ifcont).or.(nk.eq.0)) return
+      if ((jset.gt.jpsets).or.(jset.eq.0)) then
+       write(*,*)'jset',jset,' not valid!'
+       return
+      endif
+      if (il.gt.0) then
+       write(*,*)' IL deprecated; use INC instead!'
+      endif
+
+
+      partot=jpiset(jset)%partot
+      jtot  =jpiset(jset)%jtot
+      nchan =jpiset(jset)%nchan
+      ql (1:nchan)   =jpiset(jset)%lsp(1:nchan)
+      r0=rvec(1)
+!      write(50,400) jpi(jtot,partot), nchan,inc
+
+      rm=av*ac/(av+ac)
+      conv=(2*amu/hc**2)*rm
+
+      kmin=sqrt(conv*abs(emin))
+      kmax=sqrt(conv*abs(emax))
+
+      if (energy) then
+        de=(emax-emin)/(nk-1)
+      else
+        dk=(kmax-kmin)/(nk-1)
+      endif
+
+
+      if(allocated(smate)) deallocate(smate)
+      allocate(smate(nk,maxchan),psh_el(nk))
+      if (allocated(wfcont)) deallocate(wfcont)
+      allocate(wfcont(nk,nchan,nr))
+!      deladd=0.
+      call wfrange(jset,nchan,inc,emin,emax,nk,energy,wfcont,
+     &     smate,psh_el)
+     
+
+c ... Write WFS
+      if (writewf) then
+      write(50,400) jpi(jtot,partot), nchan,inc,energy !, ql(1:nchan)
+400   format("# Continuum WFS for Jp=",a5,"; Channels=",i2,
+     & " ;  Inc. chan.=",i2, ' Uniform Ecm=',l1)
+      write(50,'(1x,i4,2x,2f8.4)') nr,dr,r0
+      if (energy) then
+       write(50,'(1x,i4,2x,2f8.4)') nk,de,emin
+      else
+       write(50,'(1x,i4,2x,2f8.4)') nk,dk,kmin
+      endif
+
+      do ik=1,nk
+      if (energy) then
+        ecm=emin+(ik-1)*de
+      else
+        kcont=kmin+ (ik-1)*dk  !new kcont for schcc
+        ecm=(hc*kcont)**2/2/mu12
+      endif
+      write(50,*)'# Continuum wf with Ecm=',Ecm
+      do ir=1,nr
+      write(50,'(1f8.3,2x,50f12.8)')rvec(ir),
+     &       (wfcont(ik,n,ir),n=1,nchan)
+      enddo ! ir
+      write(50,*)'& '
+      enddo ! ik
+      endif !writewf
+      
+      end subroutine 
 
 c ------------------------------------------------------------
 c ** Calculate scattering states by differential integration
@@ -255,7 +367,7 @@ c ------------------------------------------------------------
       use nmrv,only:nch,ech,vcoup
 !!!!!
       implicit none
-      logical info
+      logical info,writewf
       integer n,ir,ich,ichp,nskip,klog,method
       real*8:: r,r0,dk,kcont,econt,k,ecm, t1,t2
       real*8:: phase(nchan),aux,phadd(nchan)
@@ -269,7 +381,7 @@ c  bincc variables
       complex*16:: y(nr,nchan),etap(nchan),wf(nchan,nr),smat(nchan)
       real*8:: fmscal
 c  end bincc 
-      namelist/scatwf/ emin, emax,ifcont,nk,il,pcon,ilout,eout
+      namelist/scatwf/ emin, emax,ifcont,nk,il,ilout,writewf
       il=0
       ili=1
       klog=99
