@@ -1,3 +1,10 @@
+      function WHITP(HETA,R,XK)
+!       EXP(-(KR))
+      real*8 heta,r,xk,whitp,rho
+      rho=xk*r
+      whitp=exp(rho)
+      end function
+      
       SUBROUTINE WHIT(HETA,R,XK,E,LL,F,FD,IE)
 C
 C     CALCULATES  WHITTAKER  FUNCTION  WL(K,R)  WITH

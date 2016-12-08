@@ -64,7 +64,7 @@ c
         integer, parameter:: maxsets=100    ! max number of jp/parity sets
         integer           :: maxl=10
         integer, parameter:: maxeset=100
-        integer, parameter:: maxch  =500  ! max number of channels per JTOT/PI
+        integer, parameter:: maxch  =1000  ! max number of channels per JTOT/PI
       end module parameters
 
 
@@ -115,6 +115,7 @@ c
 
 
       TYPE PCHANNEL
+          integer  bastype         ! basis type (1=THO, 2=CC Bins...)
           integer  partot          ! parity of composite
           real*8:: jtot            ! total spin of composite
           real*8:: sn              ! spin of valence (not really needed here)
@@ -216,7 +217,7 @@ c       for all j/pi sets
       end module wfs
 
       module xcdcc
-      logical iftrans
+      logical iftrans,realwf
       integer nrad1,nquad,nex,numfilmax,nrad2,nrad3
       real*8 rin,dr, hin, rstep
       real*8, allocatable:: rvin(:),rvcc(:)

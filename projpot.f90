@@ -80,7 +80,6 @@ c
        vcp(:,:)=0d0
        ap=0
        at=1
-
        lambda=2 
        kband=0
 !       maxlamb=4

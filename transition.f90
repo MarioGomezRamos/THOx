@@ -18,9 +18,12 @@ c  -----------------------------------------------------------------------------
       integer qcmin,qcmax,kcmax,coups!,lambmax
 c     -------------------------------------------------------------------------------
       character*5:: jpi
+      character*3:: jname
+      CHARACTER PARITY(3)
+      DATA PARITY / '-','?','+' / 
       character*40 filename,couplings,comment,fileamps
 c     -------------------------------------------------------------------------------
-      real*8 factor,ptr,ttr,jt
+      real*8 factor,ptr,ttr,jt,iin,ifi,kband1,kband2
       real*8,allocatable:: xrad2(:),xrad3(:)
 c changed to complex in v2.3
       complex*16,pointer:: ui(:),uf(:)
@@ -303,41 +306,38 @@ c commented by AMoro, to save memory
       do m=1,jpsets
         nchann1=jpiset(m)%nchan ! nch(m)
         xjp1=jpiset(m)%jtot! xjp(m)
-      do n=m,jpsets
+! TEst 11/OCT/16
+!      do n=m,jpsets
+      do n=1,jpsets
+      if(realwf.and.n.lt.m) cycle
+!!!!!!!!!!!!!!!!!!
         nchann2=jpiset(n)%nchan ! nch(n)
         xjp2=jpiset(n)%jtot     ! xjp(n)
-!      xnlc=nint(xjp1+xjp2-abs(xjp1-xjp2))
-!      do ilc=0,nlc
-!        write(*,*)'nchans:',nchann1, nchann2
-!      do lc=nint(dabs(xjp1-xjp2)),nint(xjp1+xjp2)
       do lc=nint(dabs(xjp1-xjp2)),min(lambmax,nint(xjp1+xjp2))
         xlc=dble(lc)
         nk=0  !Nb. of P(IK) for each n,m,Lambda
         call cpu_time(t1)
         do i=1,nchann1
-!      xl1=chann(i,2,n)
        xl1=jpiset(m)%lsp(i) 
-!      Iin=nint(chann(i,1,m))
-! AMM: check this!!!, jc could be half-integer
+       ic1=jpiset(m)%cindex(i)
+       kband1=qnc(ic1)%kband
        Iin=jpiset(m)%jc(i) 
 
        do j=1,nchann2      
-!      xl2=chann(j,2,n)
-      xl2=jpiset(n)%lsp(j) 
-!      Ifi=nint(chann(j,1,n))
-! AMM: check this!!!, jc could be half-integer
-      Ifi=jpiset(n)%jc(j) 
-!      WRITE(*,*)'xl1,Iin=',xl1,Iin
-!      WRITE(*,*)'xl1,Iin=',xl2,Ifn
+       xl2=jpiset(n)%lsp(j) 
+       Ifi=jpiset(n)%jc(j) 
+       ic2=jpiset(n)%cindex(j)
+       kband2=qnc(ic2)%kband
 
+! AMM: Assume rotor model and kband1=kband2
+       if (kband1.ne.kband2) cycle
+     
       do k=0,kmax
-!      do nq=abs(Iin-Ifi),min(nQmax,Iin+Ifi) ! AMM
-!      do nq=nqmin,nqmax
-      do nq=max(abs(Iin-Ifi),nqmin),nqmax
+      do nq=max(nint(Iin-Ifi),nqmin),nqmax
       do l=0,nq !small \lambda
 ! CHECK AMM : i <-> f
 !      call rmatel(m,n,xlc,i,j,k,nq,l,xjp1,xjp2,xKrot,rmatn,rmatc)
-      call rmatel(n,m,xlc,j,i,k,nq,l,xjp2,xjp1,xKrot,rmatn,rmatc)
+      call rmatel(n,m,xlc,j,i,k,nq,l,xjp2,xjp1,kband1,rmatn,rmatc)
 
       if (abs(rmatn).lt.1e-6.and.abs(rmatc).lt.1e-6) cycle
       nk=nk+1
@@ -411,10 +411,11 @@ c ---------------------------------------------------------
       
       do iquad=1,nquad
       vmon=0d0
-      fprod=frad(m,ie1,iquad,i)*frad(n,ie2,iquad,j)
+! AMM: frad(j) should be conjugate!! (fixed Sept 16)  
+!      fprod=frad(m,ie1,iquad,i)*frad(n,ie2,iquad,j) ! i -> j = <j | V | i> 
+      fprod=conjg(frad(n,ie2,iquad,j))*frad(m,ie1,iquad,i) ! i -> j = <j | V | i> 
       if(l.eq.nq) then
-      xintgn(iquad)=fprod*potQKn(iquad,irad2,nq,k)
-     &             *xrad2(irad2)**l
+      xintgn(iquad)=fprod*potQKn(iquad,irad2,nq,k)*xrad2(irad2)**l
 
 c subtract projectile-target monopole Coulomb
       if ((nq.eq.0).and.zp*zt.gt.1e-3.and.k.eq.0.and.ncoul.ne.1)
@@ -510,7 +511,8 @@ c    -----------------------------------------------------------
         endif
       end select
 !!!!!!!!!!!!!!!!
-      if (m1.gt.m2) cycle !!!! AMORO
+! Commented for TEST 11/OCT/16
+      if ((m1.gt.m2).and.realwf) cycle !!!! AMORO
 c for fresco
       do lc= nint(dabs(xjp1-xjp2)),min(nint(xjp1+xjp2),lambmax)
       if (ipar1*ipar2*(-1)**lc<0) cycle
@@ -529,7 +531,12 @@ c \hat{J_p}*hat{J'_p}*(2*\Lambda+1)*(-1)^\Lambda
       write(comment,'(2x,"<",i3,"|",i2,"|",i3,">")') m1,lc,m2
       if (writeff) 
      & write(kfr,500) nrad3,rstep,rfirst,fscale,ltr,ptr,ttr,m2,m1,
-     &               comment
+     &               comment   ! ORIG
+
+!     & write(kfr,500) nrad3,rstep,rfirst,fscale,ltr,ptr,ttr,m1,m2,
+!     &               comment    ! FIXED???
+
+
       if (verb.ge.4) write(120,'("# <",i3,"|",i2,"|",i3,">")') m1,lc,m2
       do irad=1,nrad2
       r2=xrad2(irad)
@@ -548,6 +555,15 @@ c \hat{J_p}*hat{J'_p}*(2*\Lambda+1)*(-1)^\Lambda
       if (verb.ge.4) 
      & write(120,'(1x,1f8.3,2x,2g16.8)') r2,factor*fauxc
       enddo !irad
+
+c Check that imaginary part is small
+      if (abs(aimag(fauxc)).gt.1e-5) then
+      write(*,480) m1,xjp1,parity(ipar1+2),m2,xjp2,parity(ipar2+2),lc,
+     & r2,fauxc
+      endif
+480   format('** Warning **: Large imaginary part for coupling: ',
+     & 1i3,' (',1f4.1,a1,") -> ", 1i3," (",1f4.1,a1,")",
+     & " for LAM=",1i3, ": R=",1f8.2," Fc(R)=",2g16.8)
 
 c Extrapolate Coulomb formactors from R=Rmax to Rextrap
       if (rextrap.gt.rmax) then

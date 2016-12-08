@@ -32,7 +32,7 @@ c     ------------------------------------------------------------
       real*8  :: kcmi,kcmf,exc,vi,vf,tkch
       real*8  :: ecmi,ecmf,etai,etaf,mupt,ermin,ermax
       real*8  :: excore,ei,ef,ki,kf
-      real*8  :: thmin,thmax,dth,cth,sth,s2,th,thrad
+      real*8  :: thmin,thmax,thcut,dth,cth,sth,s2,th,thrad
       real*8, allocatable :: pl(:,:),delci(:),delcf(:)
       real*8  :: rm,rmp,rmlp,lri,lrf
       real*8  :: factor, r1,r2,delif
@@ -58,7 +58,7 @@ c PLM
 
 
       namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,jsets,
-     &                    ermin,ermax,ner,icore,
+     &                    ermin,ermax,ner,icore,thcut,
      &                    triplexs
 
 c initialize -------------------------------------------------
@@ -69,7 +69,7 @@ c initialize -------------------------------------------------
 !      written(ksj)=.false.
       written(kxs+1:kxs+min(nex,9))=.true.
       pi=acos(-1d0)
-      thmin=0; thmax=0; dth=0; 
+      thmin=0; thmax=0; dth=0; thcut=0
       doublexs=.false. ; triplexs=.false.
       ermin=-1; ermax=-1
       jsets(:)=.true.        
@@ -85,6 +85,7 @@ c     -----------------------------------------------------------
       else
         write(*,*)'thmax<thmin!; Aborting'; stop
       endif
+      if (thcut.lt.1e-6) thcut=thmax 
 
       if (ner.eq.0) then
          write(*,*)'NER=0!!';
@@ -576,8 +577,8 @@ c Simple ds/de for bins
       
 c Double x-sections 
 1000  if ((doublexs).or.(triplexs))
-     &     call d2sigma(nth,dth,thmin,ermin,ermax,
-     &                 ner,icore,jsets,fileamp,doublexs,triplexs)
+     &     call d2sigma(nth,dth,thmin,thcut,ermin,ermax,ner,
+     &                 icore,jsets,fileamp,doublexs,triplexs)
       if (allocated(famps0)) deallocate(famps0)
       end subroutine
 
@@ -588,7 +589,7 @@ c Double x-sections
 c ----------------------------------------------------------------
 c Double differential x-sections dsigma/dEx dW  (NEW VERSION) 
 c ----------------------------------------------------------------
-      subroutine d2sigma(nth,dth,thmin,emin,emax,ncont,
+      subroutine d2sigma(nth,dth,thmin,thcut,emin,emax,ncont,
      &                   icore,jsets,fileamp,doublexs,triplexs)
      
      
@@ -618,7 +619,7 @@ c     -----------------------------------------------------------------------
 c     -------------------------------------------------------------------------
       real*8:: kpt,kcv,krel,dkrdk
       real*8:: ji,jf,jci,jcf,raux,jac,jpi,jpf,jtarg
-      real*8:: ecmi,ecmf,kcmi,kcmf,excore,th,thmin,dth
+      real*8:: ecmi,ecmf,kcmi,kcmf,excore,th,thmin,dth,thcut
       real*8:: dec,ebind,ecv,ethr,emin,emax
       real*8:: facK,mv,mc,mucv,mupt,f2t,xstot,sumr
       real*8,allocatable::dsdew(:,:)
@@ -666,6 +667,11 @@ c     ..........................................................................
       complex*16,allocatable:: fxyc(:,:)
 !      complex*16:: fxyc(10,ncont)
       complex*16,allocatable:: fv(:)
+c  *** Relativistic kinematics
+      logical  :: rel=.true.
+      real*8   :: sinv,etcm,pcmi,pcmf,mpx
+c     ..........................................................................
+
 !!! TESTING
       real*8 tmatsq2,ampt2
       integer icount,if2c
@@ -695,6 +701,7 @@ c ------------------------------------------------------------------------------
 
       write(*,'(//,3x, "** DOUBLE DIFFERENTIAL CROSS SECTIONS **",/ )')
 
+
 c     If no amplitudes have been calculated before, we try to read them
 c     from an external file, specified by the user 
       if (.not.allocated(famps0).and.(fileamp.ne."")) then
@@ -720,7 +727,7 @@ c     from an external file, specified by the user
       jpf=jpiset(iset)%jtot
       nmf=nint(2.*jpf+1.)
       nm=nmi*nmf
-      write(*,'(a,i3,a,i3,a,1f4.1)') 'Expected: iset=',iset, 
+      write(*,'(a,i3,a,i3,a,1f4.1)') ' Expected: iset=',iset, 
      & '  nex=', nex, ' jpf=',jpf
       do n=1,nex
       iex=iex+1
@@ -730,7 +737,7 @@ c     from an external file, specified by the user
       read(line,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab    
 !      read(kfam,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
 !     & ,a,b
-      write(*,'(a,i3,a,i3,a,1f4.1)') 'Read: ie=',iex, 
+      write(*,'(a,i3,a,i3,a,1f4.1)') ' Found: ie=',iex, 
      & ' n=',n,' jpf=',jpf
 
       if (iex.eq.1) write(*,*) ' amplitudes are for elab=',elab
@@ -752,18 +759,30 @@ c     from an external file, specified by the user
 c     -------------------------------------------------------------------------
  
 
-      ecmi=elab*mt/(mp+mt)
-      mupt=mp*mt/(mp+mt)!*amu
-      kcmi=sqrt(2*mupt*ecmi)/hc
+      if (.not.rel) then       ! non-relativistic
+        ecmi=elab*mt/(mp+mt)
+        mupt=mp*mt/(mp+mt)!*amu
+        kcmi=sqrt(2*mupt*ecmi)/hc
+      else                     ! relativistic
+        write(*,*)' ** USING RELATIVISTIC KINEMATICS **'
+        sinv=((mp+mt))**2+2*mt*elab
+        etcm=sqrt(sinv)          ! total relativistic energy
+        ecmi=etcm-mp-mt       ! kinetic energy in initial channel
+        Pcmi=sqrt((sinv-mp**2-mt**2)**2-4.*(mp*mt)**2)/2/sqrt(sinv)
+        Kcmi=pcmi/hc
+        write(*,*)'REL: sqrt(s)=',sqrt(sinv),' Ecmi=',Ecmi, "Kcmi=",kcmi
+      endif
+
       ebind=energ(1,1) ! exch(1)          
 !      Kcm=sqrt(2.d0*mupt*ecm)/hc        
       Ethr=Ecmi+ebind
       Kthr=sqrt(2.d0*mupt*Ethr)/hc
+
       write(99,*) 'Ethr=',Ethr, ' Kthr=',Kthr
       write(99,'(a,1f8.3,a,3f10.5)')'Elab=',elab,
      & ' mp,mc,mv=',mp/amu,mc/amu,mv/amu
       write(99,*)'Ecmi=',Ecmi, "Kcm=",kcmi, 'Ethr=',Ethr
-
+      
 
 c *** Assign global index to states of all j/pi sets iPS=iPS(iset,n)
       iex=0
@@ -891,7 +910,8 @@ c *** -------------- PRINT OVERLAPS FOR TESTING --------------------------------
       if (jpiset(iset)%nho.eq.0) cycle
       do n=1,nex
       raux=0
-      write(97,*)'# n -> Ex=',n,energ(iset,n)
+      write(97,'(a,i3,a,i3,a,1f10.4)')'# Set:',iset,
+     & ' n=',n,' Ex=',energ(iset,n)
       do iecv=1,ncont
        ecv=emin+(iecv-1)*dec
        if (energ(iset,n).lt.0)    cycle ! bound state
@@ -901,15 +921,16 @@ c *** -------------- PRINT OVERLAPS FOR TESTING --------------------------------
        jac=mucv/(hc**2)/kcv
        write(97,111)ecv,
      &  (jac*abs(gsolap(iset,n,inc,iecv))**2,inc=1,nchan)
-111    format(2x,1f12.6,2x,4g14.6)
+111    format(2x,1f12.6,2x,10g14.6)
        do inc=1,nchan
        raux=raux+jac*abs(gsolap(iset,n,inc,iecv))**2*dec
        enddo ! inc
       enddo !iecv
-      write(97,*)'&'
       if (verb.ge.3) then
-      write(*,*)'PS',n,' Norm solap=',raux*2/pi
+      write(97,'(3x,a,i3,a,i3,a,1f8.5)')'# -> Set:',iset, '  PS=',n,
+     & ' Norm solap=',raux*2/pi
       endif
+      write(97,*)'&'
       enddo ! n
       enddo !iset
       endif ! verb
@@ -956,13 +977,27 @@ c *** Compute DOUBLE x-sections dsigma/dedw FOR SELECTED CORE STATE ICORE
       jci    =jpiset(iset)%jc(inc)
       excore =jpiset(iset)%exc(inc) ! core energy 
       ic     =jpiset(iset)%cindex(inc)
-      ecmf=ecmi-dabs(ebind)-ecv-excore ! p-t c.m. energy in final channel !! CHEEEEEEEEEEEEEEEEECK
+      ecmf   =ecmi-dabs(ebind)-ecv-excore ! p-t c.m. energy in final channel !! CHEEEEEEEEEEEEEEEEECK
       if (ecmf.lt.0) then
           write(*,*)'Ecm=',Ecmf, 'Ecv=',Ecv
           stop
       endif
       if (ecmf.lt.1e-4) ecmf=1e-4
-      Kcmf=sqrt(2.d0*mupt*ecmf)/hc     
+
+      if (.not.rel) then ! non-relativistic
+        Kcmf=sqrt(2.d0*mupt*ecmf)/hc   
+        if ((ith.eq.1).and.(iecv.eq.1))
+     &     write(*,*)'Kcmf(nr)=',kcmf    
+      else               ! relativistic
+        mpx=mp+abs(ebind)+ecv+excore
+        Pcmf=sqrt((sinv-mpx**2-mt**2)**2-4.*(mpx*mt)**2)/2/sqrt(sinv)
+        Kcmf=pcmf/hc
+!        if ((ith.eq.1).and.(iecv.eq.1))
+         write(*,*)'Kcmf(rel)=',kcmf,sqrt(2.d0*mupt*ecmf)/hc
+      endif
+
+     
+
       facK=kcmf/kcmi/kcv
       f2t=-2.*pi*hc**2/mupt*sqrt(Kcmi/Kcmf) ! conversion factor f(theta) -> T-mat
 
@@ -994,6 +1029,7 @@ c *** Compute DOUBLE x-sections dsigma/dedw FOR SELECTED CORE STATE ICORE
 c Integrate in ENERGY, to get dsigma/dOmega for core state ICORE
       open(90,file='dsdw_conv.xs',status='unknown')
       open(91,file='dsdwe_conv.xs',status='unknown')
+      open(92,file='dsdwe_conv.gnu',status='unknown')
       do ith=1,nth
       raux=0.
       th = thmin + dth*(ith-1)
@@ -1002,7 +1038,9 @@ c Integrate in ENERGY, to get dsigma/dOmega for core state ICORE
       ecv=emin+(iecv-1)*dec
       raux=raux + dsdew(iecv,ith)*dec
       write(91,'(1f10.4,1g14.6)') ecv, dsdew(iecv,ith)      
+      write(92,'(2f10.4,1g14.6)') th,ecv, dsdew(iecv,ith)      
       enddo !iecv
+      write(92,*)' ' 
       write(90,*) th, raux
       enddo !ith
       call flush(90)
@@ -1018,6 +1056,7 @@ c Integrate in ANGLE, to get dsigma/dE  for core state ICORE
       raux=0.
       do ith=1,nth
       th = thmin + dth*(ith-1)
+      if (th.gt.thcut) cycle
       raux=raux + 2*pi*dsdew(iecv,ith)*
      &     sin(th*pi/180.)*dth*pi/180.   
       enddo !iecv

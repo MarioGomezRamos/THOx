@@ -224,8 +224,7 @@ c spin.spin term
        if (abs(faux(ir)).lt.small) faux(ir)=0.0
        ccmat(nchani,nchanf,ir)=cmplx(faux(ir),zero)*conv
        enddo
-       
-      
+     
 
 !       ccmat(nchani,nchanf,1:nr)=cmplx(faux(1:nr)*conv 
 !     X      * (-1)**NINT((JCI-JCF - ABS(JCI-JCF))/2.),0d0)
@@ -325,7 +324,7 @@ c ... Write WFS
       if (writewf) then
       write(50,400) jpi(jtot,partot), nchan,inc,energy !, ql(1:nchan)
 400   format("# Continuum WFS for Jp=",a5,"; Channels=",i2,
-     & ";  Inc. chan.=",i2, ' Uniform Ecm=',l1)
+     & " ;  Inc. chan.=",i2, ' Uniform Ecm=',l1)
       write(50,'(1x,i4,2x,2f8.4)') nr,dr,r0
       if (energy) then
        write(50,'(1x,i4,2x,2f8.4)') nk,de,emin
