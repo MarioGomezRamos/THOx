@@ -3,23 +3,23 @@ c **  Scattering amplitudes & cross sections
 c *** --------------------------------------------------------------
       subroutine xsecs(kin,ncc,iexgs)
       use xcdcc,    only: smats,elab,jpch,jtmin,jtmax,nex,exch,parch,
-     &                    famps
+     &                    famps0,jbord,jump,binset
       use channels, only: jptset,jpiset,jpsets
       use factorials
       use sistema
       use constants
       use parameters, only:  maxchan,maxsets
-      use globals,  only: debug,written,verb
+      use globals,  only: debug,written,verb,mu12
       use nmrv,     only: hort
       use wfs,      only: nr,dr,energ,rvec,wfr
       implicit none
-      logical :: doublexs,triplexs,jsets(maxsets)
+      logical :: doublexs,triplexs,jsets(maxsets),kinset(maxsets)
 c     ---------------------------------------------------------
       integer, parameter :: klog=99
       integer   , parameter:: kamp=136, kxs=300,kfam=137,
      &                        ksmat=170, !ksj=157,
      &                        nearfa=1
-      integer :: istat,kin
+      integer :: istat,kin,iset,n
       integer :: inc,iexgs,icc,ncc,nch,ni,nf,lmax,iex,lfmax,ith,icore
       integer :: partot,nth,njt,parold,maxleg,ner
       integer :: iam,im,imp,mlp,li,lf,nmi,nmf,mi,mf,ijt,l,nmfmax
@@ -31,7 +31,8 @@ c     ------------------------------------------------------------
       real*8  :: jtot,jpgs,jpi,jpf,jpold,jtarg
       real*8  :: kcmi,kcmf,exc,vi,vf,tkch
       real*8  :: ecmi,ecmf,etai,etaf,mupt,ermin,ermax
-      real*8  :: thmin,thmax,dth,cth,sth,s2,th,thrad
+      real*8  :: excore,ei,ef,ki,kf
+      real*8  :: thmin,thmax,thcut,dth,cth,sth,s2,th,thrad
       real*8, allocatable :: pl(:,:),delci(:),delcf(:)
       real*8  :: rm,rmp,rmlp,lri,lrf
       real*8  :: factor, r1,r2,delif
@@ -49,8 +50,15 @@ c ---------------------------------------------------------------
 c PLM
 !      REAL*8 PM(0:1000,0:1000),PD(0:1000,0:1000)
 
+      complex*16,allocatable:: ampauxJ(:,:,:,:) !MGR
+      integer :: njtot,nlp,ijtot,ilp,njtotcalc,ijtotcalc,nspline,ispline
+      integer :: jspl
+      integer,allocatable :: interpJ(:)
+      real*8 ljmax
+
+
       namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,jsets,
-     &                    ermin,ermax,ner,icore,
+     &                    ermin,ermax,ner,icore,thcut,
      &                    triplexs
 
 c initialize -------------------------------------------------
@@ -61,7 +69,7 @@ c initialize -------------------------------------------------
 !      written(ksj)=.false.
       written(kxs+1:kxs+min(nex,9))=.true.
       pi=acos(-1d0)
-      thmin=0; thmax=0; dth=0; 
+      thmin=0; thmax=0; dth=0; thcut=0
       doublexs=.false. ; triplexs=.false.
       ermin=-1; ermax=-1
       jsets(:)=.true.        
@@ -77,6 +85,7 @@ c     -----------------------------------------------------------
       else
         write(*,*)'thmax<thmin!; Aborting'; stop
       endif
+      if (thcut.lt.1e-6) thcut=thmax 
 
       if (ner.eq.0) then
          write(*,*)'NER=0!!';
@@ -106,7 +115,7 @@ c     -----------------------------------------------------------
 
 c *** Factorials (CHECK IF THIS IS NEEDED!!!!!!!!!!!!!!)
 !      lmax=nint(jtmax+maxval(jpch))     
-!      write(*,*)'famps: lmax=',lmax
+!      write(*,*)'famps0: lmax=',lmax
 !      call factorialgen(2*lmax)
 
 
@@ -124,7 +133,7 @@ c *** Compute & store amplitudes (Fresco, CPC Eq. (3.30))
 c *** (zero target spin assumed here!) 
       nmi    =2*jpgs+1
       nmfmax =2*maxval(jpiset(:)%jtot)+1
-      allocate(famps(nex,nth,nmi*nmfmax))
+      allocate(famps0(nex,nth,nmi*nmfmax))
       
       if (nex.lt.1) then
          write(*,*)'solvecc: nex<1!'; stop
@@ -146,6 +155,27 @@ c *** (zero target spin assumed here!)
       allocate(delcf(0:lfmax),stat=istat)
       call coulph(etaf,delcf,lfmax) !Coulomb phase-shifts for final channel
 
+!MGR let's find the maximum number of L' that there are for any Jtot
+      nlp=0
+      njtot=0
+      ljmax=0d0
+      do icc=1,ncc
+        jtot  =jptset(icc)%jtot
+        njtot =max(njtot,floor(jtot))
+        nch   =jptset(icc)%nchan
+        do nf=1,nch
+          if (jptset(icc)%nchan.eq.0) cycle
+          if (jptset(icc)%idx(nf).ne.iex) cycle 
+          lf  =jptset(icc)%l(nf);
+          ljmax=max(ljmax,abs(jtot-lf-0d0))           
+        enddo  
+      enddo
+      njtot=njtot-floor(jbord(1))
+      nlp=nint(2d0*ljmax+1d0)
+!      write(0,*) 'nlp',nlp,'njtot',njtot
+!-----------------------------------------------------------------------
+
+
       write(kfam,'(4f6.1,i5,i2,1f10.3)') jpgs,jtarg,jpf,
      & jtarg,nth,nearfa,elab
       write(1370,'(a,i3,a,1f8.4)') 'iex=',iex,' Ex=',exc !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST AMPS
@@ -161,9 +191,12 @@ c *** (zero target spin assumed here!)
 
       allocate(ampl(0:lfmax,nmi,nmf)) ! angle-independent amplitudes
 c1     allocate(ampaux(0:lfmax,nmi,nmf),lfv(0:lfmax) )
+             allocate(ampauxJ(0:njtot,nlp,nmi,nmf)) !MGR
+       allocate(interpJ(0:njtot)) !MGR
       ampl(:,:,:)=0; 
 c1      ampaux(:,:,:)=0; lfv(:)=0
-
+      ampauxJ(:,:,:,:)=0d0;interpJ(:)=1 !MGR
+      ijtot=-1 !MGR
       do icc=1,ncc
        partot=jptset(icc)%partot
        jtot  =jptset(icc)%jtot
@@ -172,7 +205,10 @@ c1      ampaux(:,:,:)=0; lfv(:)=0
 !          write(*,*)'skipping jtot=',jtot
           cycle 
        endif
-
+       if (jtot.ge.jbord(1)) then
+       ijtot=floor(jtot-jbord(1))!MGR
+       interpJ(ijtot)=0!MGR
+       endif
        do ni=1,nch
        if (jptset(icc)%idx(ni).ne.iexgs) cycle ! no inc waves 
        li   =jptset(icc)%l(ni)
@@ -191,7 +227,7 @@ c1      ampaux(:,:,:)=0; lfv(:)=0
        nmf =2*jpf+1
        smat=smats(icc,ni,nf) 
        
-       if (lf.gt.lfmax) stop 'internal error; lf >lfmax in famps!' 
+       if (lf.gt.lfmax) stop 'internal error; lf >lfmax in famps0!' 
 325    format(' Chan:',2i5,2x,2f6.1,2x,"S=",2f11.7)
 
        do im=1,nmi
@@ -224,6 +260,16 @@ c1        lfv(lf)=lf
      &  3i3," => nf,lf,iex=",3i3,6x,"S=",2f12.6," r1,r2=",2f12.5)')
      &  ni,li,1,nf,lf,iex,smat,r1,r2
        endif
+       
+!MGR--------------------------------------------------------------------
+       if(ijtot.ge.0) then
+       ilp=nint(ljmax+jtot-lrf)+1 
+!       write(0,*) 'ijtot',ijtot,'ilp',ilp,'im',im,'imp',imp, 'jtot',jtot
+       ampauxJ(ijtot,ilp,im,imp)= ampauxJ(ijtot,ilp,im,imp)  
+     &                 + phci*conjg(phcf)*r1*r2*c1*sqrt(2*lri+1)  
+     &                 * (smat-kron(ni,nf))*YLMC2(lf,mlp)
+       endif 
+!-----------------------------------------------------------------------        
        enddo ! imp
        enddo ! imp
        enddo ! nchf
@@ -232,57 +278,85 @@ c1        lfv(lf)=lf
     
 
 !!!!!!!!!!!!!!!!!!!!!!!!! INTERPOLATION !!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (.false.) then 
-      allocate(gaux(lfmax+1),xv(lfmax+1))
-      do icc=1,ncc
-       partot=jptset(icc)%partot
-       jtot  =jptset(icc)%jtot
-       nch   =jptset(icc)%nchan
-       if (nch.eq.0) cycle
-       if (.not.jptset(icc)%interp) cycle
+!      if (.true.) then
+      if (jump(1).gt.0.5d0) then ! fixed 21/nov/16
+!First we need to know the points that are already calculated
+      njtotcalc=0
+      do ijtot=0,njtot
+      if (interpJ(ijtot).eq.0) njtotcalc=njtotcalc+1
+      enddo
+      
+!------------------------------------------------------------------------      
+      allocate(gaux(njtotcalc),xv(njtotcalc))
+      njtotcalc=0
+      do ijtot=0,njtot
+      if (interpJ(ijtot).eq.0) then
+       njtotcalc=njtotcalc+1
+       xv(njtotcalc)=ijtot
+      endif
+      enddo
+!      write(0,*) 'Passed njtotcalc,', njtotcalc,'njtot',njtot
+      do ijtot=0,njtot
+       jtot  =ijtot+jbord(1)
+       if (interpJ(ijtot).eq.0) cycle
 
-       do ni=1,nch
-       if (jptset(icc)%idx(ni).ne.iexgs) cycle ! no inc waves 
-       li   =jptset(icc)%l(ni)
-       lri  =li
-       jpi  =jptset(icc)%jp(ni)             ! should be just jpgs
-       nmi  =2*jpi+1
-
-       do nf=1,nch
-       if (jptset(icc)%nchan.eq.0) cycle
-       if (jptset(icc)%idx(nf).ne.iex) cycle 
-       lf  =jptset(icc)%l(nf)
-       lrf =lf
-       jpf =jptset(icc)%jp(nf)
-       nmf =2*jpf+1
+!MGR Let's try with splines
+!      pspline=(jtot-jbord(1))/jump(1)
+!      call SPLINT(pspline,njtotcalc,ispline,nspline,spline)
+      
+!      write(0,*) 'Spline N',njtotcalc,' NP',nspline,'I',ispline,'P',
+!     & pspline,'SP',spline(1:nspline)
        
-       if (lf.gt.lfmax) stop 'internal error; lf >lfmax in famps!' 
-
        do im=1,nmi
         rm= -jpi + (im -1)
         do imp=1,nmf
-        rmp=-jpf + (imp-1)
-        mlp=nint(rm-rmp)
-        rmlp=rm-rmp
-        if (abs(mlp).gt.lf) cycle        
-        phci =exp(zz*(delci(li)-delci(0)))
-        phcf =exp(zz*(delcf(lf)-delcf(0)))
-        gaux(1:lfmax+1)=ampaux(0:lfmax,im,imp)
-        xv(1:lfmax+1)  =lfv(0:lfmax)
-        write(*,'(10(i3,2f10.5))') (nint(xv(l)),gaux(l),l=1,lfmax)
-        caux=cfival(lrf,xv,gaux,lfmax+1,alpha)
-        write(*,*)'lf,caux=',lf,caux
-        ampl(lf,im,imp)= ampl(lf,im,imp)+caux*(phcf*phcf)
+        rmp= -jpf + (imp -1)
+        do ilp=1,nlp
+
+        lf=nint(ljmax+jtot-ilp)+1
+        if (abs(nint(rm-rmp)).gt.lf) cycle
+             
+        phcf =exp(2d0*zz*(delcf(lf)-delcf(0)))
+        gaux(:)=0d0
+!        write(0,*) 'Interpolating Jtot:', jtot,'L',lf 
+        do ijtotcalc=1,njtotcalc
+          gaux(ijtotcalc)=ampauxJ(nint(xv(ijtotcalc)),ilp,im,imp)
+        enddo
+!MGR splines        
+!        ampauxJ(ijtot,ilp,im,imp)=0d0
+!        do jspl=1,nspline
+!        if(interpJ(ijtot).eq.1) then
+!        ampl(lf,im,imp)=ampl(lf,im,imp)+spline(jspl)*
+!     &   gaux(jspl+ispline-1)*phcf
+!        endif
+!        ampauxJ(ijtot,ilp,im,imp)=ampauxJ(ijtot,ilp,im,imp)+spline(jspl)
+!     &  *gaux(jspl+ispline-1)
+!        enddo
+                   
+!        write(*,'(10(i3,2f10.5))') (nint(xv(l)),gaux(l),l=1,lfmax)
+        caux=cfival(ijtot+0d0,xv,gaux,njtotcalc,0d0)
+        ampl(lf,im,imp)= ampl(lf,im,imp)+caux*phcf
+        ampauxJ(ijtot,ilp,im,imp)=ampauxJ(ijtot,ilp,im,imp)+caux
+         
+        enddo !ilp
        enddo ! imp
-       enddo ! imp
-       enddo ! nchf
-       enddo ! nchi
-       enddo ! icc (j/pi sets)
+       enddo ! im
+       enddo ! ijtot (j/pi sets)
+       deallocate(gaux,xv)
        endif 
+!       write(0,*) 'Exit interpolation'
+
+!       do ijtot=0,njtot
+!       write(888,*) ijtot, dble(ampauxJ(ijtot,1,1,1)),
+!     &  aimag(ampauxJ(ijtot,1,1,1))
+!       enddo
+!       write(888,*) '&'    
+       
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 c write angle-indep amplitudes ----------------------------------------
+       if (verb.ge.3) then
        write(kamp,300) iex,exc,jpf,parity(parch(iex)+2)
        do lf=0,lfmax
 !225    WRITE(kamp,226) LF,((AMPL(lf,im,imp)*phcf,imp=1,nmf), im=1,nmi)
@@ -295,6 +369,7 @@ c write angle-indep amplitudes ----------------------------------------
         enddo
        enddo
        enddo ! lf
+       endif !write?
 
 
 c Angle-dependent amplitudes: f(theta,m,mp) (Fresco CPC eq. (3.31)
@@ -336,7 +411,7 @@ c
         faux=faux + ampl(lf,im,imp)*r1
        enddo !lf
        fam(ith,im,imp)=fc*kron(im,imp)*kron(iexgs,iex) + faux 
-       famps(iex,ith,iam)= fam(ith,im,imp)
+       famps0(iex,ith,iam)= fam(ith,im,imp)
        enddo !im
        enddo !imp
        write(kfam,'(2x,1f8.4)') th 
@@ -376,6 +451,8 @@ c *** Differential cross sections for each state
 800     format(1x,1f8.3,2g15.5)
         write(kxs,*)'&'
         deallocate(ampl,fam,pl,delcf)
+        deallocate(ampauxJ)
+         deallocate(interpJ)
 !        deallocate(ampaux,xv,lfv)
         if(allocated(gaux)) deallocate(gaux)
       enddo ! iex 
@@ -466,12 +543,43 @@ c Generate an approximate distribution dsigma/dE
 c need to fix the calculation of widths!!!!!
 !      call budist(exch,nex,sigex)
 !      write(*,*)'call d2sigma with ner',ner
+
+
+c Simple ds/de for bins 
+      open(131,file='dsde_bin.xs')
+      iex=0
+      xstot=0
+      do iset=1,jpsets
+      xs=0; 
+      nex=jpiset(iset)%nex
+      inc=jpiset(iset)%inc
+      excore =jpiset(iset)%exc(inc) ! core energy 
+      do n=1,nex
+      if(n.eq.1)write(131,*)'# Set',iset,'j=',jpiset(iset)%jtot
+      iex=iex+1
+      if (jpiset(iset)%nho.ne.0) cycle
+      ki=binset(iset)%klow(n)
+      kf=binset(iset)%kup(n)
+      ei=hc**2/2./mu12*ki**2
+      ef=hc**2/2./mu12 *kf**2
+      exc=excore+ binset(iset)%ebin(n) 
+      write(131,'(1x,1f10.3,2x,2f12.6,1x,i3)') 
+     & exc,sigex(iex)/(ef-ei),sigex(iex),iex 
+      xs=xs + sigex(iex)
+      enddo ! n
+      xstot= xstot + xs 
+      write(131,'(5x,a,1f10.4,a)') '# -> in this set xsec=',xs,' mb'
+      write(131,*)'&'
+      enddo ! iset
+      write(131,*)'   # Total Bins xs=',xstot,' mb'
+      close(131)
+
       
 c Double x-sections 
 1000  if ((doublexs).or.(triplexs))
-     &     call d2sigma(nth,dth,thmin,ermin,ermax,
-     &                 ner,icore,jsets,fileamp,doublexs,triplexs)
-      if (allocated(famps)) deallocate(famps)
+     &     call d2sigma(nth,dth,thmin,thcut,ermin,ermax,ner,
+     &                 icore,jsets,fileamp,doublexs,triplexs)
+      if (allocated(famps0)) deallocate(famps0)
       end subroutine
 
 
@@ -481,24 +589,29 @@ c Double x-sections
 c ----------------------------------------------------------------
 c Double differential x-sections dsigma/dEx dW  (NEW VERSION) 
 c ----------------------------------------------------------------
-      subroutine d2sigma(nth,dth,thmin,emin,emax,ncont,
+      subroutine d2sigma(nth,dth,thmin,thcut,emin,emax,ncont,
      &                   icore,jsets,fileamp,doublexs,triplexs)
-      use xcdcc,    only: elab,jpch,nex,exch,parch,famps,binset
+     
+     
+      use xcdcc,    only: elab,jpch,nex,exch,parch,famps0,binset
       use channels, only: jpiset,jpsets,nchmax,sn,qnc
       use sistema
       use constants
       use parameters, only:  maxchan,maxsets,maxeset
       use globals,  only: debug,written,verb,kin
       use wfs,      only: nr,dr,energ,rvec,wfc,wbin
-      use memory,   only: t3d
+      use memory,   only: t3d,lr8
       implicit none
+
+      include "omp_lib.h"
+
 c     ----------------------------------------------------------------------- 
       character*40:: line,fileamp
       logical, parameter:: energy=.true.   ! NEEDED FOR FFC4 INTERPOLATION!! 
       logical :: jsets(maxsets),doublexs,triplexs
       integer , parameter:: kfam=137  ! file containing amplitudes
       integer , parameter:: eps=1e-3
-      integer , parameter:: maxstat=300
+      integer , parameter:: maxstat=400
       integer :: ic,icore,ncont,idet,ier
       integer ::nsetmax,ir,iset,n,nchan,iam,ich,iecv,nth,iex,ith,mth
       integer ::nmi,nmf,nmfmax,nm,li,lf,im,imp,inc,nearfa
@@ -506,7 +619,7 @@ c     -----------------------------------------------------------------------
 c     -------------------------------------------------------------------------
       real*8:: kpt,kcv,krel,dkrdk
       real*8:: ji,jf,jci,jcf,raux,jac,jpi,jpf,jtarg
-      real*8:: ecmi,ecmf,kcmi,kcmf,excore,th,thmin,dth
+      real*8:: ecmi,ecmf,kcmi,kcmf,excore,th,thmin,dth,thcut
       real*8:: dec,ebind,ecv,ethr,emin,emax
       real*8:: facK,mv,mc,mucv,mupt,f2t,xstot,sumr
       real*8,allocatable::dsdew(:,:)
@@ -519,20 +632,20 @@ c     -------------------------------------------------------------------------
 c     -------------------------------------------------------------------------
 c     Triple x-sections
 c     -------------------------------------------------------------------------
-      logical zert,fail3,wrt
+      logical zert,fail3,wrt,kinset(maxsets)
       character*3 :: sys ! 'com' or 'lab'
 c    ......................................................................
       integer imu,imo,ival,j,iii,ii,iflag,iroot,iroot1n,iroots,iroot2n
       integer iten,isig,ip,inu,iang,ilval,itphi,iv,itv,itphim,itc,lmax
-      integer ind,ien,nchann,niag,nial,ibin,nieg,niel,ik,maxne
-      integer, parameter:: ncleb=1000, nord=2
+      integer ind,ien,nchann,niag,nial,ibin,nieg,niel,ik,maxne,nk
+      integer, parameter:: ncleb=2000, nord=2
 c     .....................................................................
       real*8,allocatable:: angsr(:)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
       real*8,allocatable:: xyt(:,:)
 !      real*8 xyt(2,ncont)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      real*8:: Kthr,dk,dkb,kmax
+      real*8:: Kthr,dk,dkb,kmax,a,b
       real*8:: dot,m,plmrec,ylmc2,plm_nr
       real*8:: dphir,dtc,dtv,phiu,tcl,tvl,tcu,tvu,dtcr,dtvr
       real*8:: acc,degrad,mtot,totp
@@ -547,19 +660,27 @@ c     .....................................................................
       real*8:: cplm(0:10,21),cgc(ncleb)
 c     ..........................................................................
       complex*16 :: resc,caux,tmat_aux,faux,cfival,ffc4
-      complex*16:: ampt,xi,f2c,sumps,phbin(maxsets)
+      complex*16:: ampt,xi,f2c,sumps,phbin(maxsets),wkfac(maxsets)
       complex*16:: phask1,phask,phas,ylm(0:10,21)
       complex*16,allocatable:: tmat(:,:,:)
       complex*16,pointer:: overlap(:)
       complex*16,allocatable:: fxyc(:,:)
 !      complex*16:: fxyc(10,ncont)
       complex*16,allocatable:: fv(:)
+c  *** Relativistic kinematics
+      logical  :: rel=.true.
+      real*8   :: sinv,etcm,pcmi,pcmf,mpx
+c     ..........................................................................
+
 !!! TESTING
       real*8 tmatsq2,ampt2
       integer icount,if2c
       complex*16,allocatable:: fin(:,:,:)
       complex*16:: fxyc2(10,50),bindk(maxsets,maxeset)
 
+!MGR---------------------------------------------------------------------
+      real*8,allocatable :: xs3body(:,:,:), energ3(:)
+!------------------------------------------------------------------------
 c ------------------------------------------------------------------------------
       namelist /framework/ sys,idet ! ,atarget not needed
       namelist /gridener/ Enlow,Enup,dEn
@@ -580,31 +701,44 @@ c ------------------------------------------------------------------------------
 
       write(*,'(//,3x, "** DOUBLE DIFFERENTIAL CROSS SECTIONS **",/ )')
 
+
 c     If no amplitudes have been calculated before, we try to read them
 c     from an external file, specified by the user 
-      if (.not.allocated(famps).and.(fileamp.ne."")) then
+      if (.not.allocated(famps0).and.(fileamp.ne."")) then
       if (fileamp.eq."") then
           write(*,*)'No amplitudes calculated and no file specified';
           stop
       endif
       write(*,'(3x," Reading f-amps from file ",a20)')fileamp
       open(kfam,file=fileamp,status='old')
-      read(kfam,*,err=900) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
+      read(kfam,'(a)',err=900) line 
+      write(*,'(a)') line
+      read(line,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab     
+!      read(kfam,*,err=900) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
+!     & ,a,b
+        write(*,*) 'ie,jpf,mth,elab,a=',iex,jpf,mth,elab,a
       rewind(kfam)
 
-      allocate(famps(maxstat,mth,nmi*nmfmax))
+      allocate(famps0(maxstat,mth,nmi*nmfmax))
       iex=0
+      famps0(:,:,:)=0
       do iset=1,jpsets  
       nex=jpiset(iset)%nex
       jpf=jpiset(iset)%jtot
       nmf=nint(2.*jpf+1.)
       nm=nmi*nmf
+      write(*,'(a,i3,a,i3,a,1f4.1)') ' Expected: iset=',iset, 
+     & '  nex=', nex, ' jpf=',jpf
       do n=1,nex
       iex=iex+1
-      if (iex.gt.maxstat) stop'increase dimension of famps' ! temporary solution
+      if (iex.gt.maxstat) stop'increase dimension of famps0' ! temporary solution
 !      write(*,*)'expected jpf=',jpf
-      read(kfam,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
-!      write(*,*) 'ie,jpf,mth=',iex,jpf,mth
+      read(kfam,'(a)',err=900) line
+      read(line,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab    
+!      read(kfam,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
+!     & ,a,b
+      write(*,'(a,i3,a,i3,a,1f4.1)') ' Found: ie=',iex, 
+     & ' n=',n,' jpf=',jpf
 
       if (iex.eq.1) write(*,*) ' amplitudes are for elab=',elab
       if(nth.ne.mth) then
@@ -613,28 +747,42 @@ c     from an external file, specified by the user
       endif 
       do ith=1,nth
       read(kfam,*) th  
-      read(kfam,228) (famps(iex,ith,iam),iam=1,nm) 
+      read(kfam,228) (famps0(iex,ith,iam),iam=1,nm) 
 228   format(1P,6E12.4)
       enddo !states
       enddo !ith
+      write(*,*)' ' 
       enddo !iset
-650   write(*,'(5x,"[f amplitudes read for ",i3," states]")')iex
+650   write(*,'(5x,"[f amplitudes read for ",i3," states and",i4,
+     & " angles ]")')iex,nth
       endif
 c     -------------------------------------------------------------------------
  
 
-      ecmi=elab*mt/(mp+mt)
-      mupt=mp*mt/(mp+mt)!*amu
-      kcmi=sqrt(2*mupt*ecmi)/hc
+      if (.not.rel) then       ! non-relativistic
+        ecmi=elab*mt/(mp+mt)
+        mupt=mp*mt/(mp+mt)!*amu
+        kcmi=sqrt(2*mupt*ecmi)/hc
+      else                     ! relativistic
+        write(*,*)' ** USING RELATIVISTIC KINEMATICS **'
+        sinv=((mp+mt))**2+2*mt*elab
+        etcm=sqrt(sinv)          ! total relativistic energy
+        ecmi=etcm-mp-mt       ! kinetic energy in initial channel
+        Pcmi=sqrt((sinv-mp**2-mt**2)**2-4.*(mp*mt)**2)/2/sqrt(sinv)
+        Kcmi=pcmi/hc
+        write(*,*)'REL: sqrt(s)=',sqrt(sinv),' Ecmi=',Ecmi, "Kcmi=",kcmi
+      endif
+
       ebind=energ(1,1) ! exch(1)          
 !      Kcm=sqrt(2.d0*mupt*ecm)/hc        
       Ethr=Ecmi+ebind
       Kthr=sqrt(2.d0*mupt*Ethr)/hc
+
       write(99,*) 'Ethr=',Ethr, ' Kthr=',Kthr
       write(99,'(a,1f8.3,a,3f10.5)')'Elab=',elab,
      & ' mp,mc,mv=',mp/amu,mc/amu,mv/amu
       write(99,*)'Ecmi=',Ecmi, "Kcm=",kcmi, 'Ethr=',Ethr
-
+      
 
 c *** Assign global index to states of all j/pi sets iPS=iPS(iset,n)
       iex=0
@@ -650,8 +798,8 @@ c *** Assign global index to states of all j/pi sets iPS=iPS(iset,n)
       enddo
 
 
-c *** Sum discrete inel/breakup angular distributions      
-      open(90,file='dsdw_ps.xs',status='unknown')
+c *** Sum discrete breakup angular distributions      
+      open(90,file='dsdw_bu.xs',status='unknown')
       do ith=1,nth
       raux=0
       do iset=1,jpsets
@@ -667,7 +815,7 @@ c *** Sum discrete inel/breakup angular distributions
       iex=ips(iset,n)
       if (energ(iset,n).lt.0)    cycle  ! bound state 
       if (energ(iset,n).gt.Ethr) cycle  ! closed channel
-      raux=raux+ 10.*abs(famps(iex,ith,iam))**2/nmi
+      raux=raux+ 10.*abs(famps0(iex,ith,iam))**2/nmi
       enddo ! states within j/pi set
       enddo !imp 
       enddo !im
@@ -740,7 +888,7 @@ c *** Overlaps between PS's and Scattering states  -----------------------------
       jf  =jpiset(iset)%jc(ich)
       do ir=1,nr   
       gaux(ir)=wfc(iset,n,ich,ir)*wfcont(iecv,ich,ir)*rvec(ir)*
-     &         (-1)**(li+jci+lf+jcf) !nfactl1+xfactI1+nfactl2+xfactI2)
+     &         (-1)**(li+jci+lf+jcf) ! AMM: I think this phase is always 1! 
       enddo !ir
 
       call simc(gaux,resc,1,nr,dr,nr)
@@ -762,7 +910,8 @@ c *** -------------- PRINT OVERLAPS FOR TESTING --------------------------------
       if (jpiset(iset)%nho.eq.0) cycle
       do n=1,nex
       raux=0
-      write(97,*)'# n -> Ex=',n,energ(iset,n)
+      write(97,'(a,i3,a,i3,a,1f10.4)')'# Set:',iset,
+     & ' n=',n,' Ex=',energ(iset,n)
       do iecv=1,ncont
        ecv=emin+(iecv-1)*dec
        if (energ(iset,n).lt.0)    cycle ! bound state
@@ -772,22 +921,23 @@ c *** -------------- PRINT OVERLAPS FOR TESTING --------------------------------
        jac=mucv/(hc**2)/kcv
        write(97,111)ecv,
      &  (jac*abs(gsolap(iset,n,inc,iecv))**2,inc=1,nchan)
-111    format(2x,1f12.6,2x,4g14.6)
+111    format(2x,1f12.6,2x,10g14.6)
        do inc=1,nchan
        raux=raux+jac*abs(gsolap(iset,n,inc,iecv))**2*dec
        enddo ! inc
       enddo !iecv
-      write(97,*)'&'
       if (verb.ge.3) then
-      write(*,*)'PS',n,' Norm solap=',raux*2/pi
+      write(97,'(3x,a,i3,a,i3,a,1f8.5)')'# -> Set:',iset, '  PS=',n,
+     & ' Norm solap=',raux*2/pi
       endif
+      write(97,*)'&'
       enddo ! n
       enddo !iset
       endif ! verb
 c-------------------------------------------------------------------------------
 
 
-c *** Compute DOUBLE x-sections dsigma/dedw
+c *** Compute DOUBLE x-sections dsigma/dedw FOR SELECTED CORE STATE ICORE
       if (ncont.gt.0) then
         allocate(dsdew(ncont,nth))
       else  
@@ -798,9 +948,10 @@ c *** Compute DOUBLE x-sections dsigma/dedw
       raux=0.5/(pi**3)/hc**6*mupt**2*mucv/nmi
       raux=raux*10 ! fm^2 -> mb
 
+      excore=qnc(icore)%exc
       write(*,'(3x,a,i3,a,1f7.3,a)')
      & '=> Double x-sections for final core state',
-     &  icore,' with energy=',qnc(icore)%exc, ' MeV'
+     &  icore,' with energy=',excore, ' MeV'
 
       do iecv=1,ncont
       ecv=emin+(iecv-1)*dec
@@ -826,13 +977,27 @@ c *** Compute DOUBLE x-sections dsigma/dedw
       jci    =jpiset(iset)%jc(inc)
       excore =jpiset(iset)%exc(inc) ! core energy 
       ic     =jpiset(iset)%cindex(inc)
-      ecmf=ecmi-dabs(ebind)-ecv-excore ! p-t c.m. energy in final channel !! CHEEEEEEEEEEEEEEEEECK
+      ecmf   =ecmi-dabs(ebind)-ecv-excore ! p-t c.m. energy in final channel !! CHEEEEEEEEEEEEEEEEECK
       if (ecmf.lt.0) then
           write(*,*)'Ecm=',Ecmf, 'Ecv=',Ecv
           stop
       endif
       if (ecmf.lt.1e-4) ecmf=1e-4
-      Kcmf=sqrt(2.d0*mupt*ecmf)/hc     
+
+      if (.not.rel) then ! non-relativistic
+        Kcmf=sqrt(2.d0*mupt*ecmf)/hc   
+        if ((ith.eq.1).and.(iecv.eq.1))
+     &     write(*,*)'Kcmf(nr)=',kcmf    
+      else               ! relativistic
+        mpx=mp+abs(ebind)+ecv+excore
+        Pcmf=sqrt((sinv-mpx**2-mt**2)**2-4.*(mpx*mt)**2)/2/sqrt(sinv)
+        Kcmf=pcmf/hc
+!        if ((ith.eq.1).and.(iecv.eq.1))
+!         write(*,*)'Kcmf(rel)=',kcmf,sqrt(2.d0*mupt*ecmf)/hc
+      endif
+
+     
+
       facK=kcmf/kcmi/kcv
       f2t=-2.*pi*hc**2/mupt*sqrt(Kcmi/Kcmf) ! conversion factor f(theta) -> T-mat
 
@@ -844,7 +1009,7 @@ c *** Compute DOUBLE x-sections dsigma/dedw
       iex=ips(iset,n)
 !      if((iecv.eq.1).and.(imp.eq.1)) 
 !     &   write(*,*)'inc,iset,n,iex=',inc,iset,n,iex
-      tmat_aux=f2t*famps(iex,ith,iam)
+      tmat_aux=f2t*famps0(iex,ith,iam)
       sumps=sumps+gsolap(iset,n,inc,iecv)*tmat_aux
 !      if (ith.eq.1) write(*,*) iset,n,inc,iecv,
 !     & abs(gsolap(iset,n,inc,iecv))
@@ -859,22 +1024,31 @@ c *** Compute DOUBLE x-sections dsigma/dedw
       enddo ! iecv (valence-core relative energy)  
 
 
-c Integrate in ENERGY, to get dsigma/dOmega
+
+
+c Integrate in ENERGY, to get dsigma/dOmega for core state ICORE
       open(90,file='dsdw_conv.xs',status='unknown')
+      open(91,file='dsdwe_conv.xs',status='unknown')
+      open(92,file='dsdwe_conv.gnu',status='unknown')
       do ith=1,nth
       raux=0.
       th = thmin + dth*(ith-1)
+      write(91,'(a,1f8.4)') '#thcm=',th
       do iecv=1,ncont
-      raux=raux + dsdew(iecv,ith)*dec    
+      ecv=emin+(iecv-1)*dec
+      raux=raux + dsdew(iecv,ith)*dec
+      write(91,'(1f10.4,1g14.6)') ecv, dsdew(iecv,ith)      
+      write(92,'(2f10.4,1g14.6)') th,ecv, dsdew(iecv,ith)      
       enddo !iecv
+      write(92,*)' ' 
       write(90,*) th, raux
       enddo !ith
       call flush(90)
-      close(90)
+      close(90); close(91)
 
 
 
-c Integrate in ANGLE, to get dsigma/dE
+c Integrate in ANGLE, to get dsigma/dE  for core state ICORE
       open(92,file='dsde_conv.xs',status='unknown')
       xstot=0
       do iecv=1,ncont
@@ -882,6 +1056,7 @@ c Integrate in ANGLE, to get dsigma/dE
       raux=0.
       do ith=1,nth
       th = thmin + dth*(ith-1)
+      if (th.gt.thcut) cycle
       raux=raux + 2*pi*dsdew(iecv,ith)*
      &     sin(th*pi/180.)*dth*pi/180.   
       enddo !iecv
@@ -899,6 +1074,8 @@ c     (inspired in cdcn code by JAT)
 c---------------------------------------------------------------------------------
       if (.not.triplexs) return
       write(*,'(//,3x, "** TRIPLE DIFFERENTIAL CROSS SECTIONS **",/ )')
+
+      open(99,file='thox.log')
       
       read(kin,nml=framework)
       write(77,'(a)') sys
@@ -916,6 +1093,10 @@ c-------------------------------------------------------------------------------
 !!!! REDEFINE Mp as IN TESTN 
       mp=mc+mv
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      excore=qnc(icore)%exc
+      write(*,'(5x,a,i3,a,1f7.3,a)')
+     & '=> Triple x-sections for final core state',
+     &  icore,' with energy=',excore, ' MeV'
 
 
       allocate(angsr(nth))
@@ -1003,10 +1184,10 @@ c-------------------------------------------------------------------------------
       ic  =jpiset(iset)%cindex(inc)
       if (ic.ne.icore) cycle
       rli=li
-      do inu=1,2*li+1
-      rnu=inu-li-1
       if (fail3(rli,sn,ji)) cycle
       if (fail3(ji,jci,jpf)) cycle
+      do inu=1,2*li+1
+      rnu=inu-li-1
       if (abs(rnu+sig).gt.ji.or.abs(rnu+sig+mu).gt.jpf) cycle
       ind=ind+1
       cgc(ind)=cleb(rli,rnu,sn,sig,ji,rnu+sig)*
@@ -1043,7 +1224,7 @@ c-------------------------------------------------------------------------------
       if (ebin.lt.0) cycle ! bound state
       iex=ips(iset,n)
       write(99,*)'iset,n=',iset,n
-      write(99,308) (famps(iex,1,iii),iii=1,iam)
+      write(99,308) (famps0(iex,1,iii),iii=1,iam)
 308   format(1p,6e12.4)
       if (jpiset(iset)%nho.eq.0) then ! bin set
 !        ebin=hc**2*(binset(iset)%khat(n))**2/(2.d0*mucv)
@@ -1057,7 +1238,7 @@ c-------------------------------------------------------------------------------
       Kcmf=sqrt(2.d0*mupt*ecmf)/hc    
       f2t=-2.*pi*hc**2/mupt*sqrt(Kcmi/Kcmf) ! conversion factor f(theta) -> T-mat
 !      if(wrt)write(99,*)'n,k,bindk=',n,binset(iset)%kmid(n),1/sqrt(dk)
-      famps(iex,:,:)=f2t*famps(iex,:,:)      ! convert f(theta) -> T(theta)
+      famps0(iex,:,:)=f2t*famps0(iex,:,:)      ! convert f(theta) -> T(theta)
       if (ecmf.lt.1e-4) ecmf=1e-4
       write(99,3130)'   iset=',iset,' ich=',n,' Ecmf=',Ecmf,
      +    'Ko=',kcmf,abs(kcmf-Kthr),' Ebin=',ebin,
@@ -1093,7 +1274,26 @@ c-------------------------------------------------------------------------------
       enddo
 *     ---------------------------------------------------------------
 *     loop over core particle detection angle
-      wrt=.true. ; icount=0; if2c=0
+      wrt=.false. ; icount=0; if2c=0 !MGR
+      
+      allocate(xs3body(iten,itv,itc),energ3(iten))
+      
+      xs3body=0d0
+      do ien=1,iten
+        energ3(ien)=Enlow+(ien-1)*dEn
+      enddo
+!      write(0,*) 'Ener', energ3(:)
+      write(0,*) 'Total memory needed',itc*itv*iten*lr8/1e6,'MB' !MGR      
+!$OMP PARALLEL DO FIRSTPRIVATE(tcd,tc,costc,sintc,iv,tvd,tv,costv,
+!$OMP& sintv,itphim,iflag,zert,ien,En,p1L,p2L,ip,sigphi,phid,phi,cospv,
+!$OMP& sinpv,cospc,sinpc,pcL,pvL,tem,aq,bq,cq,dq,iroots,iroot,iroot1n,
+!$OMP& iroot2n,Ec,Ev,kvL,kcL,bkp,kp,ekb,eks,
+!$OMP& tmatsq,tmatsq2,ybo,xb,xbd,yb,phkb,xyt,iang,nial,mkp,co,phks,co2,
+!$OMP& si2,si,phask1,phask,phas,ilval,j,inu,aleg,ylm,fxyc,fxyc2,tmat,
+!$OMP& fin,iset,nchan,jpf,nex,nmf,iam,inc,fv,n,iii,ic,excore,ier,nieg,
+!$OMP& niel,iecv,ecv,ecmf,kcmf,th,sumps,iex,ibin,ki,kf,dk,dkb,ik,phbin,
+!$OMP& if2c,icount,imo,mo,ind,imu,mu,isig,sig,ampt,ampt2,li,ji,jci,rli,
+!$OMP& rnu,mult,xsig) PRIVATE(ii)
       do 10 ii=1,itc
       tcd=tcl+(ii-1)*dtc
       tc=tcd*degrad
@@ -1230,15 +1430,19 @@ c-------------------------------------------------------------------------------
 *     -----------------------------------------------------------------
       Ec=(p1L*p1L)/(2.d0*mc)
       Ev=(p2L*p2L)/(2.d0*mv)
-      do j=1,3
+      
       if(idet.eq.1) then
+      do j=1,3
       kvL(j)=p2L*pvL(j)/hc                 
-      kcL(j)=pcL(j)/hc                  
+      kcL(j)=pcL(j)/hc
+      enddo                  
       else
+      do j=1,3
       kcL(j)=p1L*pcL(j)/hc         
       kvL(j)=pvL(j)/hc              
-      endif
       enddo
+      endif
+
       if (wrt)write(99,'(a,i2,a,i2,a,i2,a,i2,a,2g14.5)') 
      & ' iv=',iv,' ic=',ii,' ien=',ien,' ip=',ip,' ec,ev=',ec,ev
 *     -----------------------------------------------------------------
@@ -1339,6 +1543,8 @@ c-------------------------------------------------------------------------------
       enddo
       fxyc(:,:)=0;  fxyc2=0
       tmat(:,:,:)=0; fin=0;
+      kinset(:)=.false.
+      wkfac(:)=0
 *     -------------------------------------------- 
 *     interpolate the sum \sum_i gsolap(i)*tmat(i)
 *     --------------------------------------------
@@ -1351,7 +1557,11 @@ c-------------------------------------------------------------------------------
       iam=nmi*nmf 
       if (iam.lt.0) stop 'iam<0! '
       do inc=1,nchan
-      if ((jpiset(iset)%nho).gt.0) then ! PS's -> need overlaps
+      ic=jpiset(iset)%cindex(inc)
+      if (ic.ne.icore) cycle
+      if (wrt) write(99,*)'ic present in set',iset
+
+      IF ((jpiset(iset)%nho).gt.0) then ! PS's -> need overlaps
         if (eks.gt.emax) then
         fv(1:nex)=0
         else
@@ -1359,12 +1569,43 @@ c-------------------------------------------------------------------------------
         fv(n)=ffc4((eks-emin)/dec,gsolap(iset,n,inc,:),ncont)
         enddo
         endif
-      endif  ! PS?
+!!! TEST July 16
+      ELSE                              ! BINs
+!        write(99,*)'inc=',inc,jpiset(iset)%inc
+        if (inc.ne.jpiset(iset)%inc) cycle  ! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!        write(0,*)'iset,inc',iset,inc
+!       if (mkp > binset(iset)%kup(nex)) cycle
+      ik=0
+! determine and store bin w(k) factor for this j/pi set
+      do n=1,nex
+      ki=binset(iset)%klow(n)
+      kf=binset(iset)%kup(n)
+      dk=kf-ki
+      nk=binset(iset)%nk(n)
+      dkb=(kf-ki)/(nk - 1)
 
+      if ((mkp.ge.ki).and.(mkp.le.kf)) then
+        ik=nint((mkp-ki)/dkb+1)     
+!        write(0,*)'ik=',ik
+        if (ik.gt.nk) stop 'ik too large'
+        if (ik.le.0) stop 'ik <=0!!'
+        kinset(iset)=.true.
+!        phbin(iset)=exp(xi*binset(iset)%pshel(n,ik))
+        wkfac(iset)=binset(iset)%wk(n,ik)
+       if (wrt)write(99,'(a,1f6.2,i3,4f12.6)')'eks,iset,phbin=',
+     &   eks,iset,phbin(iset)
+       if (wrt)write(99,*)'iset,ik,wkfac=',mkp,iset,ik,wkfac(iset)
+      endif !mkp within this bin
+      enddo !n 
+
+      endif  ! PS or Bins?
+
+c Interpolate m-dependent amplitudes
       do iii=1,iam
-      ic=jpiset(iset)%cindex(inc)
-      if (ic.ne.icore) cycle
-      excore =jpiset(iset)%exc(inc) !!!! can be placed before!!!!!!!!!!!!!!1
+! AMM Sept 16: moved upwards
+!      write(99,*)
+!      ic=jpiset(iset)%cindex(inc)
+!      if (ic.ne.icore) cycle
 
 c *** PS's .......................................................
       if ((jpiset(iset)%nho).gt.0) then 
@@ -1394,9 +1635,9 @@ c1 ------------------------------------
       if (energ(iset,n).lt.0)    cycle ! bound states
       if (energ(iset,n).gt.Ethr) cycle ! closed channels
       iex=ips(iset,n)
-! famps() already transformed to T-matrix
-!      sumps=sumps+fv(n)*f2t*famps(iex,nial+ith,iii)
-      sumps=sumps+fv(n)*famps(iex,nial+ith,iii)
+! famps0() already transformed to T-matrix
+!      sumps=sumps+fv(n)*f2t*famps0(iex,nial+ith,iii)
+      sumps=sumps+fv(n)*famps0(iex,nial+ith,iii)
 
       enddo !  n (PS's)
       fxyc(ith+1,ier)=sumps
@@ -1413,28 +1654,25 @@ c1 ------------------------------------
 !          write(99,*)' -> tmat=',tmat(iset,inc,iii)
       endif
 
-      else 
+      ELSE 
 c *** BINs  .......................................................................
       ibin=0
+      if (kinset(iset)) then 
+!      if (abs(wkfac(iset)).lt.1e-6) 
+!     &    write(99,*)'iset,wkfac=',iset,wkfac(iset)
 !       if (eks < binset(iset)%emin-5) cycle
 !      if (eks > binset(iset)%emax+5) cycle
 !      if (mkp < binset(iset)%klow(1))   cycle
-      if (mkp > binset(iset)%kup(nex)) cycle
+!      if (mkp > binset(iset)%kup(nex)) cycle
 
       do n=1,nex
-      ki=binset(iset)%klow(n)
-      kf=binset(iset)%kup(n)
-      dk=kf-ki
-      if ((mkp.ge.ki).and.(mkp.le.kf)) then
-        dkb=(kf-ki)/(binset(iset)%nk(n) - 1)
-        ik=nint((mkp-ki)/dkb+1)
-        phbin(iset)=exp(xi*binset(iset)%pshel(n,ik))
-       if (wrt)write(99,'(a,1f6.2,i3,2f12.6)')'eks,iset,phbin=',
-     &   eks,iset,phbin(iset)
-      endif 
-      ecmf=ecmi-abs(ebind)-energ(iset,n)-excore
-      if(icount.eq.1)write(99,*)'n,k,bindk=',
-     & n,binset(iset)%khat(n),1/sqrt(dk)
+!      ki=binset(iset)%klow(n)
+!      kf=binset(iset)%kup(n)
+!      dk=kf-ki
+!      nk=binset(iset)%nk(n)
+      ecmf=ecmi-abs(ebind)-energ(iset,n)
+      if(wrt) write(99,'(a,i3,6f12.6)')'n,k,bindk=',
+     & n,binset(iset)%khat(n),wkfac(iset) !phbin(iset)/sqrt(dk)
       if (ecmf.lt.0) then
           write(*,*) 'Ecm=',Ecmf,'Ecv=',Ecv; stop
       endif
@@ -1442,21 +1680,21 @@ c *** BINs  ....................................................................
       Kcmf=sqrt(2.d0*mupt*ecmf)/hc     
 c1      f2t=-2.*pi*hc**2/mupt*sqrt(Kcmi/Kcmf) ! conversion factor f(theta) -> T-mat
       xyt(2,n)=abs(Kcmf-Kthr)
-      call flush(99)
+!      call flush(99)
       do ith=0,5
-c CHECK !!!! ASSUME g(k)=1 for bins !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      iex=ips(iset,n)
-! TEST : f2t already included in famps 
-!      fxyc(ith+1,n)=f2t*famps(iex,nial+ith,iii)
-!     &             *sqrt(pi/2.)/sqrt(dk)    
-!      fxyc2(ith+1,n)= f2t*famps(iex,nial+ith,iii)
-!     & /binset(iset)%khat(n)/sqrt(dk)  
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      fxyc(ith+1,n)=famps(iex,nial+ith,iii)
-     &             *sqrt(pi/2.)/sqrt(dk)    
-      fxyc2(ith+1,n)= famps(iex,nial+ith,iii)
-     & /binset(iset)%khat(n)/sqrt(dk)    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TEST!!!!!!!!
+        iex=ips(iset,n)
+        fxyc(ith+1,n)=famps0(iex,nial+ith,iii)
+     &               *sqrt(pi/2.)*wkfac(iset) ! includes phase e^(-i delta_el)
+!     &             *sqrt(pi/2.)/sqrt(dk)  * phbin(iset)
       enddo !ith
+
+      if(wrt)write(99,'(a,4i4,14g12.6)') 'iset,n,nial,ik,',
+     &    iset,n,nial,ik,fxyc(1:6,n)
+
+      if(wrt)write(99,'(a,i3,20e12.4)') '3 famp,iii=',iii,
+     &  (famps0(iex,nial+ith,iii),ith=0,5)
+
+
       enddo !n 
       if2c=if2c+1
       tmat(iset,inc,iii)=f2c(xb,yb,xyt,fxyc,6,nex,nord,10,maxne) ! CHECK DIMS HERE!!!!!!!!!!!!!!!!
@@ -1465,18 +1703,22 @@ c1      fin(iset,inc,iii)=f2c(xb,yb,xyt,fxyc2,6,nex,nord,10,50) ! TESTING
           write(99,*)'iii=',iii,'xb,yb=',xb,yb
           write(99,'("xyt(1,:)=",20g12.5)') (xyt(1,ith),ith=1,6)
           write(99,'("xyt(2,:)=",20g12.5)') (xyt(2,ier),ier=1,nex)
-          write(99,'("fxyc2(1,:)=",12g12.5)') fxyc2(1,1:nex)
-!          write(99,'("fxyc2(2,:)=",12g12.5)') fxyc2(2,1:nex)
-!          write(99,*)' -> fin=',fin(iset,inc,iii)
+          write(99,'("fxyc(1,:)=",12g12.5)') fxyc(1,1:nex)
+          write(99,'("fxyc(2,:)=",12g12.5)') fxyc(2,1:nex)
           write(99,*)
-      endif
-
+          endif
+!          if(abs(tmat(iset,inc,iii)).gt.1e5) then
+!           write(*,*)'Big tmat for iset,inc,iii=',iset,inc,iii,
+!     &     tmat(iset,inc,iii)
+!          endif
+      else 
+         tmat(iset,inc,iii)=0
+      endif ! k in this set?
+         
       endif ! Bins or PS's     
 c    ...............................................................................
-555   icount=icount+1
-      if (icount.gt.10) wrt=.false.
-      enddo ! inc channel
       enddo ! iii
+      enddo ! inc channel
       enddo ! jpset
 *     ----------------------------------------------------------------- 
 *     |t-matrix|**2 summed on spin projections / (2sp+1)
@@ -1525,7 +1767,9 @@ c    ...........................................................................
 !      if (abs(raux-cgc(ind)).gt.1e-3) then
 !      write(99,*)'cgc mismatch!: rli,rnu,sig,mu,jpf=',rli,rnu,sig,mu,jpf     
 !      endif
-      ampt=ampt+(-xi)**li*cgc(ind)*ylm(li,inu)*phbin(iset)*  ! NOTE phbin() inserted here!!!!!
+!AMMoro Sept 16
+!      ampt=ampt+(-xi)**li*cgc(ind)*ylm(li,inu)*  ! NOTE phbin() inserted here!!!!!
+      ampt=ampt+(-xi)**li*cgc(ind)*ylm(li,inu)* ! phbin(iset)*  ! NOTE phbin() inserted here!!!!!
      .tmat(iset,inc,iam)*exp(xi*nint(mo-rnu-sig-mu)*phKb)
 
 !TESTING
@@ -1536,11 +1780,11 @@ c1     & fin(iset,inc,iam)*exp(xi*nint(mo-rnu-sig-mu)*phKb)
       enddo ! inc
       enddo ! j/pi
       tmatsq=tmatsq+abs(ampt)**2
-      tmatsq2=tmatsq2+abs(ampt2)**2   !!! TESTING
+c2      tmatsq2=tmatsq2+abs(ampt2)**2   !!! TESTING
       enddo ! isigma
       enddo ! imu
       enddo ! imo
-      tmatsq2=tmatsq2*((2.d0*pi)**3)/dble(nmi)
+c2      tmatsq2=tmatsq2*((2.d0*pi)**3)/dble(nmi)
       tmatsq=(4.d0*pi/mkp)**2*tmatsq/dble(nmi)
 c1      if (icount.lt.100)
 c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
@@ -1598,22 +1842,34 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
       xsig=sigphi(1)*(phiu-phil)*degrad
       endif
       if(ien.eq.iten) then
-      print 315,ien,iv,ii,xsig,En,iflag
+!      print 315,ien,iv,ii,xsig,En,iflag
       endif
 *     -----------------------------------------------------------------
-      write(77,315) ien,iv,ii,xsig,En
+       xs3body(ien,iv,ii)=xsig
+!      write(77,315) ien,iv,ii,xsig,En
 !      STOP
-      call flush(77)
+!      call flush(77)
 *     -----------------------------------------------------------------
 *     close the angle (core and valence thetas) and energy loops
 *     -----------------------------------------------------------------
 30    continue      
 20    continue
 10    continue
+!$OMP END PARALLEL DO
       print 510
       print*,'  erelmax =',erelmax
       write(*,*)'icount=',icount,' if2c=',if2c
       print 510
+!MGR--------------------------------------------------------------------
+      do ii=1,itc
+        do iv=1,itv
+          do ien=1,iten
+            write(77,315) ien,iv,ii,xs3body(ien,iv,ii),energ3(ien)
+          enddo
+        enddo
+      enddo    
+      deallocate(xs3body,energ3)
+!-----------------------------------------------------------------------      
       call cpu_time(tf)
       t3d=tf-ti
       return 
@@ -1772,9 +2028,8 @@ c     -----------------------------------------------
       open(15,file='dsde_ps.xs') 
 !      d1=2.d0*ENEX(2) - 1.5d0*ENEX(1) - 0.5d0*ENEX(3)
       d1=enex(nb+1)
-      print*,'d1=',d1
-      write(15,50) ENEX(nb+1)-be,sigset(nb+1)/d1,
-     X	      enex(1)+d1/2.d0,d1 
+!      print*,'d1=',d1
+      write(15,50) ENEX(nb+1)-be,sigset(nb+1)/d1,enex(1)+d1/2.d0 
       write(18,50) ENEX(nb+1)-be,sigset(nb+1),
      X     enex(nb+1)+d1/2.d0 
 
@@ -1807,3 +2062,666 @@ c     Interpolation for IA=NSET
       return
       end
 
+
+!MGR amplitudes with target excitation or spin of target
+
+c *** --------------------------------------------------------------
+c **  Scattering amplitudes & cross sections
+c *** --------------------------------------------------------------
+      subroutine xsecs_tdef(kin,ncc,iexgs)
+      use xcdcc,    only: smats,elab,jpch,jtmin,jtmax,nex,exch,parch,
+     &                    famps,jbord,jump
+      use channels, only: jptset,jpiset,jpsets,tset
+      use factorials
+      use sistema
+      use constants
+      use parameters, only:  maxchan,maxsets
+      use globals,  only: debug,written,verb
+      use nmrv,     only: hort
+      use wfs,      only: nr,dr,energ,rvec,wfr
+      implicit none
+      logical :: doublexs,triplexs,jsets(maxsets)
+c     ---------------------------------------------------------
+      integer, parameter :: klog=99
+      integer   , parameter:: kamp=136, kxs=300,kfam=137,
+     &                        ksmat=170, !ksj=157,
+     &                        nearfa=1
+      integer :: istat,kin
+      integer :: inc,iexgs,icc,ncc,nch,ni,nf,lmax,iex,lfmax,ith,icore
+      integer :: partot,nth,njt,parold,maxleg,ner,itex,itarg
+      integer :: iam,im,imp,mlp,li,lf,nmi,nmti,nmtf,nmf,mi,mf,ijt,l
+      integer :: nmtfmax,nmfmax,imt,imtp,idt
+c     ------------------------------------------------------------
+      real*8  :: kron,cleb,ylmc,ylmc2 !external functions
+      real*8    , parameter:: zero=0
+      real*8    , parameter:: theps=1e-3,alpha=0d0
+      real*8    , allocatable:: lfv(:),xv(:)
+      real*8  :: jtot,jpgs,jpi,jpf,jpold,jtarg,jti,jtf,jlpi,jlpf
+      real*8  :: kcmi,kcmf,exc,vi,vf,tkch,etarg,partarg,extarg
+      real*8  :: ecmi,ecmf,etai,etaf,mupt,ermin,ermax,jwtarg
+      real*8  :: thmin,thmax,dth,cth,sth,s2,th,thrad
+      real*8, allocatable :: pl(:,:),delci(:),delcf(:)
+      real*8  :: rm,rmp,rmlp,lri,lrf,rmt,rmtp
+      real*8  :: factor, r1,r2,delif,yffc
+      real*8  :: xsruth,xs,xstot,xsj,xr,xrj,sigex(nex),xsaux
+      real*8  :: sigtex(ntex+1),sigextex(nex,ntex+1)
+c     -----------------------------------------------------------
+      complex*16, parameter:: zz=cmplx(0.,1.)
+      complex*16,allocatable:: ampl(:,:,:,:,:),fam(:,:,:,:,:)
+      complex*16, allocatable:: ampaux(:,:,:,:,:),gaux(:)
+      complex*16 smat,c1,faux,fc,phci,phcf,caux,cfival,resc,ffc4                     
+c     -----------------------------------------------------------
+      CHARACTER  PARITY(3)
+      character*40 fileamp
+      DATA PARITY / '-','?','+' /
+      
+      complex*16,allocatable:: ampauxJ(:,:,:,:,:,:) !MGR
+      integer :: njtot,nlp,ijtot,ilp,njtotcalc,ijtotcalc,nspline,ispline
+      integer :: jspl
+      integer,allocatable :: interpJ(:)
+      real*8 ljmax      
+c ---------------------------------------------------------------
+c PLM
+!      REAL*8 PM(0:1000,0:1000),PD(0:1000,0:1000)
+
+      namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,jsets,
+     &                    ermin,ermax,ner,icore,itarg,
+     &                    triplexs
+
+c initialize -------------------------------------------------
+      written(kamp)=.true.
+      written(kxs)=.true.
+      written(kfam)=.true.
+      
+!      written(ksj)=.false.
+      written(kxs+1:kxs+min(nex,9))=.true.
+      pi=acos(-1d0)
+      thmin=0; thmax=0; dth=0; 
+      doublexs=.false. ; triplexs=.false.
+      ermin=-1; ermax=-1
+      jsets(:)=.true.        
+      fileamp=""
+      ner=0
+      
+c     -----------------------------------------------------------
+      rewind(kin)
+      itarg=1
+      read(kin,nml=xsections)
+
+      if (thmax.gt.thmin) then
+        nth=nint((thmax-thmin)/dth)+1
+      else
+        write(*,*)'thmax<thmin!; Aborting'; stop
+      endif
+
+      if (ner.eq.0) then
+         write(*,*)'NER=0!!';
+      endif
+
+!      write(*,*)'ncc=',ncc
+
+      if (ncc.eq.0) goto 1000
+
+      jpgs =jpch(iexgs)
+      mupt =mp*mt/(mp+mt)*amu 
+      ecmi =elab*mt/(mp+mt)
+      kcmi =sqrt(2*mupt*ecmi)/hc
+      etai =zp*zt*mupt/kcmi/hc/finec 
+      lmax =nint(jtmax+maxval(jpch)+maxval(tset(:)%jtarg))
+
+
+
+      write(*,'(/,5x,"*** SCATTERING AMPLITUDES AND X-SECTIONS ***",/)')
+      write(*,320) elab, ecmi,kcmi, etai
+320   format(3x,"Elab=",1f7.2, 5x,'Ecm=',1f8.3,5x,
+     &  'Kcm=',1f6.3, 4x,'Eta param. =',1f7.4)
+      write(*,'(/,3x, "o Jtmin=",1f4.1,3x,"Jtmax=",1f5.1,/ )')
+     &  jtmin,jtmax
+      call flush(6)
+
+c *** Factorials (CHECK IF THIS IS NEEDED!!!!!!!!!!!!!!)
+!      lmax=nint(jtmax+maxval(jpch))     
+!      write(*,*)'famps: lmax=',lmax
+!      call factorialgen(2*lmax)
+
+
+c *** Compute Coulomb phases for l< lmax
+       allocate(delci(0:lmax),stat=istat)
+       if (istat>0) then
+         write(*,*) 'readsmat: allocating memory for DELC failed!';
+         stop
+       endif
+       call coulph (etai,delci,lmax) !Coulomb phase-shifts for inc channel
+
+
+
+c *** Compute & store amplitudes (Fresco, CPC Eq. (3.30))   
+c *** (zero target spin assumed here!) !MGR let's try and change it
+      nmi    =nint(2*jpgs+1)
+      nmti   =nint(2*jtgs+1)
+      nmfmax =nint(2*maxval(jpiset(:)%jtot)+1)
+      nmtfmax=nint(2*maxval(tset(:)%jtarg)+1)
+      allocate(famps(nex,ntex+1,nth,nmi*nmfmax*nmti*nmtfmax))
+
+      
+      if (nex.lt.1) then
+         write(*,*)'solvecc: nex<1!'; stop
+      endif
+      if (iexgs.lt.1) then
+         write(*,*)'solvecc: inc=',iexgs; stop
+      endif
+
+      do iex=1,nex  ! loop in projectile states
+      jpf  = jpch(iex) 
+      exc  = exch(iex)
+      do itex=1,ntex+1
+      jtarg =tset(itex)%jtarg
+      etarg =tset(itex)%extarg
+      tkch=ecmi+exch(iexgs)-exc-etarg
+      
+      
+      
+      if (tkch.lt.0) cycle    !closed channel
+      kcmf = sqrt(2*mupt*tkch)/hc
+      etaf = zp*zt*mupt/kcmf/hc/finec 
+      nmf  = nint(2*jpf +1)
+      nmtf = nint(2*jtarg+1)
+      lfmax= nint(jtmax+jpf+jtarg)
+      maxleg=max(1,lfmax)
+      write(*,*) 'Projectile state',iex,'Target state',itex,'Ecm',tkch,
+     & 'k_f:',kcmf
+!      write(0,*) 'lfmax',lfmax,'nmi',nmi,'nmti',nmti,'nmf',nmf,'nmtf',
+!     & nmtf
+      allocate(ampl(0:lfmax,nmi,nmti,nmf,nmtf)) ! angle-independent amplitudes
+      allocate(lfv(0:lfmax))
+      allocate(delcf(0:lfmax),stat=istat)
+      call coulph(etaf,delcf,lfmax) !Coulomb phase-shifts for final channel
+
+!MGR let's find the maximum number of L' that there are for any Jtot
+      nlp=0
+      njtot=0
+      ljmax=0d0
+      do icc=1,ncc
+        jtot  =jptset(icc)%jtot
+        njtot =max(njtot,floor(jtot))
+        nch   =jptset(icc)%nchan
+        do nf=1,nch
+          if (jptset(icc)%nchan.eq.0) cycle
+          if (jptset(icc)%idx(nf).ne.iex) cycle 
+          if (jptset(icc)%idt(nf).ne.itex) cycle
+          lf  =jptset(icc)%l(nf);
+          ljmax=max(ljmax,abs(jtot-lf-0d0))           
+        enddo  
+      enddo
+      njtot=njtot-floor(jbord(1))
+      nlp=nint(2d0*ljmax+1d0)
+!      write(0,*) 'nlp',nlp,'njtot',njtot
+!-----------------------------------------------------------------------
+
+
+!      write(kfam,301) iex,exc,jpf,parity(parch(iex)+2)
+!      write(kfam,*) elab,nth
+      write(kfam,'(4f6.1,i5,i2,1f10.3)') jpgs,jtgs,jpf,
+     & jtarg,nth,nearfa,elab
+      write(kxs,302) iex,exc,jpf,parity(parch(iex)+2)
+      if (iex+itex.le.10) write(kxs+(iex-1)*(ntex+1)+itex,302) 
+     &      iex,exc,jpf,parity(parch(iex)+2),itex,tset(itex)%extarg
+300   format(3x,'o Angle-indep amplitudes for state #',i3,
+     &   ' Ex=',1f7.3,' MeV',' J/pi=',1f5.1,a1)     
+301   format(1x,'# f(theta) amplitudes for state #',i3,
+     &   ' Ex=',1f7.3,' MeV',' J/pi=',1f5.1,a1) 
+302   format(1x,'# Cross sections for state #',i3,
+     &   ' Ex=',1f7.3,' MeV',' J/pi=',1f5.1,a1,'Targ. state',i3,
+     &   ' E_targ=',1f7.3)
+
+
+      allocate(ampauxJ(0:njtot,nlp,nmi,nmti,nmf,nmtf),interpJ(0:njtot)) !MGR
+      ampauxJ(:,:,:,:,:,:)=0d0;interpJ(:)=1 !MGR
+      ijtot=-1 !MGR
+      ampl(:,:,:,:,:)=0; 
+      lfv(:)=0
+
+      do icc=1,ncc
+       partot=jptset(icc)%partot
+       jtot  =jptset(icc)%jtot
+       nch   =jptset(icc)%nchan
+       if (jptset(icc)%interp) then
+!          write(*,*)'skipping jtot=',jtot
+          cycle 
+       endif
+       if (jtot.ge.jbord(1)) then
+       ijtot=floor(jtot-jbord(1))!MGR
+       interpJ(ijtot)=0!MGR
+       endif
+
+       do ni=1,nch
+       if (jptset(icc)%idx(ni).ne.iexgs) cycle ! no inc waves 
+       if (jptset(icc)%idt(ni).ne.1) cycle !no inc waves NEEDS REPHRASING MGR
+       li   =jptset(icc)%l(ni)
+       lri  =li
+       jpi  =jptset(icc)%jp(ni)             ! should be just jpgs
+       jlpi =jptset(icc)%jlp(ni)
+       jti  =jptset(icc)%jt(ni)
+       nmi  =nint(2*jpi+1)
+       nmti =nint(2*jti+1)
+
+       do nf=1,nch
+       if (jptset(icc)%nchan.eq.0) cycle
+       if (jptset(icc)%idx(nf).ne.iex) cycle 
+       if (jptset(icc)%idt(nf).ne.itex) cycle 
+       lf  =jptset(icc)%l(nf);   
+!       nlf=nlf+1;     
+!       lfv(icc,nlf)=lf 
+       lrf =lf
+       jpf =jptset(icc)%jp(nf)
+       jlpf=jptset(icc)%jlp(nf)
+       jtf= jptset(icc)%jt(nf)
+       nmf =nint(2*jpf+1)
+       nmtf=nint(2*jtf+1)
+       smat=smats(icc,ni,nf) 
+       
+       if (lf.gt.lfmax) stop 'internal error; lf >lfmax in famps!' 
+325    format(' Chan:',2i5,2x,2f6.1,2x,"S=",2f11.7)
+
+       do im=1,nmi
+        rm= -jpi + (im -1)
+        do imp=1,nmf
+        rmp=-jpf + (imp-1)
+        do imt=1,nmti
+         rmt= -jti + (imt -1)
+        do imtp=1,nmtf
+         rmtp=-jtf + (imtp-1)
+        mlp=nint(rm+rmt-rmp-rmtp)
+        rmlp=rm+rmt-rmp-rmtp
+        if (abs(mlp).gt.lf) cycle        
+        r1=cleb(lri,zero,  jpi, rm, jlpi,rm)*
+     &     cleb(jlpi,rm,jti,rmt,jtot,rm+rmt)
+     &    *cleb(lrf,rmlp,jpf, rmp,jlpf,rmlp+rmp)*
+     &     cleb(jlpf,rmlp+rmp,jtf,rmtp,jtot,rm+rmt)
+        r2=sqrt(kcmf/kcmi)  ! this needs to be generalized for different partitions!!
+        c1=sqrt(pi)/zz/kcmi
+        phci =exp(zz*(delci(li)-delci(0)))
+        phcf =exp(zz*(delcf(lf)-delcf(0)))
+c Satchler (4.58) for spin zero target:
+        ampl(lf,im,imt,imp,imtp)= ampl(lf,im,imt,imp,imtp)  
+     &                 + phci*phcf*r1*r2*c1*sqrt(2*lri+1)  
+     &                 * (smat-kron(ni,nf))*YLMC2(lf,mlp) 
+!        ampaux(lf,im,imt,imp,imtp)= ampaux(lf,im,imt,imp,imtp)  
+!     &                   + phci*exp(-zz*(delcf(lf)-delcf(0)))
+!     &                   * r1*r2*c1*sqrt(2*lri+1)           
+!     &                   * (smat-kron(ni,nf))*YLMC2(lf,mlp) 
+        lfv(lf)=lf
+
+!        write(777,*)'lf,mlp,ylm=', lf,mlp,YLMC(lf,mlp),YLMC2(lf,mlp)
+
+        if (debug) then
+        write(klog,'(6x,"Contrib to AMP: ni,li,iex=",
+     &  3i3," => nf,lf,iex=",3i3,6x,"S=",2f12.6," r1,r2=",2f12.5)')
+     &  ni,li,1,nf,lf,iex,smat,r1,r2
+       endif
+       
+!MGR--------------------------------------------------------------------
+       if(ijtot.ge.0) then
+       ilp=nint(ljmax+jtot-lrf)+1 
+!       write(0,*) 'ijtot',ijtot,'ilp',ilp,'im',im,'imp',imp, 'jtot',jtot
+!     & ,'imt',imt,'imtp',imtp
+       ampauxJ(ijtot,ilp,im,imt,imp,imtp)= 
+     &  ampauxJ(ijtot,ilp,im,imt,imp,imtp)  
+     &                 + phci*conjg(phcf)*r1*r2*c1*sqrt(2*lri+1)  
+     &                 * (smat-kron(ni,nf))*YLMC2(lf,mlp)
+       endif 
+!-----------------------------------------------------------------------               
+       enddo ! imtp
+       enddo ! imt
+       enddo ! imp
+       enddo ! imp
+       enddo ! nchf
+       enddo ! nchi
+       enddo ! icc (j/pi sets)
+    
+
+!!!!!!!!!!!!!!!!!!!!!!!!! INTERPOLATION !!!!!!!!!!!!!!!!!!!!!!!!!!!
+      if (.true.) then
+!First we need to know the points that are already calculated
+      njtotcalc=0
+      do ijtot=0,njtot
+      if (interpJ(ijtot).eq.0) njtotcalc=njtotcalc+1
+      enddo
+!------------------------------------------------------------------------      
+      allocate(gaux(njtotcalc),xv(njtotcalc))
+      njtotcalc=0
+      do ijtot=0,njtot
+      if (interpJ(ijtot).eq.0) then
+       njtotcalc=njtotcalc+1
+       xv(njtotcalc)=ijtot
+      endif
+      enddo
+!      write(0,*) 'Passed njtotcalc,', njtotcalc,'njtot',njtot
+      do ijtot=0,njtot
+       jtot  =ijtot+jbord(1)
+       if (interpJ(ijtot).eq.0) cycle
+
+!MGR Let's try with splines
+!      pspline=(jtot-jbord(1))/jump(1)
+!      call SPLINT(pspline,njtotcalc,ispline,nspline,spline)
+      
+!      write(0,*) 'Spline N',njtotcalc,' NP',nspline,'I',ispline,'P',
+!     & pspline,'SP',spline(1:nspline)
+       do im=1,nmi
+        rm= -jpi + (im -1)
+        do imp=1,nmf
+        rmp=-jpf + (imp-1)
+        do imt=1,nmti
+         rmt= -jti + (imt -1)
+        do imtp=1,nmtf
+         rmtp=-jtf + (imtp-1)
+        mlp=nint(rm+rmt-rmp-rmtp)
+        rmlp=rm+rmt-rmp-rmtp
+        do ilp=1,nlp
+
+        lf=nint(ljmax+jtot-ilp)+1
+        if(lf.gt.lfmax)write(0,*) 'lf',lf,'> lfmax',lfmax,'!!'
+!       write(0,*)'jtot',jtot,'m',rm,'mp',rmp,'mt',rmt,'mtp',rmtp,'l',lf
+        if (abs(nint(rm+rmt-rmp-rmtp)).gt.lf) cycle
+             
+        phcf =exp(2d0*zz*(delcf(lf)-delcf(0)))
+        gaux(:)=0d0
+!        write(0,*) 'Interpolating Jtot:', jtot,'L',lf 
+        do ijtotcalc=1,njtotcalc
+        gaux(ijtotcalc)=ampauxJ(nint(xv(ijtotcalc)),ilp,im,imt,imp,imtp)
+        enddo
+!MGR splines        
+!        ampauxJ(ijtot,ilp,im,imp)=0d0
+!        do jspl=1,nspline
+!        if(interpJ(ijtot).eq.1) then
+!        ampl(lf,im,imp)=ampl(lf,im,imp)+spline(jspl)*
+!     &   gaux(jspl+ispline-1)*phcf
+!        endif
+!        ampauxJ(ijtot,ilp,im,imp)=ampauxJ(ijtot,ilp,im,imp)+spline(jspl)
+!     &  *gaux(jspl+ispline-1)
+!        enddo
+                   
+!        write(*,'(10(i3,2f10.5))') (nint(xv(l)),gaux(l),l=1,lfmax)
+        caux=cfival(ijtot+0d0,xv,gaux,njtotcalc,0d0)
+        ampl(lf,im,imt,imp,imtp)= ampl(lf,im,imt,imp,imtp)+caux*phcf
+        ampauxJ(ijtot,ilp,im,imt,imp,imtp)=
+     &  ampauxJ(ijtot,ilp,im,imt,imp,imtp)+caux
+         
+        enddo !ilp
+        enddo !imtp
+        enddo !imt
+       enddo ! imp
+       enddo ! im
+       enddo ! ijtot (j/pi sets)
+       deallocate(gaux,xv,ampauxJ,interpJ)
+       endif 
+!       write(0,*) 'Exit interpolation'
+
+!       do ijtot=0,njtot
+!       write(888,*) ijtot, dble(ampauxJ(ijtot,1,1,1)),
+!     &  aimag(ampauxJ(ijtot,1,1,1))
+!       enddo
+!       write(888,*) '&'    
+       
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+c write angle-indep amplitudes ----------------------------------------
+       write(kamp,300) iex,exc,jpf,parity(parch(iex)+2)
+       do lf=0,lfmax
+!225    WRITE(kamp,226) LF,((AMPL(lf,im,imp)*phcf,imp=1,nmf), im=1,nmi)
+225    WRITE(kamp,226) lf,((((ampl(lf,im,imt,imp,imtp),imtp=1,nmtf),
+     &  imp=1,nmf),imt=1,nmti), im=1,nmi)
+226    FORMAT(' LP=',I5,1X,1P,10E12.4 / (10X,10E12.4),/)
+       enddo ! lf
+
+!        write(0,*) 'Exited angle-independent'
+
+c Angle-dependent amplitudes: f(theta,m,mp) (Fresco CPC eq. (3.31)
+       allocate(fam(nth,nmi,nmti,nmf,nmtf))
+!       write(*,*)'allocate pl with lfmax+1=',lfmax+1
+       allocate(pl(maxleg+1,maxleg+1))
+       fam(:,:,:,:,:)=0; pl=0;
+       do ith=1,nth
+          th = thmin + dth*(ith-1)
+          if (th<theps) th=theps
+          thrad = th*pi/180.
+          cth=cos(thrad)
+          sth=sin(thrad)
+          s2= sin(thrad/2)**2
+          call PLM(cth,maxleg,maxleg,maxleg+1,PL)
+
+c Point Coulomb (Satchler 4.11a), but with different phase convention 
+c (no e^{2 i delc(0)}  factor as in Fresco !) 
+          r1=-etai*log(s2)  !  2*delc(0)
+          fc=-etai/(2*kcmi)*exp(zz*r1)/s2
+c 
+       iam=0
+       do im=1,nmi
+       rm= -jpi + (im -1)
+       do imt=1,nmti
+         rmt= -jti + (imt -1)
+       do imp=1,nmf
+       ! global index for spin projections
+       rmp=-jpf + (imp-1)
+       do imtp=1,nmtf
+         rmtp=-jtf + (imtp-1)
+       iam=iam+1 
+       faux=0
+       rmlp=rm+rmt-rmp-rmtp
+       mlp=nint(rm+rmt-rmp-rmtp)
+       if (abs(mlp).gt.lfmax) stop'mlp>lfmax'
+
+       do lf=abs(mlp),lfmax
+         if(mlp.lt.0) then
+          r1=pl(lf+1,-mlp+1)
+         else 
+          r1=pl(lf+1,mlp+1)          
+         endif 
+        faux=faux + ampl(lf,im,imt,imp,imtp)*r1
+       enddo !lf
+       fam(ith,im,imt,imp,imtp)=fc*kron(im,imp)*kron(imt,imtp)*
+     &  kron(iexgs,iex)*kron(itex,1) + faux !Needs rephrasing MGR
+       famps(iex,itex,ith,iam)= fam(ith,im,imt,imp,imtp)
+       enddo !imtp
+       enddo !im
+       enddo !imt
+       enddo !imp
+!       write(kfam,'(2x,"theta=",1f6.2)') th 
+       write(kfam,'(2x,1f6.2)') th ! changed in v2.2e
+       write(kfam,228) ((((fam(ith,im,imt,imp,imtp),imtp=1,nmtf),
+     &  imp=1,nmf),imt=1,nmti),im=1,nmi)
+228    format(1P,6E12.4)
+!       write(kfam,*) ' '
+       enddo !angles
+777    format(f8.3,1e12.3,1f10.4,1e12.3)
+!       write(0,*) 'Exited angle-dependent'
+
+
+c *** Differential cross sections for each state
+       do ith=1,nth
+        th = thmin + dth*(ith-1)
+        if (th<theps) th=theps
+        factor=1./nmi/nmti
+        thrad=th*pi/180        
+        xs=0d0
+        do im=1,nmi
+        do imt=1,nmti
+        do imp=1,nmf
+        do imtp=1,nmtf
+         xs=xs+10*factor*abs(fam(ith,im,imt,imp,imtp))**2
+        enddo !imtp
+        enddo !imp
+        enddo !imt
+        enddo !imp
+        if ((iex.eq.1).and.(itex.eq.1).and.(zp*zt.gt.0)) then 
+            s2=sin(thrad/2.)**2
+            xsruth=10*(etai/(2.*kcmi*s2))**2  ! point Coulomb(mb/sr)
+            write(kxs,800) th,xs/xsruth,xs!,xsruth*10
+            write(kxs+1,800) th,xs/xsruth,xs!,xsruth*10
+        else
+            write(kxs,800) th,xs
+            if (iex.le.10) write(kxs+(iex-1)*(ntex+1)+itex,800) th,xs
+        endif
+        enddo !ith
+800     format(1x,1f8.3,2g15.5)
+        write(kxs,*)'&'
+!        write(0,*) 'Exited cross sections'
+        
+        if(allocated(fam))deallocate(fam)
+!        write(0,*) 'Exited deallocation fam'
+        if(allocated(pl))deallocate(pl)
+!        write(0,*) 'Exited deallocation pl size ampl',size(ampl,1),'x',
+!     &  size(ampl,2),'x',size(ampl,3),'x',size(ampl,4),'x',size(ampl,5)
+        if(allocated(delcf))deallocate(delcf)
+!        write(0,*) 'Exited deallocation delcf size lfv',size(lfv)
+        if(allocated(lfv))deallocate(lfv)
+!        write(0,*) 'Exited deallocation lfv'
+        if(allocated(ampl))deallocate(ampl)
+!        write(0,*) 'Exited deallocation ampl'
+        
+      enddo !itex
+      enddo ! iex 
+
+
+c *** Angle-integrated cross sections 
+      sigex(:)=0
+      sigtex(:)=0d0
+      sigextex(:,:)=0d0
+      xstot = 0.
+      jpi   = jpch(iexgs)
+      nmi   = 2*jpi+1
+      jti   = jtgs
+      nmti  =nint(2*jtgs+1)
+      icc=0
+      njt  =jtmax-jtmin+1
+      do ijt=1,njt
+      jtot=jtmin+dble(ijt-1)
+      xsj=0
+      xrj=0
+      do partot=1,-1,-2
+      xs=0
+      xr=0
+       icc=icc+1 ! CC set (total J/pi)
+       if (jptset(icc)%interp) cycle
+!       partot=jptset(icc)%partot
+!       jtot  =jptset(icc)%jtot
+       nch   =jptset(icc)%nchan
+       do ni=1,nch
+       if (jptset(icc)%idx(ni).ne.iexgs) cycle ! no inc waves 
+       if (jptset(icc)%idt(ni).ne.1) cycle !Needs rephrasing MGR 
+       li= jptset(icc)%l(ni)
+       jlpi=jptset(icc)%jlp(ni)
+       jti=jptset(icc)%jt(ni)
+       do nf=1,nch
+       iex  = jptset(icc)%idx(nf)
+       idt  = jptset(icc)%idt(nf)
+       exc  = exch(iex)
+       etarg= jptset(icc)%ext(nf)
+       tkch=ecmi+exch(iexgs)-exc-etarg
+       if (tkch.lt.0) cycle    !closed channel
+       kcmf = sqrt(2*mupt*tkch)/hc
+       lf   = jptset(icc)%l(nf)
+       jpf  = jptset(icc)%jp(nf) 
+       jlpf=jptset(icc)%jlp(nf)
+       jtf=jptset(icc)%jt(nf)
+
+       if ((iex.eq.iexgs).and.(idt.eq.1)) then ! elastic channel 
+         written(ksmat)=.true.
+         smat=smats(icc,ni,nf)
+         xr=xr+10*(pi/kcmi**2)*(2.*jtot+1)/nmi/nmti*(1-abs(smat)**2)
+         write(ksmat,'(1f6.1,2x,3i3,3f6.1," ->",3i3,3f6.1,2x,3f14.8)')
+     &   jtot,iexgs,1,li,jpi,jlpi,jti,iex,idt,lf,jpf,jlpf,jtf,smat,
+     &   abs(smat)
+       else      
+         smat=smats(icc,ni,nf)! *sqrt(kcmf/kcmi)
+         xsaux=10*(pi/kcmi**2)*(2.*jtot+1)/nmi/nmti
+     &    *abs(smat)**2*kcmf/kcmi
+         xs=xs + xsaux 
+         sigex(iex)=sigex(iex) + xsaux
+         sigtex(idt)=sigtex(idt)+ xsaux
+         sigextex(iex,idt)=sigextex(iex,idt)+ xsaux
+         if (verb.gt.1) then
+         write(ksmat,'(1f6.1,2x,3i3,3f6.1," ->",3i3,3f6.1,2x,3f14.8)')
+     &   jtot,iexgs,1,li,jpi,jlpi,jti,iex,itex,lf,jpf,jlpf,jtf,smat,
+     &   abs(smat)
+         endif
+       endif
+       enddo !nf
+       enddo !ni
+       xstot= xstot + xs
+       xsj  = xsj   + xs
+       xrj  = xrj   + xr
+       write(*,'(5x," J/pi=",1f5.1,a1,3x,
+     &   " xs(inel)=",1e12.3, " mb"," reac=",1e12.3)') 
+     &   jtot,parity(partot+2),xs,xr
+      enddo !partot
+! COMMENTED, becase we have printed the x-sections after each J/pi set
+!      write(ksj, '(1x,1f5.1,3f10.4,2x,i2)') jtot,xrj-xsj,xrj,xsj
+      enddo !ijt (JT)
+      write(*,780) xstot
+780   format(/,3x," => total inel+bu x-section=",1f8.3," mb")
+
+
+c *** Angle-integrated cross section for each projectile state
+      write(*,'(/,2x,"o Angle-integrated xs for each state:")')
+      jpold=-1 ; parold=-2
+      do iex=1,nex
+        partot=parch(iex)
+        exc   =exch(iex)
+        jpf   =jpch(iex)
+        if (iex.eq.1) jpold=jpf
+        if ((iex.gt.1).and.(jpf.ne.jpold).and.(partot.ne.parold))
+     & write(130,*) '&'
+        jpold=jpf
+        write(130,795) exc, sigex(iex), iex,jpf,partot
+        write(*,790) iex,jpf,parity(partot+2),exc, sigex(iex)
+789     format(8x,"#",i4,3x,1f5.1, a1,f10.3,"->")
+790     format(8x,"#",i4,3x,1f5.1, a1,f10.3,"->",f12.6,' mb')
+794     format(1x,1f10.3,2x,12x,1x,i3,1f5.1,2x,i2)
+795     format(1x,1f10.3,2x,1f12.6,1x,i3,1f5.1,2x,i2)
+      enddo
+
+!   Angle-integrated cross section for each target state
+      write(*,'(/,2x,"o Angle-integrated xs for each target state:")')
+      jpold=-1 ; parold=-2
+      do idt=1,ntex+1
+        partot= tset(idt)%partarg
+        exc   = tset(idt)%extarg
+        jtf   =tset(idt)%jtarg
+        jpold=jpf
+        write(1130,795) exc, sigtex(idt), idt,jtf,partot
+        write(*,790) idt,jtf,partot,exc, sigtex(idt)
+      enddo
+
+!   Angle-integrated cross section for each target and projectile state
+      write(*,'(/,2x,"o Angle-integrated xs for each target and 
+     & projectile state:")')
+      jpold=-1 ; parold=-2
+      do iex=1,nex
+        partot=parch(iex)
+        exc   =exch(iex)
+        jpf   =jpch(iex)
+        if (iex.eq.1) jpold=jpf
+        if ((iex.gt.1).and.(jpf.ne.jpold).and.(partot.ne.parold))
+     & write(130,*) '&'
+        jpold=jpf
+        
+        do idt=1,ntex+1
+          partarg= tset(idt)%partarg
+          extarg   = tset(idt)%extarg
+          jwtarg   =tset(idt)%jtarg
+          write(1230,794) exc, iex,jpf,partot
+        write(*,789) iex,jpf,parity(partot+2),exc
+          write(1230,795) extarg, sigextex(iex,idt), idt,jtf,partot
+          write(*,790) idt,jtf,partot,extarg, sigextex(iex,idt)
+        enddo
+      enddo
+
+1000  continue
+
+      if (allocated(famps)) deallocate(famps)
+
+
+
+      end subroutine

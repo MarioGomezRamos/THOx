@@ -202,7 +202,11 @@ c        real*8:: all,als,as0,j,vcou,vpot,deriv1,deriv2
 	   vnm=  (vcou(i)+vcl(l,i)+als*vls(i)+all*vll(i))*un*um !coulomb+nucl(only s-o) 
 
            if (cptype.eq.5) then
- 	   vnm=  vnm+(vtran(ic,ic,0,i)/sqrt(2.*jcore+1))*un*um 
+             if (partot.eq.1) then
+ 	   vnm=  vnm+(vtran(ic,ic,0,i,1)/sqrt(2.*jcore+1))*un*um
+             else
+        vnm=  vnm+(vtran(ic,ic,0,i,2)/sqrt(2.*jcore+1))*un*um
+             endif
            endif
 
        hnmaux(i)=knm+vnm
@@ -303,7 +307,7 @@ c *** ---------------------------------------------------
       use sistema
       use potentials, only: vls,vlsc,vss,vcl,vcou,vlcoup,
      &lpot,vll,vtran,cptype,maxlamb,  
-     &lambda,kband,pcmodel,laminc ! v2.1          
+     &lambda,pcmodel,laminc ! v2.1          
       use constants
       use channels
       use wfs
@@ -330,6 +334,7 @@ c *** ---------------------------------------------------
       real*8:: ui,uf,vi,vf,ren
       real*8:: acoup(0:maxlamb),vcp(0:maxlamb)
       logical:: ifren=.false.
+      real*8 :: ki,kf,kband
       real*8 :: allp2 !!!! TEST
          
       ichn=spindex(nchani)
@@ -343,15 +348,19 @@ c *** ---------------------------------------------------
       jci=qjc(nchani) 
       ici=cindex(nchani)
       nphi=nphon(ici)
+      ki =qnc(ici)%kband
 
       jcf=qjc(nchanf)
       icf=cindex(nchanf)
       nphf=nphon(icf)
+      kf =qnc(icf)%kband
 
       cl=1d0
 
       fact=hc*hc/2d0/mu12
       h=dr
+
+      if (ki.eq.kf) kband=ki
 
 C ***      Matrix elements of tensor operators           ****
 c Spin-orbit for valence ------------------------------
@@ -363,7 +372,7 @@ c spin-orbit for core (added to v2.0.2 version by AMoro)
 
 c spin.spin term 
       ass= coefss(li,sn,ji,qjc(nchani),lf,sn,jf,qjc(nchanf),jtot)
-!      if (abs(ass).gt.0) write(0,*)'ass=',ass
+      
 
 c l.l term -----------------------------------------------
        all=xl*(xl+1.d0)
@@ -489,7 +498,7 @@ c Non-diagonal
 !     &  + ass*vss(i)           ! spin-spin  
 
        if ((li.eq.lf).and.abs(ass*vss(li,i)).gt.0) then
-!             write(*,*)'spin.spin included! ass=',ass,vss(li,i)
+!       if (i.eq.1) write(*,*)'spin.spin included! ass=',ass,vss(li,i)
              vnm=vnm + ass*vss(li,i)*un*um  ! spin-spin 
        endif
 
@@ -507,9 +516,13 @@ c Non-diagonal
 !           else
 !             cl=1d0
 !           endif
-
+               if (partot.eq.1) then
            vnm=vnm+cmic2(lir,ji,jci,lfr,jf,jcf,jtot,sn,lambdar)
-     &        *vtran(ici,icf,il,i)*un*um
+     &        *vtran(ici,icf,il,i,1)*un*um
+               else
+            vnm=vnm+cmic2(lir,ji,jci,lfr,jf,jcf,jtot,sn,lambdar)
+     &        *vtran(ici,icf,il,i,2)*un*um
+               endif
 
 !           vnm=vnm+((-1d0)**(ji+jcfr+jtot)*sixj(jf,ji,lambdar
 !     &,jcir,jcfr,jtot)*sqrt((2*jf+1.)*(2*ji+1.))*sixj(jf,ji,lambdar,
@@ -669,9 +682,9 @@ c <lf,jf,rf,Jtot,M_f|P_{lambda}(cos(theta))|li,ji,ri,Jtot,M_i>
 c ------------------------------------------------------------
 	function crotor(lf,jf,rf,li,ji,ri,jtot,kproj,sn,lambda)
         implicit none
-	integer:: kproj,lambda,li,lf
+	integer:: lambda,li,lf
 	real*8:: ji,ri,jf,rf,jtot,sn,crotor
-	real*8:: phase,zero,one,rlambda,kk,half
+	real*8:: phase,zero,one,rlambda,kk,half,kproj
 	real*8:: cleb,sixj,pi
 	parameter(zero=0d0,one=1d0,half=0.5d0)
 
@@ -700,9 +713,9 @@ c
 	function gcoup(li,ji,ri,ni,lf,jf,rf,nf,
      &                  jtot,kproj,sn,lambda,model)
        implicit none
-	integer:: kproj,lambda,li,lf,ni,nf,model
+	integer::lambda,li,lf,ni,nf,model
 	real*8:: ji,ri,jf,rf,jtot,sn,gcoup,vibrator
-	real*8:: zero,one,rlambda,kk,half,red2
+	real*8:: zero,one,rlambda,kk,half,red2, kproj
 	real*8:: cleb,sixj,pi,ph1,ph2,rli,rlf,threej
 	parameter(zero=0d0,one=1d0,half=0.5d0)
 c      --------------------------------------------------------
@@ -711,7 +724,6 @@ c      --------------------------------------------------------
 	rli=li
 	rlf=lf
 	pi=acos(-one)
- 
 
 ! <(lsj||Y_{lambda} || (l's)j'>  
 	ph2=(-1)**(rlambda+sn+jf+2*rli)
@@ -766,8 +778,8 @@ cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c	use globals
       implicit none
 	real*8:: jc,j,jtot,sn,rc,r
-	integer:: lc,l,lambda,kr,model,n,nc
-	real*8:: lcr,lr,rcr,rr,lambdar,krr
+	integer:: lc,l,lambda,model,n,nc
+	real*8:: lcr,lr,rcr,rr,lambdar,krr,kr
 	real*8:: fact,rme,ph,r6,r3 !,cg
 	real*8:: ccoef,sixj,cleb
 	real*8::zero,one,pi,vibrator
@@ -908,14 +920,17 @@ c Build and diagonalize full Hamiltonian
       implicit none
       integer:: i,ir,m,n,ip,n1,m1,inchani,inchanf,ninc
       integer:: incn,np,nho,nset
-      real*8:: norm,r,norm2,rms,rl,rmstot,ex
+      real*8 :: norm,r,norm2,rms,rl,rmstot,ex
+      real*8,parameter:: uno=1.0
+      real*8 :: wcut(1:maxchan)
       real*8,allocatable:: faux(:),ebaux(:)
 !      integer,allocatable:: iord(:)
       integer:: ifail
       CHARACTER(LEN=80) formato
 c     --------------------------------------------------
       rmstot=0d0
-	  
+      wcut(1:maxchan)=jpiset(nset)%wcut(1:maxchan)
+
       if (nho.eq.0) then 
          write(*,*)'fullham: nho=0!'
          return
@@ -1058,7 +1073,7 @@ c     (changed in version 2.3 to complex)
         endif
         if ((hmatx(n1,n1)<0).or.wfprint(i)) then   
           write(100+i,246)nchan,i,hmatx(n1,n1)
-246	   format('# ',i2,' Channels, Eigenvalue:',i2,' Enegy:',f8.4)
+246	   format('# ',i2,' Channels, Eigenvalue:',i2,' Energy: ',f8.4)
           write(100+i,247)jtot,partot
 247	   format('# J:',f4.2,' parity:',i2)
           write(100+i,*)'# #channel #core Jc (l sn) jn'
@@ -1097,16 +1112,19 @@ c     (changed in version 2.3 to complex)
         endif
         enddo ! inchanf
 
+        wfeig(i,:,:)=wfeig(i,:,:)*sign(uno,wfeig(i,1,1))
+
         ex=ebin(i)
 c store wfs and energies for all j/pi sets
-        if((ex.ge.exmin).and.(ex.le.exmax)) then
+        if((ex.lt.exmin).or.(ex.gt.exmax)) cycle
+        if (any(wchan(i,1:nchan).lt.wcut(1:nchan))) then   ! Added dec/16.
+          print*,'i=',i, 'excluded due to small weight'; cycle
+        endif
           ninc=ninc+1
           energ(nset,ninc)=ex
 c changed in version 2.3 for complex bins
 !         wfr(nset,ninc,1:nchan,:)=wfeig(i,1:nchan,:)
-          wfc(nset,ninc,1:nchan,:)=wfeig(i,1:nchan,:)
-
-        
+          wfc(nset,ninc,1:nchan,:)=wfeig(i,1:nchan,:)        
         write(formato,'( "(5x,",'' "#" '',",i3,1f10.4,2x,",
      & '' "[", '',I0,"f8.4",'' ,"]" '',",4x,",    
      & '' "rms=" '',",1f8.4)"
@@ -1114,13 +1132,13 @@ c changed in version 2.3 for complex bins
         rmstot=sqrt(rmstot)
 
        write(*,formato) i, hmatx(n1,n1), (wchan(i,m),m=1,nchan),rmstot
-       endif ! exmin < ex < exmax
+!       endif ! exmin < ex < exmax
        enddo !i=1,hdim (eigenvalues)
 
        jpiset(nset)%nex=ninc
 c this is included in basis.f90, so it should be redundant here
        if (nchan.gt.nchmax) nchmax=nchan
-       write(*,'(/,5x,"[",i3, " out of", i3,
+       write(*,'(/,5x,"[",i3, " out of", i4,
      & " eigenvalues retained ]")')  ninc,hdim
 
 !      write(80,'(11f12.6)')1d0*nho,(ebin(i),i=1,10)

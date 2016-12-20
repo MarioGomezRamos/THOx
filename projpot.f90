@@ -23,7 +23,7 @@ c
        use parameters, only: maxl,maxcore!,maxchan
        implicit none
        logical:: lsderiv
-       integer kin,ir,ith,ncomp,mmultipole,l
+       integer kin,ir,ith,ncomp,mmultipole,l,p
        parameter(mmultipole=4) !!better in a module???
        real*8:: alpha,fival
        parameter(alpha=0.)
@@ -35,7 +35,7 @@ c
        integer np,nv,iv
        real*8, allocatable:: rvecp(:),vvec(:,:)
        integer jci,jcf,ici,icf
-       real*8:: pfact(10),pgfact
+       real*8:: pfact(10),pgfact(2)
        real*8 :: vcp(0:maxl,nr), vc(0:maxl,nr)
        real*8 :: vcaux(nr),v0,v02
        character*15::potname
@@ -80,13 +80,12 @@ c
        vcp(:,:)=0d0
        ap=0
        at=1
-
        lambda=2 
        kband=0
 !       maxlamb=4
        written(40)=.false.
        pfact(:)=1d0
-       pgfact=1d0
+        pgfact(:)=1d0
        lsderiv=.true.
 
        read(kin,nml=potential)
@@ -322,11 +321,11 @@ c .. External spin-orbit potential from fort.21
 !        write(*,*)maxval(nint(qjc)),maxval(nint(qjc)),
 !     &maxval(cindex),maxval(cindex)
 !        allocate(vtran(maxval(cindex),maxval(cindex),0:maxlamb,nr))
-        allocate(vtran(maxcore,maxcore,0:maxlamb,nr))
+        allocate(vtran(maxcore,maxcore,0:maxlamb,nr,2))
         allocate(rvecp(np),vvec(np,1))
         rvecp(:)=0d0
         vvec(:,1)=0d0
-        vtran(:,:,:,:)=0d0
+        vtran(:,:,:,:,:)=0d0
         do iv=1,nv
         read(30,*)jci,jcf,ici,icf,l
 
@@ -335,13 +334,15 @@ c .. External spin-orbit potential from fort.21
         enddo
         do ir=1,nr
 !        if (rvecp(np).gt.rvec(ir)) then
-        vtran(ici,icf,l,ir)=vtran(ici,icf,l,ir)+
-     &fival(rvec(ir),rvecp(:),vvec(:,1),np,alpha)*pfact(iv)*pgfact  
+        DO P=1,2
+        vtran(ici,icf,l,ir,p)=vtran(ici,icf,l,ir,p)+
+     &fival(rvec(ir),rvecp(:),vvec(:,1),np,alpha)*pfact(iv)*pgfact(P)
+        ENDDO
 
-        write(31,*)rvec(ir),vtran(ici,icf,l,ir)
+        write(31,*)rvec(ir),vtran(ici,icf,l,ir,1),vtran(ici,icf,l,ir,2)
 
         enddo
-        vtran(icf,ici,l,:)=vtran(ici,icf,l,:)             !symmetric potentials
+        vtran(icf,ici,l,:,:)=vtran(ici,icf,l,:,:)             !symmetric potentials
 
         write(31,*)'& '
         read(30,*)         !separation between different potentials, all in fort.30
@@ -610,12 +611,13 @@ c add monopole to previous potential
            write(23,'(12f10.4)')rvec(ir),(vlcoup(3,l,ir),l=0,maxl)
          endif
       else
-         write(20,'(12f10.4)')rvec(ir),vtran(1,1,0,ir)
+         write(20,'(12f10.4)')rvec(ir),vtran(1,1,0,ir,1)
+     &,vtran(1,1,0,ir,2)
          write(21,'(12f10.4)')rvec(ir),vls(ir)
-         write(22,'(12f10.4)')rvec(ir),vtran(2,1,2,ir)
-     &,vtran(1,2,2,ir)      
-         write(23,'(12f10.4)')rvec(ir),vtran(2,2,0,ir)
-     &,vtran(2,2,2,ir)      
+         write(22,'(12f10.4)')rvec(ir),vtran(2,1,2,ir,1)
+     &,vtran(1,2,2,ir,1),vtran(2,1,2,ir,2),vtran(1,2,2,ir,2)
+         write(23,'(12f10.4)')rvec(ir),vtran(2,2,0,ir,1)
+     &,vtran(2,2,2,ir,1),vtran(2,2,0,ir,2),vtran(2,2,2,ir,2)
       endif
       enddo
       endif
