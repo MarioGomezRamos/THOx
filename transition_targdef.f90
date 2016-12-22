@@ -516,6 +516,7 @@ c ---------------------------------------------------------
       id1=idx(m,ie1)
       do ie2=1,jpiset(n)%nex ! np(n)
       id2=idx(n,ie2)
+      if ((m.eq.n).and.(ie2.lt.ie1)) cycle
       nff=nff+1 !number of FF
       do irad2=1,nrad2
 	do ik=1,NK
@@ -756,8 +757,8 @@ c for fresco
       fauxc=Fc(mproj1,mproj2,lc,irad)*rmelc
       fauxn=Fn(mproj1,mproj2,lc,irad)*rmeln  
       else
-      fauxc=Fc(mproj2,mproj1,lc,irad)*rmelc*(-1d0)*(xjp1-xjp2+jti-jtf)   !Factor for inversion
-      fauxn=Fn(mproj2,mproj1,lc,irad)*rmeln*(-1d0)*(xjp1-xjp2+jti-jtf)   !Factor for inversion
+      fauxc=Fc(mproj2,mproj1,lc,irad)*rmelc*(-1d0)**(xjp1-xjp2+jti-jtf)
+      fauxn=Fn(mproj2,mproj1,lc,irad)*rmeln*(-1d0)**(xjp1-xjp2+jti-jtf) 
       endif
  
 !      fauxn=0d0
@@ -777,7 +778,11 @@ c for fresco
 !      write(440,*) 'm1',m1,'m2',m2,'xlc',nint(xlc),'xlcp',xlcp,'Q',nq,
 !     & 'rmeln',rmeln,'rmelc',rmelc
 c Extrapolate Coulomb formactors from R=Rmax to Rextrap
+      if (mproj1.le.mproj2) then     
       fauxc=fauxc/rmelc
+      else
+      fauxc=fauxc/rmelc*(-1d0)**(xjp1-xjp2+jti-jtf)
+      endif
       if (rextrap.gt.rmax) then
       caux=real(fauxc)*rmax**(xlc+1) 
       do ir=nrad2+1,nrad3
@@ -791,7 +796,7 @@ c Extrapolate Coulomb formactors from R=Rmax to Rextrap
       if (writeff) write(kfr,'(2x,1g16.10,2x,1g16.10)')fauxc*rmelc      
       else
       if (writeff) write(kfr,'(2x,1g16.10,2x,1g16.10)')fauxc*rmelc*     !Factor for inversion
-     & (-1d0)*(xjp1-xjp2+jti-jtf)  
+     & (-1d0)**(xjp1-xjp2+jti-jtf)  
       endif
       if (verb.ge.4) write(120,'(1x,1f8.3,2x,2g16.8)')r2,
      & fauxc*rmelc

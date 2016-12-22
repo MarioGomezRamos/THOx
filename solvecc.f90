@@ -1015,7 +1015,7 @@ c     ...............................................................
 !          write(*,*)'[(',lri,',',jpi,')',jlpi,',',jti,']',Jtot
 !          write(*,*)'[(',lrf,',',jpf,')',jlpf,',',jtf,']',Jtot
 !        endif
-        phc=(0d0,1d0)**(lrf-lri)
+        phc=(0d0,1d0)**(lri-lrf)
         ix=ix+1
 !      endif
       if (verb.ge.4) then     
