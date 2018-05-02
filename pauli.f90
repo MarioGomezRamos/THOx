@@ -244,13 +244,13 @@ c     P=Sum |forbidden> < forbidden|
           r=rvec(ir)
           un=wfaux(n,ir)*r
           um=wfaux2(m,ir)*r
-	   up=wfpau(ir)*r
+	  up=wfpau(ir)*r
           fpaux(ir)=fpaux(ir)+un*up ! <n|p>
-	   gpaux(ir)=gpaux(ir)+um*up ! <p|m>
+	  gpaux(ir)=gpaux(ir)+um*up ! <p|m>
          enddo !ir
 !         endif
 	 call sim(fpaux,res1,1,nr,dr,nr)
-        call sim(gpaux,res2,1,nr,dr,nr)
+         call sim(gpaux,res2,1,nr,dr,nr)
 !!!!!! TEST PAULI HINDRANCE
 !	 ppauli(ni,nf)=ppauli(ni,nf)+res1*res2
         paux=paux+res1*res2

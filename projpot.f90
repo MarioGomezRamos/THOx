@@ -22,8 +22,8 @@ c
        use wfs, only:rvec,nr,rmin,rmax,dr
        use parameters, only: maxl,maxcore!,maxchan
        implicit none
-       logical:: lsderiv
-       integer kin,ir,ith,ncomp,mmultipole,l
+       logical:: lsderiv,uu
+       integer kin,ir,ith,ncomp,mmultipole,l,p
        parameter(mmultipole=4) !!better in a module???
        real*8:: alpha,fival
        parameter(alpha=0.)
@@ -35,20 +35,20 @@ c
        integer np,nv,iv
        real*8, allocatable:: rvecp(:),vvec(:,:)
        integer jci,jcf,ici,icf
-       real*8:: pfact(10),pgfact
+       real*8:: pfact(10),pgfact(2)
        real*8 :: vcp(0:maxl,nr), vc(0:maxl,nr)
        real*8 :: vcaux(nr),v0,v02
        character*15::potname
        real*8:: ap,at             ! masses for radius conversion
        real*8:: R0,A0        ! central WS
-       real*8:: Vso,rso,aso       ! spin-orbit for valence
-       real*8:: Vsoc,rsoc,asoc       ! spin-orbit for core
+       real*8:: Vso(0:10),rso,aso       ! spin-orbit for valence MGR
+       real*8:: Vsoc(0:10),rsoc,asoc       ! spin-orbit for core !MGR
        real*8:: Vss0(0:10),rss,ass       ! spin-spin
-       real*8:: Vll0,rll,all       ! l.l
+       real*8:: Vll0(0:10),rll,all       ! l.l !MGR
        real*8:: rc0               ! charge radius
        real*8:: rcp0
        real*8:: p0,acp !coupling
-       real*8:: vl0(0:10),vcp0(0:10)
+       real*8:: vl0(0:10),vcp0(0:10),normr(0:10)
        real*8:: th(40),wth(40)       
        real*8::fvol
        real*8:: vg1,rg1
@@ -63,7 +63,7 @@ c
      & Vll0, rll,all,          !l.l
      & cptype,lpot,beta,delta,Vcp0,rcp0,acp,
      & np,nv,pfact,pgfact,
-     & kband, lambda,pcmodel
+     & kband, lambda,pcmodel,normr
 
        pcmodel=0
        delta=0d0
@@ -71,28 +71,46 @@ c
        cptype=0
        ncomp=0 !number of potential components
        laminc(:)=.false.
+
+		if (.not.allocated(vcl)) then
+	  allocate(
+     &    vcl(0:maxl,1:nr),     ! central, l-dependent
+     &    vls(0:maxl,1:nr),            ! spin-orbit for valence MGR
+     &    vlsc(0:maxl,1:nr),           ! spin-orbit for core MGR
+     &    vss(0:maxl,1:nr),     ! spin-spin
+     &    vll(0:maxl,1:nr),            ! l.l MGR
+     &    vlcoup(0:maxlamb,0:maxl,1:nr),  ! coupling
+     &    vcou(1:nr))           ! Coulomb monopole
+
+          vcl(:,:)=0d0; vls(:,:)=0d0; vss(:,:)=0d0; vlsc(:,:)=0d0!MGR
+          vcou(:)=0d0; vcaux(:)=0d0; vlcoup(:,:,:)=0d0;vll(:,:)=0d0!MGR
+        endif
+
+       vcp(:,:)=0d0
+
 100    V0=0; vl0(:)=0d0; r0=0d0; a0=0d0; 
-       Vso=0d0; rso=0d0; aso=0d0; rc0=0d0
-       Vsoc=0; rsoc=0; rsoc=0
-       Vcp0(:)=0d0; rcp0=0d0; acp=0d0
-       Vss0=0d0; rss=0d0; ass=0d0
-       Vll0=0d0; rll=0d0; all=0d0
+       Vso(:)=0d0; rso=0d0; aso=0d0; rc0=0d0!MGR
+       Vsoc(:)=0; rsoc=0; rsoc=0!MGR
+       Vcp0(:)=0d0; rcp0=0d0; acp=0d0!MGR
+       Vss0(:)=0d0; rss=0d0; ass=0d0!MGR
+       Vll0(:)=0d0; rll=0d0; all=0d0!MGR
        vcp(:,:)=0d0
        ap=0
        at=1
+       if (cptype.ne.5) cptype=0
+       normr(:)=1.
+       delta=0d0
+       beta=0d0
 
        lambda=2 
        kband=0
 !       maxlamb=4
        written(40)=.false.
        pfact(:)=1d0
-       pgfact=1d0
+       pgfact(:)=1d0
        lsderiv=.true.
 
        read(kin,nml=potential)
-!	if (Vss0.ne.0) then 
-!          write(*,*)'Vss=', Vss0
-!	endif
        A13=Ap**.33333333 + At**.33333333
        rabs=r0*a13
        if (delta.eq.0d0) delta=beta*rabs
@@ -113,8 +131,26 @@ c
        write(*,118) Rc0*a13
  118   format(3x,'COULOMB     : uniform charged sphere with Rc=',
      &        1f6.3,' fm')
-
-
+!MGR--------------------------------------------------------------------
+!In case the l dependence is ignored, take the given potential for all l
+      if ((abs(Vso(0)).gt.0d0).and.(sum(abs(Vso(1:10))).lt.1e-12)) then
+        do l=1,10
+        Vso(l)=Vso(0)
+        enddo
+      endif
+      
+      if ((abs(Vsoc(0)).gt.0d0).and.(sum(abs(Vsoc(1:10))).lt.1e-12))then
+        do l=1,10
+        Vsoc(l)=Vsoc(0)
+        enddo
+      endif
+      
+      if((abs(Vll0(0)).gt.0d0).and.(sum(abs(Vll0(1:10))).lt.1e-12)) then
+        do l=1,10
+        Vll0(l)=Vll0(0)
+        enddo
+      endif
+!MGR--------------------------------------------------------------------
        if (abs(vl0(0))>0d0) v0=vl0(0)
        write(*,'(3x,"NUCLEAR part:",$)')
        select case(ptype) 
@@ -129,7 +165,8 @@ c ------------------------------------------------------
            write(potname,*) "Woods-Saxon"
 c ------------------------------------------------------          
            write(*,119) potname, Vl0(0:3),r0*a13,a0
-           if (abs(Vso).gt.0) write(*,122)Vso,rso*A13, aso
+           if (abs(maxval(Vso(0:3))).gt.0)write(*,122)Vso(0:3),
+     &      rso*A13,aso !MGR
 
  119       format(7x,'o ',a15,"V0(l=0-3)=(",4f8.3,') MeV, R0=',
      &           f5.2,' fm, ar=',f5.2,' fm ')
@@ -137,7 +174,7 @@ c ------------------------------------------------------
  120       format(7x,'o Central   : V0(l=0-3)=(',4f8.3,') MeV, R0=',
      &           f5.2,' fm, ar=',f5.2,' fm ')
 !     &           ' Rc=',f6.3,' fm ]')
- 122       format(7x,'o Spin-orbit: Vso=',1f8.3,' MeV, Rso=',f5.2,
+ 122       format(7x,'o Spin-orbit: Vso=(0:3)',4f8.3,' MeV, Rso=',f5.2, !MGR
      &           ' fm, aso=',f5.2,' fm ',/)
  124       format(7x,'o Spin-spin : Vss(l=0-3)=(',4f8.3,') MeV, Rss=',
      &          f5.2, ' fm, ass=',f5.2,' fm ',/)
@@ -156,7 +193,8 @@ c ------------------------------------------------------
              write(potname,*) "Gaussian"
              write(*,*)'type=3 => Gaussian'
              write(*,119) potname,Vl0(0:3),r0*a13,aso
-             if (abs(Vso).gt.0) write(*,122) Vso,rso*A13, aso
+         if (abs(maxval(Vso(0:3))).gt.0) write(*,122) Vso(0:3),
+     &    rso*A13, aso!MGR
              if (maxval(abs(Vss0)).gt.0) 
      &          write(*,124) Vss0(0:3),rss*A13, ass
 
@@ -168,8 +206,8 @@ c ------------------------------------------------------
         case(4) !  Externally read
 c ------------------------------------------------------
            write(*,*)'- type=4 => Read from fort.2x files'
-           write(*,153)np
-153        format(3x,i5,' points')
+           write(*,153)np, maxl
+153        format(3x,i5,' points for maxl=',i3)
 
 c ------------------------------------------------------
         case(5) !  Externally read
@@ -250,19 +288,7 @@ c ------------------------------------------------------
 	    
 
 ! ---------------------- END OF INFORMATIVE SECTION --------------------
-	if (.not.allocated(vcl)) then
-	  allocate(
-     &    vcl(0:maxl,1:nr),     ! central, l-dependent
-     &    vls(1:nr),            ! spin-orbit for valence
-     &    vlsc(1:nr),           ! spin-orbit for core
-     &    vss(0:maxl,1:nr),     ! spin-spin
-     &    vll(1:nr),            ! l.l
-     &    vlcoup(0:maxlamb,0:maxl,1:nr),  ! coupling
-     &    vcou(1:nr))           ! Coulomb monopole
 
-          vcl(:,:)=0d0; vls(:)=0d0; vss(:,:)=0d0; vlsc(:)=0d0
-          vcou(:)=0d0; vcaux(:)=0d0; vlcoup(:,:,:)=0d0
-        endif
 
 c .. Monopole Coulomb ... 
        Rc=Rc0*A13
@@ -275,31 +301,49 @@ c .. Monopole Coulomb ...
 
 c .. External potential from fort.20 
         if (ptype.eq.4) then
+        if (allocated(rvecp)) deallocate(rvecp) 
+        if (allocated(vvec))  deallocate(vvec)
         allocate(rvecp(np),vvec(np,0:maxl))
         rvecp(:)=0d0
         vvec(:,:)=0d0
         open(20)
-        open(21)       
-        open(22)
         do ir=1,np
-        read(20,'(12f10.4)')rvecp(ir),(vvec(ir,l),l=0,maxl)    !what happens if there is only a pot for all l's
+!        read(20,'(12f10.4)')rvecp(ir),(vvec(ir,l),l=0,maxl)    !what happens if there is only a pot for all l's    
+        read(20,*)rvecp(ir),(vvec(ir,l),l=0,maxl)    !what happens if there is only a pot for all l's    
+        if (ir.lt.20) print*,rvecp(ir),vvec(ir,0)   
         enddo
         do l=0,maxl
         do ir=1,nr
-        vcl(l,ir)=fival(rvec(ir),rvecp(:),vvec(:,l),np,alpha)  
+        vaux=fival(rvec(ir),rvecp(:),vvec(:,l),np,alpha)  
+!        write(*,*)rvec(ir),normr(l)*vaux
+        vcl(l,ir)=vcl(l,ir) + normr(l)*vaux
+        if (ir.eq.1)print*, 'norm,vaux=',normr(0),vaux
         enddo
         enddo
 c .. External spin-orbit potential from fort.21
+        uu = .false.
+        inquire(file="fort.21",exist=uu)
+        if (uu) then
+        open(21)       
         rvecp(:)=0d0
         vvec(:,:)=0d0
         do ir=1,np
         read(21,*)rvecp(ir),vvec(ir,1) 
         enddo
         do ir=1,nr
-        vls(ir)=fival(rvec(ir),rvecp(:),vvec(:,1),np,alpha)  
+        vls(0,ir)=fival(rvec(ir),rvecp(:),vvec(:,1),np,alpha) !MGR l-dependence not included here  
+         do l=1,maxl!MGR
+           vls(l,ir)=vls(0,ir)
+         enddo!MGR
         enddo
-
+        else
+           write(*,*)'No spin orbit component found'
+        endif
 !---------------------------------------read from fort.22 coupling potential
+        uu = .false.
+        inquire(file="fort.22",exist=uu)
+        if (uu) then
+        open(22)
         rvecp(:)=0d0
         vvec(:,:)=0d0
         do ir=1,np
@@ -310,6 +354,9 @@ c .. External spin-orbit potential from fort.21
         vlcoup(lambda,l,ir)=fival(rvec(ir),rvecp(:),vvec(:,l),np,alpha)   
         enddo
         enddo
+        else ! if file exists
+           write(*,*)'No coupling potential found'
+        endif
         endif
 !-----------------------------------------
 
@@ -322,11 +369,11 @@ c .. External spin-orbit potential from fort.21
 !        write(*,*)maxval(nint(qjc)),maxval(nint(qjc)),
 !     &maxval(cindex),maxval(cindex)
 !        allocate(vtran(maxval(cindex),maxval(cindex),0:maxlamb,nr))
-        allocate(vtran(maxcore,maxcore,0:maxlamb,nr))
+        allocate(vtran(maxcore,maxcore,0:maxlamb,nr,2))
         allocate(rvecp(np),vvec(np,1))
         rvecp(:)=0d0
         vvec(:,1)=0d0
-        vtran(:,:,:,:)=0d0
+        vtran(:,:,:,:,:)=0d0
         do iv=1,nv
         read(30,*)jci,jcf,ici,icf,l
 
@@ -335,32 +382,31 @@ c .. External spin-orbit potential from fort.21
         enddo
         do ir=1,nr
 !        if (rvecp(np).gt.rvec(ir)) then
-        vtran(ici,icf,l,ir)=vtran(ici,icf,l,ir)+
-     &fival(rvec(ir),rvecp(:),vvec(:,1),np,alpha)*pfact(iv)*pgfact  
+        DO P=1,2
+        vtran(ici,icf,l,ir,p)=vtran(ici,icf,l,ir,p)+
+     &fival(rvec(ir),rvecp(:),vvec(:,1),np,alpha)*pfact(iv)*pgfact(P)
+        ENDDO
 
-        write(31,*)rvec(ir),vtran(ici,icf,l,ir)
+        write(31,*)rvec(ir),vtran(ici,icf,l,ir,1),vtran(ici,icf,l,ir,2)
 
         enddo
-        vtran(icf,ici,l,:)=vtran(ici,icf,l,:)             !symmetric potentials
+        vtran(icf,ici,l,:,:)=vtran(ici,icf,l,:,:)             !symmetric potentials
 
         write(31,*)'& '
         read(30,*)         !separation between different potentials, all in fort.30
 
         enddo
         
-        write(*,*)'potentials read from fort.30: ok!'
+        write(*,*)'potentials read from fort.30: ok! cptype=',cptype
 !        do ir=1,nr
 !        write(400,*)rvec(ir),vtran(1,2,2,ir),vtran(2,1,2,ir)
 !        enddo
  
-        endif
+        endif ! ptype=5
 
-c ... Central and coupling formfactor ...
+c ... Central and deformed formfactor ...
         rcp=rcp0*a13 
         do l=0,maxl
-!        write(99,*)'v0(s)=',ncomp,vl0(l),vcp0(l)
-!        write(99,*)'rabs,a0',rabs,a0
-!        write(99,*)'rcp,acp',rcp,acp
         v0=vl0(l)
         v02=vcp0(l)
         if((abs(v0).lt.1e-6).and.(abs(v02).lt.1e-6)) cycle
@@ -372,8 +418,6 @@ c .. WS
            case(1)  ! WS type
 	     if (abs(v0).gt.1e-6) vaux=ws(r,v0,rabs,a0)
              if (abs(v02).gt.1e-6) vaux2=ws(r,v02,rcp,acp)
-!             if (ir.lt.5) write(99,*)'vaux=',r,v0,vaux
-!             if (ir.lt.5) write(99,*)'vaux2=',r,v02,vaux2
 c .. PT
            case(2) !  Posch-Teller
 	     vaux=pt(r,v0,a0)
@@ -384,89 +428,96 @@ c .. Gaussian
               if (abs(v02).gt.1e-6)vaux2=gausspot(r,v02,rcp*a13,acp)
 	   end select
 	    vc(l,ir)= vaux
+            if (ir.eq.1) 
+     &    print*,'adding central potential ptype,v=',ptype,vaux
            if (abs(v02).gt.1e-6) then
-              vcp(l,ir)=vaux2
+              vcp(l,ir)=vcp(l,ir)+ vaux2
            else
-              vcp(l,ir)=vaux
+              vcp(l,ir)=vcp(l,ir)+ vaux
            endif
          enddo !ir
        enddo !l
 
 c ... Spin-orbit for valence ....
-       if (abs(vso)>1e-5) then
+       do l=0,maxl !MGR
+       if ((abs(vso(l))).ge.1e-5) then!MGR       
        do ir=1,nr
          r=rvec(ir) 
          if (r.lt.1e-6) r=0.5*dr
          if (lsderiv) then  ! derivative form-factor
            select case(ptype)
            case(1,5)  ! WS type
-                vlsaux=wsso(r,vso,rso*a13,aso)		
+                vlsaux=wsso(r,vso(l),rso*a13,aso)!MGR		
 !            case(2) !  Posch-Teller
 !		vlsaux=pt(r,v0,a0)
            case(3) ! Gaussian 
- 	        vlsaux=gausder(r,vso,rso*a13,aso)
+ 	        vlsaux=gausder(r,vso(l),rso*a13,aso)!MGR
 	   end select
           else ! non-derivative
            select case(ptype)
            case(1)  ! WS type
-                vlsaux=ws(r,vso,rso*a13,aso)	
+                vlsaux=ws(r,vso(l),rso*a13,aso)	!MGR
            case(2) !  Posch-Teller
-		vlsaux=pt(r,vso,aso)
+		vlsaux=pt(r,vso(l),aso)
            case(3) ! Gaussian 
- 	        vlsaux=gausspot(r,vso,rso*a13,aso)
+ 	        vlsaux=gausspot(r,vso(l),rso*a13,aso)!MGR
 	   end select            
           endif
-	    vls(ir)=vls(ir)+vlsaux 
+	    vls(l,ir)=vls(l,ir)+vlsaux !MGR
         enddo !ir
         endif
-
+        enddo !l MGR
+        
 c ... Spin-orbit for core ...
-       if (abs(vsoc)>1e-5) then
+
+       do l=0,maxl!MGR
+       if (abs(vsoc(l))>1e-5) then !MGR
        do ir=1,nr
            r=rvec(ir) 
            if (r.lt.1e-6) r=0.5*dr
            if (lsderiv) then ! derivative formfactor
             select case(ptype)
             case(1)  ! WS type
-              vlsaux=wsso(r,vsoc,rsoc*a13,asoc)		
+              vlsaux=wsso(r,vsoc(l),rsoc*a13,asoc)		!MGR
 !            case(2) !  Posch-Teller
 !		vaux=pt(r,v0,a0)
             case(3) ! Gaussian 
- 	        vlsaux=gausder(r,vsoc,rsoc*a13,asoc)
+ 	        vlsaux=gausder(r,vsoc(l),rsoc*a13,asoc)!MGR
 	    end select
            else
             select case(ptype)
             case(1)  ! WS type
-              vlsaux=ws(r,vsoc,rsoc*a13,asoc)		
+              vlsaux=ws(r,vsoc(l),rsoc*a13,asoc)		!MGR
             case(2) !  Posch-Teller
 		vaux=pt(r,v0,asoc)
             case(3) ! Gaussian 
- 	        vlsaux=gausspot(r,vsoc,rsoc*a13,asoc)
+ 	        vlsaux=gausspot(r,vsoc(l),rsoc*a13,asoc)!MGR
 	    end select
            endif !derivative formfactor
 
-	    vlsc(ir)=vlsc(ir)+vlsaux 
+	    vlsc(l,ir)=vlsc(l,ir)+vlsaux !MGR
         enddo !ir
         endif
-
+        enddo !l MGR
 
 ! ...  l.l (only central!!!!)   ...
-       if (abs(vll0)>1e-5) then
+       do l=0,maxl!MGR
+       if (abs(vll0(l))>1e-5) then !MGR
        do ir=1,nr
            r=rvec(ir) 
            if (r.lt.1e-6) r=0.5*dr
             select case(ptype)
             case(1)  ! WS type
-              vllaux=ws(r,vll0,rll*a13,all)		
+              vllaux=ws(r,vll0(l),rll*a13,all)		!MGR
 !            case(2) !  Posch-Teller
 !		vaux=pt(r,v0,a0)
             case(3) ! Gaussian 
- 	        vaux=gausspot(r,vll0,rll*a13,all)
+ 	        vaux=gausspot(r,vll0(l),rll*a13,all)!MGR
 	    end select
-	    vll(ir)=vll(ir)+vllaux 
+	    vll(l,ir)=vll(l,ir)+vllaux !MGR 
         enddo !ir
         endif
-       
+        enddo !l MGR
 
 ! ...  spin.spin (sv.jc)  
        do l=0,maxl
@@ -491,7 +542,7 @@ c ... Spin-orbit for core ...
 
       
     
-c Coupling potential
+c Coupling (deformed) potential
        do l=0,maxl
 	if ((abs(vl0(l)).lt.1e-6).and.(abs(vcp0(l)).lt.1e-6)) cycle
         if (abs(vcp0(l)).lt.1e-5) then
@@ -509,16 +560,12 @@ c Coupling potential
         do ir=1,nr
         r=rvec(ir) 
         vcpaux=0.
+
+        
         select case(cptype)
              case(0) ! no coupling
-
+!                       write(*,*)'No coupling cptype=',cptype
              case(1) ! derivative formfactor
-!		 if (Vcp0(l).eq.0) then
-!		 vcpaux=-delta*dws(r,v0,rabs,a0)  
-!		 else
-!		 vcpaux=ws(r,Vcp0(l),rcp0*a13,acp)
-!	        endif
-!                write(0,*)'raux,aaux',raux,aaux
                 vcpaux=-delta*dws(r,v0,raux,aaux)  
 
              case(2,3) ! Numerical projection on multipoles
@@ -565,6 +612,10 @@ c Coupling potential
                  !HEEEEEEEEEEEEERRRREEEEEEEEEEEEE!!!!!!
 		end select
               vlcoup(lambda,l,ir)=vlcoup(lambda,l,ir)+vcpaux
+!             if (ir.eq.5)  
+!     &        write(99,'("l,ir,vcp(l,ir)=",2i3,5f12.6)') l,ir
+!     &        ,vlcoup(lambda,l,1:5) 
+
               enddo !ir
 !!!!  IMPORTANT!!!!
           if ((cptype.eq.3).and.(abs(vl0(l)).gt.1e-6)) then
@@ -578,7 +629,6 @@ c          write(*,*)'Monopole nuclear potential recalculated by quad!'
           endif
 c add monopole to previous potential
          if (abs(vl0(l)).gt.1e-6) then
-!           write(*,*)'adding monopole for l=',l
            vcl(l,:)=vcl(l,:)+vc(l,:)
          endif
          enddo !maxl
@@ -587,7 +637,14 @@ c add monopole to previous potential
 
 
 200   continue
-      if ((.not.written(40)).and.(verb.gt.0)) then
+
+! TEMP
+      do ir=1,nr
+         write(40,*)rvec(ir),vcl(0,ir) 
+      enddo
+
+
+      if ((.not.written(40)).and.(verb.ge.2)) then
          written(40)=.true.
         close(20)
         close(21)
@@ -596,11 +653,11 @@ c add monopole to previous potential
 !        write(22)'#Coupling potential'
       do ir=1,nr
          write(40,*)rvec(ir),vcou(ir),vcl(0,ir) 
-      if (cptype.ne.5) then
+      if ((cptype.ne.5).and.(ptype.ne.4)) then
          written(20)=.true.
-         
+
          write(20,'(12f10.4)')rvec(ir),(vcl(l,ir),l=0,maxl)
-         write(21,'(12f10.4)')rvec(ir),vls(ir)
+         write(21,'(12f10.4)')rvec(ir),(vls(l,ir),l=0,maxl)!MGR
          if (laminc(2)) then 
            written(22)=.true. 
            write(22,'(12f10.4)')rvec(ir),(vlcoup(2,l,ir),l=0,maxl)
@@ -610,12 +667,13 @@ c add monopole to previous potential
            write(23,'(12f10.4)')rvec(ir),(vlcoup(3,l,ir),l=0,maxl)
          endif
       else
-         write(20,'(12f10.4)')rvec(ir),vtran(1,1,0,ir)
-         write(21,'(12f10.4)')rvec(ir),vls(ir)
-         write(22,'(12f10.4)')rvec(ir),vtran(2,1,2,ir)
-     &,vtran(1,2,2,ir)      
-         write(23,'(12f10.4)')rvec(ir),vtran(2,2,0,ir)
-     &,vtran(2,2,2,ir)      
+         write(20,'(12f10.4)')rvec(ir),vtran(1,1,0,ir,1)
+     &,vtran(1,1,0,ir,2)
+         write(21,'(12f10.4)')rvec(ir),(vls(l,ir),l=0,maxl)!MGR
+         write(22,'(12f10.4)')rvec(ir),vtran(2,1,2,ir,1)
+     &,vtran(1,2,2,ir,1),vtran(2,1,2,ir,2),vtran(1,2,2,ir,2)
+         write(23,'(12f10.4)')rvec(ir),vtran(2,2,0,ir,1)
+     &,vtran(2,2,2,ir,1),vtran(2,2,0,ir,2),vtran(2,2,2,ir,2)
       endif
       enddo
       endif

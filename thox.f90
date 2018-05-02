@@ -1,6 +1,6 @@
-c Calculates THO functions for a two-body system (core+valence) with core excitation
+c THOx: A CDCC code with core and target excitations 
 c
-c by JA Lay and AM Moro (2011)
+c by A.M. Moro, J.A. Lay, M.Gomez-Ramos, R. de Diego (2011-2016)
 c
 
 c v1.1 adding B(Elambda) 8/7/11
@@ -23,7 +23,7 @@ c                  for (X)CDCC calculations, using DCE subroutine
 c v2.2e Problems with reading fort.30 potentials solved, continue to read core+target potentials
 c v2.3 AMM: CC bins included for the first time!
 c           Change input ordering 
-
+c v2.4 AMM: 3-body observables with CC bins implemented
       program thox
       use globals
       use sistema
@@ -42,11 +42,12 @@ c           Change input ordering
      
       parameter (eps=1e-6)
 
-      logical fail3,checkorth,ifphase,dummy,tres
+      logical fail3,checkorth,ifphase,dummy,tres,realcc
       integer:: nfmax,mlst
       real*8 ::  lambda,r,norm
       integer :: al
       CHARACTER*1 BLANK,PSIGN(3)
+      character*40 filename
       integer :: nset,nho, nchsp
 
 !!! TEST 
@@ -56,7 +57,8 @@ c           Change input ordering
 
 c Input namelists -------------------------
       namelist/system/ Zc,Ac,Zv,Av,egs,sn
-      namelist/output/ wfout,checkorth,verb,ifphase,solapout,xcdcc
+      namelist/output/ wfout,checkorth,verb,ifphase,solapout,xcdcc,
+     &                 cdccwf
 
       DATA PSIGN / '-','?','+' /, BLANK / ' ' /
       
@@ -83,7 +85,8 @@ c Input namelists -------------------------
 
       interface 
         subroutine cfival(lrf,lfv,gaux,nlf,alpha)
-        real*8 lrf,lfv(:),gaux(:),alpha
+        real*8 lrf,lfv(:),alpha
+        complex*16:: gaux(:)
         integer nlf
         end subroutine
       end interface
@@ -96,13 +99,15 @@ c Input namelists -------------------------
         end subroutine
       end interface 
       
+
+
       interface
         subroutine wfrange(iset,nchan,inc,emin,emax,
-     &             ncont,energy,wfcont)
+     &             ncont,energy,wfcont,smate,psh)
         integer :: iset,nchan,inc,ncont
         logical :: energy
-        complex*16 :: wfcont(:,:,:)
-        real*8 emin,emax 
+        complex*16 :: wfcont(:,:,:),smate(:,:)
+        real*8 emin,emax,psh(:)
         end subroutine
       end interface
 c     ------------------------------------------------------------
@@ -112,7 +117,7 @@ c     ------------------------------------------------------------
 c *** Defined global constants
       call initialize() 
       write(*,'(50("*"))')
-      write(*,'(" ***",8x,"THOx+DCE+CC code: version 2.3",8x, "***")')
+      write(*,'(" ***",8x,"THOx+DCE+CC code: version 2.4",8x, "***")')
       write(*,'(50("*"),/)')
 
 c *** Print physical constants
@@ -128,7 +133,7 @@ c *** Calculate memory sizes for memory allocation
       call memory_sizes()
 
 c *** Calculate & store factorials
-      call factorialgen(100) 
+      call factorialgen(1000) 
 
 c *** Read main input
       kin=5
@@ -158,6 +163,7 @@ c *** Output trace
       ifphase=.false.
       wfout(:)=0
       solapout(:)=0
+      cdccwf=.false.
       read(*,nml=output)
       do i=1,10
        if (wfout(i)>0) wfprint(wfout(i))=.true.
@@ -172,9 +178,13 @@ c *** Read potential parameters
 c Pauli-forbidden states to be removed
       call pauli_forbidden(kin)
 
-      do nset=1,jpsets
+      do iset=1,inpsets
       dummy=.false.
-      call read_jpiset(nset,bastype,nk,tres,ehat)
+      nset=iset
+!      nset=indjset(iset)
+      print*,'iset,nset=',iset,nset
+!      call read_jpiset(iset,bastype,nk,tres,ehat,filename)
+      call read_jpiset(nset,bastype,nk,tres,ehat,filename)
 
       jtot    =jpiset(nset)%jtot
       partot  =jpiset(nset)%partot
@@ -205,14 +215,21 @@ c *** Check orthonormality
 c *** Overlap between THO and scattering wfs
         call solap
 c *** ------------------------------------------------------------
-      case(2) ! Bins   
+      case(2,3,4) ! Bins   
         call makebins(nset,nk,tres,ehat)
+
+c *** ------------------------------------------------------------
+      case(5) ! External   
+       call readwfs(filename,nset,nchan)
+
       end select 
       
       enddo ! loop on j/pi sets
 
-c *** Continuum WFS
+c *** Continuum WFS (scatwf namelist)
 !      call continuum!(nchan)
+      call continuum_range
+
 
 c *** B(E;lambda)      
       call belam ! (kin,jtot,partot)
@@ -237,7 +254,15 @@ c *** Define reaction (projectile, target, energy)
       call partition()
 
 c *** Coupling potentials (includes DCE routines)
+      if (.not. targdef) then
+      write(*,'(5x,a)') 
+     & '[using transition subroutine for spin-zero target]'
       call transition 
+      else
+      write(*,'(5x,a)') '[using transition_targdef subroutine 
+     & with target excitation]'
+      call transition_targdef
+      endif
 
 c *** Build & solve CDCC equations
       iexgs=1 !assume that the incident channel is the first state!!!!
@@ -245,7 +270,12 @@ c *** Build & solve CDCC equations
       call cdcc(iexgs,ncc)
 
 c *** Scattering amplitudes and cross sections
+      if (.not. targdef) then
       call xsecs(kin,ncc,iexgs)
+      else
+      call xsecs_tdef(kin,ncc,iexgs)
+      endif
+      
 
 !      tripple=.true.
 !      if (tripple) call three_body()
@@ -265,14 +295,68 @@ c *** ----------------------------------------
       use sistema
       use globals, only: kin
       use constants
+      use channels, only: tset,targdef
       implicit none
-      real*8 :: ecmi,mupt,conv,etai,kcmi,jt
-
-      namelist /reaction/ elab,namep,namet,mp,mt,zt,jt
+      integer par,itex,part,nphon,inc,notgdef
+      real*8 :: ecmi,mupt,conv,etai,kcmi,It,et,jt,K !MGR
+      character*1::pchar !MGR
+      character*5:: jpi
+      namelist /reaction/ elab,namep,namet,mp,mt,zt,jt,par,ntex,nphon,
+     & K,notgdef !MGR
+      namelist /targstates/ et,It,part,nphon,K,inc !MGR
 c           
       write(*,'(//,5x,"******  REACTION CALCULATION ******")')
       jt=0.0; zt=0.0; mt=0.0 
+      ntex=0; nphon=0; K=0; inc=0;par=1 !MGR
+      targdef=.false.                   !MGR
+      notgdef=0                         !MGR
+      
       read(kin,nml=reaction)
+!MGR--------------------------------------------------------------------
+      jtgs=jt
+      partgs=par
+      if (abs(jt).gt.0.2d0) targdef=.true.
+      if(ntex.le.0) then
+        allocate(tset(1))
+        tset(:)%Krot=0d0
+        tset(1)%partarg=par
+        tset(1)%jtarg=jt
+        tset(1)%extarg=0d0
+        tset(1)%Krot=K
+        tset(1)%nphonon=nphon
+        tset(1)%inc=1
+      else
+        allocate(tset(ntex+1))
+        tset(:)%Krot=0d0
+        tset(1)%partarg=par
+        tset(1)%jtarg=jt
+        tset(1)%extarg=0d0
+        tset(1)%Krot=K
+        tset(1)%nphonon=nphon
+        tset(1)%inc=1
+        targdef=.true.
+      endif
+      
+      if (ntex.gt.0) then
+        do itex=1,ntex
+          nphon=0; K=0; inc=0
+          read(kin,nml=targstates)
+          tset(itex+1)%partarg=part
+          tset(itex+1)%jtarg=It
+          tset(itex+1)%extarg=et
+          tset(itex+1)%Krot=K
+          tset(itex+1)%nphonon=nphon
+          tset(itex+1)%inc=inc
+          if (inc.ne.0) then
+             tset(1)%inc=0 !Not fully implemented BEWARE
+          endif
+        enddo
+      endif
+      
+      if (notgdef.gt.0) targdef=.false.
+      
+
+!_----------------------------------------      
 
       ecmi=elab*mt/(mp+mt)
       mupt=mp*mt/(mp+mt)*amu
@@ -280,7 +364,6 @@ c
       conv=(2*mupt/hc**2)
       etai=conv*zp*zt*e2/kcmi/2.
       zp  =zc+zv 
-      jtgs=jt
       if ((zp.lt.0).or.(zt.lt.0)) then 
           write(*,*)'Projectile or target charge not specified!'
           stop
@@ -290,6 +373,18 @@ c
 340   format(/,5x,"Projectile: Mass=",1f8.3," amu   Z=",1f6.1,3x,
      & /      ,5x,"Target:     Mass=",1f8.3," amu   Z=",1f6.1,/)
 !     & /,"Reduced mass"," mu=",f8.3, ")
+
+      write(*,'(5x,"Nb. of target states:",i3)') ntex+1
+      do itex=1,ntex+1
+      if (tset(itex)%partarg.eq.1) pchar='+'
+      if (tset(itex)%partarg.eq.-1) pchar='-'
+      write(*,'(5x,"o state #",i3,3x, "J/pi=",a5,3x, "Ex=",1f6.3)')
+     &  itex, 
+     & jpi(tset(itex)%jtarg,tset(itex)%partarg),tset(itex)%extarg
+!      write(*,*) 'State #',itex,': J/pi',tset(itex)%jtarg,pchar,
+!     & ' E:',tset(itex)%extarg
+      enddo
+
       end subroutine
 
 
@@ -297,7 +392,7 @@ c
       use memory
       write(*,*)''
       write(*,*)'Timings:'
-      write(*,*)' CC integration :',tcc,  ' secs'
+      if (tcc.gt.1e-4) write(*,*)' CC integration :',tcc,  ' secs'
       if (tzfun.gt.1e-4) write(*,*)' Calculation of zfun:',tzfun,' secs'
       if (torto.gt.1e-4) write(*,*)' Stabilization:',torto,' secs'
       if (tcsh.gt.1e-4) write(*,*)' Cosh :',tcsh,' secs'
@@ -330,51 +425,69 @@ c Pre-read input to set dimensions
 c
       subroutine preread(kin)
       use channels 
-      use parameters, only: maxl
+      use parameters, only: maxl,maxeset,maxchan
+      use xcdcc, only: realwf
+      use wfs, only: energ,wfc,nr
 !      use potentials, only: vl0,vcp0
       implicit none
-      logical :: tres,ehat
-      integer::l,bastype,mlst,kin
+      logical :: tres,ehat,merge
+      integer::l,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
-      real*8:: jn,exmin,exmax,jtold
-      real*8:: bosc,gamma
+      real*8:: jn,exmin,exmax,jtold,rmin,rmax,dr,rlast,rint
+      real*8:: bosc,gamma,kband,wcut(1:maxchan)
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
-      
-      
+      character*40 filewf
+
+      namelist /grid/ ng, rmin,rmax,dr,rlast,rint
+            
       namelist/jpset/ jtot,parity,lmax,
      &                bastype,nfmax,exmin,exmax,
      &                nho,bosc,     ! HO
      &                gamma,mlst,   !THO Amos 
      &                nsp,  ! sp eigenvalues to keep for full diag
      &                bas2,
-     &                nk, nbins,inc,tres,ehat
+     &                nk, nbins,inc,tres,ehat,filewf,wcut,merge
 
       
-      jpsets=0
+      jpsets=0; inpsets=0
       maxl=0
+      realwf=.true.
+      merge=.false.
+
+      read(kin,nml=grid)
+      if (dr>0) then
+           nr=ceiling((rmax-rmin)/dr)+1
+      endif
       
 300   bastype=-1    
       tres=.false.
       inc=1
       read(kin,nml=jpset) 
       if (bastype.lt.0) goto 350
-      jpsets=jpsets+1
-      if (jpsets.eq.1) then
+!      if (bastype.eq.2) realwf=.false. ! complex bins
+      inpsets=inpsets+1
+      if (inpsets.eq.1) then
          jtold=jtot
          parold =parity
          basold=bastype
          incold=inc
+         indjset(inpsets)=1
+         jpsets=1
       else
          if ((jtold.eq.jtot).and.(parity.eq.parold).and.
-     x   (bastype.eq.basold).and.(inc.eq.incold)) then
-         write(0,*)'Set',jpsets,' lecould be merged to previous one!'
+     x     (bastype.eq.basold).and.(inc.eq.incold)) then
+            write(0,*)'Set',jpsets,' could be merged with previous one!'
+            jpsets=jpsets+1 ! temporary
          else
-         jtold=jtot
-         parold=parity
-         basold=bastype
-         incold=inc
+           jpsets=jpsets+1
+           jtold=jtot
+           parold=parity
+           basold=bastype
+           incold=inc
          endif
+         indjset(inpsets)=jpsets
+         print*,'jpsets,inpsets=',jpsets,inpsets
       endif
       if (lmax.gt.maxl) maxl=lmax
       goto 300 
@@ -388,7 +501,7 @@ c
         return
       endif 
       write(*,*)' Dimensions for memory allocation'
-      write(*,*)'   o J/pi sets:', jpsets
+      write(*,*)'   o J/pi sets:', inpsets,' merged into', jpsets
       write(*,*)'   o Maximum internal l:', maxl
 
       write(*,*)''
@@ -396,6 +509,15 @@ c
 
       allocate(jpiset(jpsets)) ! sets, chans/set
       allocate(spchan(jpsets,maxchan))
+
+      if (.not.allocated(wfc)) then
+        write(*,*)'allocate wfc:',maxeset,maxchan,nr
+        nchmax=0
+        allocate(wfc(jpsets,maxeset,maxchan,nr))
+        allocate(energ(jpsets,maxeset))
+      endif
+
+
       rewind(kin)
       end subroutine
 
@@ -408,11 +530,11 @@ c ***
        implicit none
        integer:: kin
        integer:: nph,parity
-       real*8 :: spin,ex
+       real*8 :: spin,ex,kband
        character*1 BLANK,PSIGN(3)      
        DATA PSIGN / '-','?','+' /, BLANK / ' ' /
 
-       namelist /corestates/ spin,parity,ex,nph
+       namelist /corestates/ spin,parity,ex,nph,kband
 
 
        nce=0 ! number of core states
@@ -420,6 +542,7 @@ c ***
 50     ex=-100.
        parity=0
        nph=0
+       kband=0
        read(kin,nml=corestates) 
        if (ex<-99) goto 100
        nce=nce+1   
@@ -434,6 +557,7 @@ c new derived variable
        qnc(nce)%parc = parity
        qnc(nce)%exc  = ex
        qnc(nce)%nphon= nph
+       qnc(nce)%kband= kband
 
        write(*,230) nce,spin,psign(parity+2),ex
 230    format(5x,"#",i2,": J/pi=",f4.1,a1,3x,'Ex=',f5.2,' MeV')
@@ -502,8 +626,12 @@ c           enddo
              write(*,170) nr, rmin,rmax,dr
 170     format(1x,"- Using uniform grid with ",i4, ' points:',
      &           2x,"[ Rmin=",1f6.3,2x," Rmax=",
-     &           1f6.1,1x," Step=",1f6.3, " fm ]",//)
-         if (rint>0) write(0,*)'rint=',rint,' fm'
+     &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
+         if ((rint>0).and.(rint.gt.rmax)) then
+          write(*,172)rint, rmax
+172       format(1x,"[ WFS calculated up to",1f6.1,
+     & " fm and extrapolated up to ", 1f6.1," fm ]",//)
+         endif
 	endif
        end subroutine 
 
