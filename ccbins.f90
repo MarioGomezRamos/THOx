@@ -7,23 +7,26 @@ c     Construct continuum single or multi-channel bins
       use channels, only: jpiset,jpsets,nchmax,ql
       use parameters, only: maxchan,maxeset
       use potentials, only: ccmat
-      use xcdcc, only: binset
+      use xcdcc, only: binset,realwf
+      use nmrv, only : nopen
       implicit none
 c     ----------------------------------------------
       logical :: energy,tres,debug,ifhat
-      integer :: iset,inc,nbins,nchan,ib,ich,ik,ir,nk
+      integer, parameter:: kfr=20
+      integer :: iset,inc,nbins,nchan,ib,ibp,ich,ik,ir,nk
+      integer :: bastype,wftype
+c     .....................................................
       real*8  :: emin,emax,ei,ef,ebin,excore,ehat,khatsq
       real*8  :: r,bnorm,raux,r2aux,bcoef,chnorm(maxchan),rms
-      real*8  :: ddk,ki,kf,kmin,kmax,kstep,kmid,k
+      real*8  :: ddk,ki,kf,kmin,kmax,kstep,kmid,k,li
       real*8  :: psh_el(nk),deltap, deladd,deltai
-      real*8  :: fconv,yint
-
+      real*8  :: fconv,yint,faux(nk)
       complex*16, parameter::iu=(0.,1.)
       complex*16,allocatable,target:: wfcont(:,:,:)
       complex*16,pointer       :: wfbin(:)
-      complex*16 :: smate(nk,maxchan),tfac,yfac
+      complex*16 :: smate(nk,maxchan),tfac,yfac,caux
       CHARACTER(LEN=80) formato
-c  bincc variables
+c  bincc variables (Fresco)
       logical tdel,tkmat,tknrm,bincc
       integer:: nf   ! number of formfactors?
       integer:: isc,il,pcon,lmax
@@ -36,19 +39,33 @@ c  end bincc
 c *** ----------------------------------------------
       fconv=hc**2/2/mu12 ! E=fconv*k^2
 
-c *** TEMP
+c *** Initialize some variables ***********
       energy=.false.
       debug=.false.
       bincc=.false.
-c *** 
+      if (bastype.eq.4) then
+        realwf=.true.
+        bcoef=1.0
+      else
+       bcoef=sqrt(2./pi)
+      endif
+      if (debug) open(kfr,file='wfbin.fr')
+c *** ------------------------------------
 
-      emin  =jpiset(iset)%exmin
-      emax  =jpiset(iset)%exmax
-      inc   =jpiset(iset)%inc
-      nbins =jpiset(iset)%nex
-      nchan =jpiset(iset)%nchan
-      excore=jpiset(iset)%exc(inc)
-      
+      emin    =jpiset(iset)%exmin
+      emax    =jpiset(iset)%exmax
+      inc     =jpiset(iset)%inc
+      nbins   =jpiset(iset)%nex
+      nchan   =jpiset(iset)%nchan
+      excore  =jpiset(iset)%exc(inc)
+      bastype =jpiset(iset)%bastype
+
+c *** Multichannel (complex) bins
+      if ((bastype.eq.2).and.(nchan.gt.1)) then 
+         realwf=.false.
+         write(*,*)' Assuming complex bins -> non-symmetric Hamiltonian' 
+      endif
+
       if (inc.gt.nchan) then
         write(*,*)'inc=',inc,'but only',nchan,' in this j/pi set'
       endif
@@ -93,8 +110,6 @@ c *** We need to allocate this only for the first j/pi set
       bnorm=0.
       ki=kmin+(ib-1.)*kstep
       kf=ki+kstep
-!      bcoef=sqrt(2./pi/(kf-ki))
-      bcoef=sqrt(2./pi)
       ddk=(kf-ki)/(nk-1)   !!!! CHECK!!!!!!!!!!!!
       kmid=(kf+ki)/2.
       ei=fconv*ki**2
@@ -131,6 +146,11 @@ c < phi |H | phi>
       IF (.NOT.BINCC) THEN 
       call wfrange(iset,nchan,inc,ei,ef,nk,energy,wfcont,smate,psh_el)
 
+      if (bastype.eq.4) then ! Real multichannel WFS (Skip Phase-shift calculation)
+       write(*,*)'makebins: nopen=',nopen 
+   
+      endif
+
 c make phase-shifts continuous (not really needed for different bins!)
       deltai=psh_el(1)
       if (ib.eq.1) then
@@ -165,21 +185,46 @@ c k-average
       yint=0.
       do ik=1,nk
       k=ki+(ik-1)*ddk
-      yfac=exp(-iu*psh_el(ik)*pi/180.)
-      tfac=(smate(ik,inc)-1.)/(0.,2.)
-      if (tres) yfac=conjg(tfac)
+c1      yfac=exp(-iu*psh_el(ik)*pi/180.) ! NEW
+c1     tfac=(smate(ik,inc)-1.)/(0.,2.) ! two-body elastic t-matrix 
+c1      if (tres) yfac=conjg(tfac)              ! Fresco choice
+!      if (tres) yfac=yfac*sin(psh_el(ik)*pi/180.) ! Alt. choice by AMM Sept 16
+
+      yfac=exp(iu*psh_el(ik)*pi/180.)  ! NEW
+      tfac=(smate(ik,inc)-1.)/(0.,2.)  ! two-body elastic t-matrix 
+      if (tres)   yfac=tfac            ! Fresco choice
+      if (bastype.eq.4) yfac=1.0             ! Real multichan wfs
+
       binset(iset)%pshel(ib,ik)=psh_el(ik)*pi/180.
-!!! TEST
-!      if (ich.eq.1)then 
-!      write(460,'(1f6.3,2x,10f12.5)') fconv*k**2,tfac    
-      write(450,'(1f6.3,2x,10f12.5)') fconv*k**2,psh_el(ik)*pi/180
+      binset(iset)%wk(ib,ik)=yfac
+
+      if (debug) then
+      write(460,'(1f6.3,2x,10f12.5)') fconv*k**2,conjg(tfac)
+      write(450,'(1f6.3,2x,10f12.5)') fconv*k**2,psh_el(ik)*pi/180.
       if (ik.eq.nk) write(450,*)'&'
-!      endif 
-!!! TEST
-      wfbin(:)= wfbin(:) + bcoef*yfac*wfcont(ik,ich,:)*ddk
-      YINT = YINT + ABS(YFAC)**2 * ddK
+      endif
+
+! AMM: Use wf conjugate, since the bin is built from phi(-)
+!      (required for 3-body observables)
+! AMM: improved trapezoidal rule 
+      if ((ik.eq.1).or.(ik.eq.nk-1)) then 
+          raux=ddk/2.0
+      else 
+          raux=ddk
+      endif
+      wfbin(:)= wfbin(:) 
+     &        + bcoef*yfac*conjg(wfcont(ik,ich,:))*raux
+c1      wfbin(:)= wfbin(:) + bcoef*yfac*wfcont(ik,ich,:)*raux
+
+      YINT = YINT + ABS(YFAC)**2 * raux
+      faux(ik)=abs(yfac)**2
       enddo ! ik
+
+!      call sim(faux,raux,1,nk,ddk,nk)
+!      write(*,*)'Bin:',ib,' yint=',yint,' kf-ki=',kf-ki, 'sim=',raux
       wfbin(:)=wfbin(:)/sqrt(yint)
+
+      binset(iset)%wk(ib,:)=binset(iset)%wk(ib,:)/sqrt(yint) ! AMM Sept 16
 
 c compute channel normalization
       do ir=1,nr
@@ -245,7 +290,7 @@ c     ----------
 
 
       write(*,100) ib,ebin,ei,ef,nchan,inc,bnorm,rms
-100   format(5x,"Bin #",i3,":", 3x,
+100   format(5x,"Bin #",i3,":", 2x,
      & "Emid=",1f8.3,2x,"Erel=[",1f8.4,1x,"-",1f8.4,"] MeV;",
      & i2," chan(s) (Inc=",i3,")",3x,
      & "Norm=",1f8.4,3x,"Rms=",1f8.4)   
@@ -254,10 +299,10 @@ c     ----------
 c  write bin wfs
       if (debug)
      &write(98,101) ib,ebin,ei,ef,nchan,inc,bnorm,rms
-101   format(5x,"#Bin ",i3,":", 3x,
+101   format(2x,"#Bin ",i3,":", 3x,
      & "Emid=",1f8.3,2x,"Erel=[",1f8.4,1x,"-",1f8.4,"] MeV;",
      & i2," chan(s) (Inc=",i3,")",3x,
-     & "Norm=",1f8.4,3x,"Rms=",1f8.4) 
+     & "Norm=",1f8.4,3x,"Rms=",1f8.4)
       do ir=1,nr
         r=rvec(ir)
         if (debug)write(98,'(1f8.3,3x,50g14.6)')r,
@@ -265,9 +310,20 @@ c  write bin wfs
       enddo ! ir
       if (debug)write(98,*)'&'
 
+c for fresco
+      if (debug) then
+      do ich=1,nchan
+      write(kfr,101)  ib,ebin,ei,ef,nchan,inc,bnorm,rms
+      write(kfr,'(i5,2x,2f8.4)') nr,dr,rvec(1)
+      write(kfr,102) (wfc(iset,ib,ich,ir)/max(1e-5,rvec(ir)),ir=1,nr)   ! Wf
+      write(kfr,102) (cmplx(0,0) ,ir=1,nr) ! Vertex
+102    FORMAT(1P,6E12.4)
+      enddo 
+      endif
+
       if (bnorm.gt.1.2) then 
         write(*,*)'** ERROR ** Bin',ib,' gave Norm=',bnorm
-        stop
+!        stop
       endif
 
 
@@ -279,5 +335,26 @@ c  u(r) -> R(r) for compatibility with the rest of the program
       enddo !ir
 
       enddo ! ib
+
+
+
+c  Check orthogonality
+      if (debug) then
+!      write(97,*)'Set',iset,' inc=',inc
+      do ib =1,nbins
+      do ibp=1,nbins
+      caux=0
+      do ich=1,nchan
+      do ir=1,nr
+      r=rvec(ir)
+      caux=caux+conjg(wfc(iset,ib,ich,ir))*wfc(iset,ibp,ich,ir)*r**2*dr 
+      enddo ! ir
+      enddo ! ich
+      write(*,*) 'Overlap:',ib,ibp,caux
+      enddo ! ibp
+      enddo ! ib
+      endif ! debug
+
+
       deallocate(wfcont)
       end subroutine

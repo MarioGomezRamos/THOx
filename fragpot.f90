@@ -11,7 +11,7 @@ c    Vc(r)   = nuclear central potential
 !       use wfs, only:rfrag,nr
        use globals , only: written,verb
        implicit none
-       integer kin,ir,ncomp,kpot,iq
+       integer kin,ir,ncomp,kpot,iq,i
        real*8 a13,r,rc,rabs,rabsi,zfrag
        real*8:: vaux,vcoul,ws,pt,gausspot,yukawa
        real*8:: vlsaux,wsso,dws,vllaux
@@ -20,7 +20,7 @@ c    Vc(r)   = nuclear central potential
        character*40:: potfile
        character*80:: line
        character(len=10):: fragname
-       integer::ptype,cptype,lambda        
+       integer::ptype,cptype,lambda,lambdamax  !MGR      
        real*8:: ap,at             ! masses for radius conversion
        real*8:: V0,R0,A0
        real*8:: V0i,R0i,A0i
@@ -28,22 +28,27 @@ c    Vc(r)   = nuclear central potential
        real*8:: Vss0,rss,ass       ! spin-spin
        real*8:: Vll0,rll,all       ! l.l
        real*8:: rc0               ! charge radius
-       real*8:: beta,delta,Vcp0,rcp0,acp !coupling
-       real*8:: betai,deltai,Vcp0i,rcp0i,acpi,normr,normi
+       real*8:: beta(1:10),delta(1:10),Vcp0,rcp0,acp !coupling MGR
+       real*8:: betai(1:10),deltai(1:10),Vcp0i,rcp0i,acpi,normr,normi !MGR
        integer np,nv,iv!,maxlamb    !Lay:added for read external potential   
        real*8,allocatable:: veaux(:),weaux(:),raux(:)!Lay:added for read external potential   
        real*8:: fival,pi
        integer, parameter::alpha=0d0
+       
+              !MGR   
+       real*8:: betat(1:10),deltat(1:10)
+       real*8:: betait(1:10),deltait(1:10)
+       logical:: deftarget,defcore
 c      ......................................................................................       
        namelist /corepotential/ ptype,ap,at,V0,r0,a0,rc0,
-     & cptype,Vcp0,rcp0,acp,delta,beta,
+     & cptype,Vcp0,rcp0,acp,delta,deltat,beta,betat,
      & V0i,r0i,a0i,
-     & Vcp0i,rcp0i,acpi,deltai,betai,mel,
+     & Vcp0i,rcp0i,acpi,deltai,betai,mel,deltait,betait,melt,
      & potfile,np,nv,normr,normi
        namelist /valencepotential/ ptype,ap,at,V0,r0,a0,rc0,
-     & cptype,Vcp0,rcp0,acp,delta,beta,
+     & cptype,Vcp0,rcp0,acp,delta,beta,betat,deltat,
      & V0i,r0i,a0i,
-     & Vcp0i,rcp0i,acpi,deltai,betai,mel,
+     & Vcp0i,rcp0i,acpi,deltai,betai,mel,deltait,betait,melt,
      & potfile,np,nv,normr,normi
 c      ......................................................................................
        pi=acos(-1d0)
@@ -58,7 +63,7 @@ c      .........................................................................
 
        written(44)=.false.
        written(42)=.false.   
-
+       lambdamax=0
 c100    V0=0; vl0(:)=0d0; r0=0d0; a0=0d0;
 c       Vso=0d0; rso=0d0; aso=0d0; rc0=0d0
 c       Vcp0=0d0; rcp0=0d0; acp=0d0
@@ -69,15 +74,22 @@ c       Vll0=0d0; rll=0d0; all=0d0
        V0i=0; r0i=0d0; a0i=0d0;
        Vcp0i=0d0; rcp0i=0d0; acpi=0d0
        mel=0d0;     
-       delta=0d0
-       beta=0d0
-       deltai=0d0
-       betai=0d0
+       delta(:)=0d0
+       beta(:)=0d0
+       deltai(:)=0d0
+       betai(:)=0d0
+       lambda=0 !MGR
        vcl(:)=0.d0;        
        vcli(:)=0.d0; 
        normr=1; normi=1
+
+!MGR
+       betat(:)=0d0;deltat(:)=0d0;betait(:)=0d0;deltait(:)=0d0
+       melt(:)=0d0
+       deftarget=.false.
+       defcore=.false.
      
-c       lambda=2
+!c       lambda=2
 
 
        if(kpot.eq.0) then
@@ -91,8 +103,60 @@ c       lambda=2
        A13=Ap**.33333333 + At**.33333333
        rabs=r0*a13
        rabsi=r0i*a13
-       if (delta.eq.0d0) delta=beta*rabs
-       if (deltai.eq.0d0) deltai=betai*rabsi
+!MGR       
+              lambdamax=max(lambdamax,lambda)
+       if ((beta(2).eq.0d0) .and.(beta(1).ne.0d0)) beta(2)=beta(1)
+       if ((delta(2)==0d0).and.(delta(1)/=0d0))delta(2)=delta(1)
+       if ((betai(2).eq.0d0) .and.(betai(1).ne.0d0)) betai(2)=betai(1)
+       if ((deltai(2)==0d0).and.(deltai(1)/=0d0))deltai(2)=deltai(1)
+       do i=1,10
+       if ((delta(i).eq.0d0).and.(beta(i).ne.0d0)) delta(i)=beta(i)*rabs
+       if ((deltai(i).eq.0d0).and.(betai(i).ne.0d0)) 
+     & deltai(i)=betai(i)*rabsi
+       enddo
+
+        if ((sum(abs(betat)).gt.1e-6).or.(sum(abs(betait)).gt.1e-6).or.
+     &   (sum(abs(deltat)).gt.1e-6).or.(sum(abs(deltait)).gt.1e-6).or.
+     &   (sum(abs(melt(:))).gt.1e-6).and.(cptype.ne.0)) then
+           deftarget=.true.
+       if ((betat(2).eq.0d0) .and.(betat(1).ne.0d0)) betat(2)=betat(1)
+       if ((deltat(2)==0d0).and.(deltat(1)/=0d0))deltat(2)=deltat(1)
+       if ((betait(2)==0d0).and.(betait(1)/=0d0)) betait(2)=betait(1)
+       if ((deltait(2)==0d0).and.(deltait(1)/=0d0))deltait(2)=deltait(1)
+           do i=1,10 
+       if ((deltat(i).eq.0d0).and.(betat(i).ne.0d0)) 
+     & deltat(i)=betat(i)*rabs
+       if ((deltait(i).eq.0d0).and.(betait(i).ne.0d0)) 
+     & deltait(i)=betait(i)*rabsi
+       enddo
+        endif  
+
+        if ((sum(abs(beta)).gt.1e-6).or.(sum(abs(betai)).gt.1e-6).or.
+     &   (sum(abs(delta)).gt.1e-6).or.(sum(abs(deltai)).gt.1e-6).or.
+     &   (sum(abs(mel(:))).gt.1e-6).and.(cptype.ne.0)) then
+           defcore=.true.
+        endif  
+        
+        if (deftarget.and.defcore) then
+         write(*,*) 'Trying to include target and core excitations
+     &     simultaneously'
+         write(*,*)'This is not implemented. Ignoring target excitation'
+      
+         betat(:)=0d0;betait(:)=0d0;deltat(:)=0d0;deltait(:)=0d0
+         melt(:)=0d0
+         deftarget=.false.   
+      endif
+      
+      if (deftarget.and. (.not. defcore)) then
+         write(*,*) 'Target excitation. No core excitation'
+!!!So I am going to switch simply betat for beta so the calculations are the same   
+         beta(:)=betat(:);betai(:)=betait(:);delta(:)=deltat(:)
+         deltai(:)=deltait(:)
+         mel(:)=melt(:)    
+      endif
+      
+!------------------------------------------------------------------------
+
 
        if (ptype.eq.0) then
 	if (ncomp.eq.0) then
@@ -186,7 +250,7 @@ c ------------------------------------------------------
 
 
 c coupling component, if any
-       if (abs(delta).lt.1e-4) goto 200
+       if (sum(abs(delta)).lt.1e-4) goto 200
        write(*, '(/,2x,"o Deformed potential",$)')
        select case(cptype)
 c ------------------------------------------------------
@@ -200,7 +264,7 @@ c ------------------------------------------------------
            write(*,*)'- Coupling Pot. type=1 => deriv. W-S'
 !	   write(*,*)'- WARNING!!!! => Possible 4pi factors not included'
            if (Vcp0.eq.0) then
-           write(*,141) delta
+           write(*,141) 2,delta(2)
 	   else
 	   if(rcp0.eq.0) rcp0=r0
            if(rcp0i.eq.0) rcp0i=r0i
@@ -211,7 +275,7 @@ c ------------------------------------------------------
 	   endif
  143       format(3x,'[Vcp=',1f8.3,' MeV acp=',f6.3,'  rcp0=',f6.3,
      &           ' fm ]',/)
- 141       format(6x,'[delta=',1f6.3,' fm ]',/)
+ 141       format(6x,'[delta(',i3,')=',1f6.3,' fm ]',/)
 	else
 	   write(*,*)'- Coupling Pot. type=1 => deriv. PT/Gaussian'
 	   write(*,*)'- WARNING!!!! => not implemented yet'
@@ -223,7 +287,9 @@ c ------------------------------------------------------
      &       ' => deform central potential & project on P_{lambda}'
          if (cptype.eq.3) write(*,*)
      &       '     (monopole potential will be also recalculated!)'
-           write(*,141) delta
+         do i=1,10
+           if (delta(i).ne.0d0) write(*,141) i,delta(i)
+         enddo  
 c ------------------------------------------------------
         case(4)  ! V_2 type
 c ------------------------------------------------------
@@ -250,6 +316,7 @@ c Coulomb potential
         if (maxval(abs(mel)).gt.1e-4) then
           do iq=1,nmult
           vcoup(ir,iq)=vcoulq(r,rc,zt,iq,mel(iq))  ! multipole
+          if (deftarget) vcoup(ir,iq)=vcoup(ir,iq)*zfrag/zt
           enddo !iq
         endif 
         enddo !ir
@@ -355,17 +422,17 @@ c -------------------------------------------------------------
 c Non-central (deformed) part (REAL): CONTROLED BY CPTYPE
 c -------------------------------------------------------------
         vcaux(:)=vcl(:)
-        if (abs(delta).gt.1e-4) then 
+        if (sum(abs(delta)).gt.1e-4) then 
         do ir=1,nr
         r=rfrag(ir)
         vdef(:)=0        
         select case(cptype)
              case(0) ! no coupling
              case(1) ! derivative formfactor
-		 if (Vcp0.eq.0) then
-                vdef(2)=-delta*dws(r,v0,  rabs,    a0)
-		 else
-                vdef(2)=-delta*dws(r,Vcp0,rcp0*a13,acp)
+		 if (Vcp0.eq.0 .and. (v0.ne.0)) then
+                vdef(2)=-delta(2)*dws(r,v0,  rabs,    a0)
+		 else if (Vcp0.ne.0) then !MGR
+                vdef(2)=-delta(2)*dws(r,Vcp0,rcp0*a13,acp)
 	        endif
                 vdef(2)=vdef(2)/sqrt(4.*pi)
 
@@ -388,7 +455,7 @@ c -------------------------------------------------------------
 
 c Non-central (deformed) part (IMAGINARY)
         wcaux(:)=vcli(:)
-        if (abs(deltai).gt.1e-4) then 
+        if (sum(abs(deltai)).gt.1e-4) then 
         written(42)=.true.
         do ir=1,nr
         r=rfrag(ir)
@@ -397,10 +464,10 @@ c Non-central (deformed) part (IMAGINARY)
              case(0) ! no coupling
              case(1) ! derivative formfactor
 !!!!! CHECK THIS!!!!
-		   if (Vcp0i.eq.0) then
-		    vdef(2)=-deltai*dws(r,v0i,rabsi,a0i)
-		   else
-		    vdef(2)=-deltai*dws(r,Vcp0i,rcp0i*a13,acpi)
+		   if (Vcp0i.eq.0.and.V0i .ne.0) then
+		    vdef(2)=-deltai(2)*dws(r,v0i,rabsi,a0i)
+		   else if (Vcp0i.ne.0) then !MGR
+		    vdef(2)=-deltai(2)*dws(r,Vcp0i,rcp0i*a13,acpi)
 	           endif
                    vdef(2)=vdef(2)/sqrt(4.*pi)
 
@@ -606,7 +673,7 @@ c  typically given in units of e.fm^q
 !      use potentials
 !      use wfs, only: nr,rvec
       implicit none
-      integer i,k,qmax,nu,mmultipole,nr
+      integer i,k,qmax,nu,mmultipole,nr,lambda
 !      integer ir,icall
       real*8 vc(nr),rvec(nr),xpos,ffr4
       real*8 u,r,rsp,rnc,pi,sh,cns,alpha,fival,vcr!,vdefr
@@ -614,11 +681,11 @@ c  typically given in units of e.fm^q
 !      parameter(mmultipole=4,alpha=0d0)
 !      real*8 pl(0:mmultipole),c(0:mmultipole),sp(9),w(9),  
 !     &    vdef(0:mmultipole),def(2:mmultipole)
-      parameter(alpha=0.5d0)
+      parameter(alpha=0.0d0)
       real*8, dimension(0:qmax):: pl,vdef,def,c
       real*8 sp(9),w(9) 
 !!! TEST
-      real*8 ws, p1,p2,p3,betar
+      real*8 ws, p1,p2,p3,betar(1:10)
 !   
       data (sp(i),i=1,5) /-.96816024,-.8360311,-.61337143,-.32425342,0./  
      &,(w(i),i=1,5) /.08127439,.18064816,.26061070,.31234708,.33023936 /
@@ -628,7 +695,9 @@ c  typically given in units of e.fm^q
 
 !!!! TEST
       def(:)=0d0
-      def(2)=betar
+      do i=2,qmax
+      def(i)=betar(i)
+      enddo
 !!!!!
 
 !      if(icall.eq.1) then

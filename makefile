@@ -5,10 +5,10 @@
 #include pgf90.def
 
 ##If compiled with ifort
-include ifort.def
+#include ifort.def
 
 #If compiled with gfortran
-#include gfortran.def
+include gfortran.def
 
 # If compiled with gfortran
 #FC=gfortran
@@ -35,10 +35,10 @@ SRC=$(TOPDIR)
 
 OBJ=modules.o coul90.o scatcc.o  thox.o basis.o hdiag.o ho.o lst-amos.o utils.o \
     pauli.o sort.o nag2.o whittaker.o  \
-     continuum.o belam.o ham.o \
+     continuum.o belam.o ham.o  transition_targdef.o\
         transition.o   clebsg.o  projpot.o fragpot.o \
         rmatel.o solvecc.o lapack.o  rmatrix.o ccbins.o xsections.o \
-	bincc2.o
+	bincc2.o ceigen.o readwf.o
 #coulfg4.f 
 all: $(OBJ)
 	$(FC) -o thox $(OBJ) $(LFLAGS) $(PARALLEL)  
@@ -82,6 +82,8 @@ belam.o:belam.f90 modules.f90
 	$(FC) $(FFLAGS1) -c belam.f90
 transition.o:transition.f90 modules.f90
 	$(FC) $(FFLAGS1)  -c transition.f90
+transition_targdef.o:transition_targdef.f90 modules.f90
+	$(FC) $(FFLAGS1)  -c transition_targdef.f90
 fragpot.o:fragpot.f90 modules.f90
 	$(FC) $(FFLAGS1) -c fragpot.f90
 projpot.o:projpot.f90 modules.f90
@@ -95,13 +97,19 @@ clebsg.o:clebsg.f90 modules.f90
 solvecc.o:solvecc.f90 modules.f90
 	$(FC) $(FFLAGS) -c solvecc.f90
 xsections.o:xsections.f90
-	$(FC) $(FFLAGS) -c  xsections.f90
+	$(FC) $(FFLAGS) $(PARALLEL) -c  xsections.f90
 lapack.o:lapack.f 
 	$(FC) $(FFLAGS) -c lapack.f
+dsyev-lapack.o:dsyev-lapack.f 
+	$(FC) $(FFLAGS) -c dsyev-lapack.f
 rmatrix.o:rmatrix.f
 	$(FC) $(FFLAGS) -c rmatrix.f
 bincc2.o:bincc2.f
 	$(FC) $(FFLAGS) -c bincc2.f
+ceigen.o:ceigen.F
+	$(FC) $(FFLAGS2) -c ceigen.F
+readwf.o:readwf.f90
+	$(FC) $(FFLAGS) -c readwf.f90
 
 install: all
 #%if BINDIR

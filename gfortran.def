@@ -2,16 +2,16 @@
 FC=gfortran
 
 # For debugging (-g -founds ..)
-#PARALLEL=-fopenmp
-PARALLEL = 
-#FFLAGS= -g -O2 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL)
-#FFLAGS1= -g -O2 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL)
+PARALLEL=-fopenmp
+#PARALLEL = 
+#FFLAGS= -g -O0 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL)
+#FFLAGS1= -g -O0 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL)
 
 #FFLAGS= -g -O2 -Wtabs  -ffixed-form -fno-align-commons 
 #FFLAGS1= -O2 -Wtabs  -ffixed-form -fno-align-commons 
 
-FFLAGS=  -O0 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) 
-FFLAGS1=  -O0 -Wtabs -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) 
+FFLAGS=  -O3  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) 
+FFLAGS1=  -O3  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) 
 
 
 #FFLAGS= -g -O0 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) -pg

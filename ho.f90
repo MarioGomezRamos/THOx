@@ -54,9 +54,9 @@ c *** ------------------------------------------------
         x=nu*r**2
         lag=laguerre(n,l,x)
         norma=normho(nu,n,l)
-        if (norma<1e-6) then
-           write(*,*)'ho3d: Norm=0!!!for  nu,n,l',nu,n,l
-        endif
+!        if (norma<1e-6) then
+!           write(*,*)'ho3d: Norm=0!!!for  nu,n,l',nu,n,l
+!        endif
         wf=norma*x**(l/2d0)*dexp(-0.5*x)*lag
       end subroutine ho3d
  
@@ -116,6 +116,7 @@ c *** --------------------------------------------------------
 c     Calculates normalization coefficient of HO wavefunctions: N(n,l) 
 c *** --------------------------------------------------------      
       function normho(nu,n,l)
+        use factorials, only: dlfac
         implicit none
         real*8:: nu,pi,normho,fact,lnorm,logfac
         integer:: n,l,m,p
@@ -123,15 +124,18 @@ c *** --------------------------------------------------------
 
         lnorm=(n+l+1)*log(2d0)+
      &        0.5d0*log(nu**(3d0/2d0)/sqrt(pi)) +
-     &        0.5d0*(logfac(n)+logfac(n+l)-logfac(2*n+2*l+1))
+     &        0.5d0*(dlfac(n)+dlfac(n+l)-dlfac(2*n+2*l+1))
+!     &        0.5d0*(logfac(n)+logfac(n+l)-logfac(2*n+2*l+1))
 
-     
+!        write(*,*) 'normho: n,l ->',n,l,logfac(n+l),dlfac(n+l)
         normho=dexp(lnorm)
 
-        if(normho<1e-6) then
-           write(*,*)'Internal ERROR: nu,n,l,HO Norm=',nu,n,l,normho
-           stop
-        endif
+!        if(normho<1e-6) then00
+!           write(*,'(a,1f8.4,2i4,a,1g12.6)')
+!     &    'Internal ERROR: nu,n,l=',nu,n,l,
+!     &    ' Norm=',normho
+!           stop
+!        endif
 
       end function normho
 
