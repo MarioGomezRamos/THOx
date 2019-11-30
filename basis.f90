@@ -7,8 +7,8 @@ c     nchan={Ic,lsj} configurations
       use wfs    ,only: exmin,exmax
       implicit none
       logical fail3,tres,ehat,merge
-      integer l,integer,bastype,mlst
-      real*8:: xl,jn,jcore,ex
+      integer l,lmin,lmax,bastype,mlst
+      real*8:: xl,j,jn,jcore,ex
       real*8:: bosc,gamma
       integer:: ichsp,ic,iset,nset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
@@ -20,7 +20,7 @@ c     nchan={Ic,lsj} configurations
 
 
 
-      namelist/jpset/ jtot,parity,lmax,
+      namelist/jpset/ jtot,parity,l,j,lmax,
      &                bastype,nfmax,exmin,exmax,
      &                nho,bosc,     ! HO
      &                gamma,mlst,   !THO Amos 
@@ -40,9 +40,14 @@ c Initialize variables and assign default values
       nfmax=0; exmin=-1e-20; exmax=1e20; inc=1; tres=.false.; nho=0;
       ehat=.false. ; filewf=""
       wcut(1:maxchan) = 0.0
+      lmin=-1; lmax=-1; l=-1; j=-1;
+      
 
       read(kin,nml=jpset) 
       nset=indjset(iset)
+      if (l.lt.0) l=0;
+      lmin=l;
+      if (lmax.lt.lmin) lmax=lmin
 
 c To be done!
 c      if (iset.eq.1) then
@@ -73,8 +78,9 @@ c      endif
 
 
 c determine allowed single-particle configurations 
-      call spconf(nset,nchsp)
+      call spconf(nset,nchsp,lmin,lmax,j)
       jpiset(nset)%nchsp =nchsp
+      jpiset(nset)%lsp(maxchan)=0; 
       
       write(*,*)'  '
       write(*,*)'   CORE+VALENCE channels:' 
@@ -108,6 +114,7 @@ c determine allowed single-particle configurations
         jpiset(nset)%parc(nchan)   =parc(ic)
         jpiset(nset)%bas2          =bas2
         jpiset(nset)%lsp(nchan)   =l  
+         write(0,*)'jpiset',nset,l
         jpiset(nset)%jsp(nchan)   =jn
         jpiset(nset)%jc(nchan)    =jcore
         jpiset(nset)%wcut(1:nchan)=wcut(1:nchan)
@@ -149,33 +156,36 @@ c deprecated variables
 c
 c determine & store single-particle channels compatible with jtot & lmax
 c
-      subroutine spconf(iset,nchsp)
+      subroutine spconf(iset,nchsp,lmin,lmax,j)
 !      use wfs, only:  ql,qspl,qspj,spindex,jc,parc,spchan,nce
       use channels
       implicit none
       logical:: fail3
-      real*8 :: xl,jnmin,jnmax,jcore,jn
-      integer:: l,njn,ic,ijn,iset
+      real*8 :: xl,jnmin,jnmax,jcore,j,jn
+      integer:: l,lmin,lmax,njn,ic,ijn,iset
       integer,intent(out):: nchsp
       write(*,*)'         '
       write(*,*)'SINGLE-PARTICLE configurations:'
-      write(*,'(3x,"[ l val-core truncated at lmax=",i2,"]")') lmax
+      write(*,'(3x,"[ l val-core truncated at lmin,lmax=",i2,1x,i2,"]")'
+     &  ) lmin,lmax
+     
       nchsp=0
 	  	   
-      do l=0,lmax
+      do l=lmin,lmax
        xl=l
        jnmin=abs(xl-sn)
        jnmax=xl+sn
        njn=nint(jnmax-jnmin)
        do ijn=0,njn
        jn=jnmin+ijn
+       if ((j.ge.0).and.(jn.ne.j)) cycle
        do ic=1,nce
           jcore=jc(ic)
           if ((-1)**l*parc(ic).ne.partot) cycle      
           if(fail3(xl,jn,sn))cycle
           if(fail3(jn,jcore,jtot))cycle
           nchsp=nchsp+1
-	  qspl(nchsp)=l
+	      qspl(nchsp)=l
           qspj(nchsp)=jn
 
           spchan(iset,nchsp)%l  =l
@@ -250,9 +260,10 @@ c -------------------------------------------------------------
        enddo
 
        if (bas2.eq.0) then
-	  write(*,*)' bas2=0 => Use Hsp eigenstates to diagonalize full H'
+	  write(*,*)' [bas2=0 => Use Hsp eigenstates to diagonalize
+     &full H]'
        else if  (bas2.eq.1) then
-	  write(*,*)' bas2=1 => Use THO basis to diagonalizd full H'
+	  write(*,*)'  [bas2=1 => Use THO basis to diagonalizd full H]'
         else
        write(*,*)' bas2=',bas2,' not implemented!'
        endif

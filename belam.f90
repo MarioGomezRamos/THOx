@@ -83,6 +83,14 @@ c     --------------------------------------------------------------------------
         
 235   write(*,*)    
       write(*,'(5x,//," ** CALCULATION OF B(ELAM) **",/ )')
+      
+      
+      if ((jset.gt.jpsets).or.(jset.eq.0)) then
+       write(*,'(5x,a,i3,a,i3,a)')'=> B(E) requested for set jset',jset,
+     & ' but only', jpsets,' available!. Skipping'
+      return
+      endif
+      
 
 c     ------------------------------ GS WF  -----------------------------------
       write(*,'("- Calculating B(E",i1,"; gs->n)")')lambda
@@ -174,10 +182,7 @@ c     -------------------------------------------------------------------------
 
 
 c     Select FINAL j/pi set and check triangularity condition -----------------.  
-      if ((jset.gt.jpsets).or.(jset.eq.0)) then
-       write(*,*)'jset',jset,' not valid!'
-       return
-      endif
+
       partot=jpiset(jset)%partot
       jtot  =jpiset(jset)%jtot
       nex   =jpiset(jset)%nex
@@ -270,7 +275,7 @@ c--------------------------------------------
         write(*,'(3x,"[Final set has",i2," bound states ]")')ncont
 
         zeff=zv*(ac/(ac+av))**lambda+zc*(-av/(ac+av))**lambda
-!        write(*,*)'- Zeff,ac,av=',zeff,ac,av
+        write(*,'(a,2f7.2,1f9.4)')'- Ac, Av, Zeff=',ac,av,zeff
         do i=1,nex
         Elam=0d0
         BEl=0d0
@@ -538,110 +543,6 @@ c < n | r^lambda | m >
         enddo ! iil
         write(*,*)'- From Continuum wfs:'
         write(*,'(30x,"Total BE=",1f10.6," e^2 fm^",i1)')besum,2*lambda
-
-!c------------------------------------------------
-!c        B(Elambda) from scattering states
-!c------------------------------------------------        
-!         if (.not.ifcont) return    !if we don't calculate continuum wf, we end here.
-!        besum=0d0
-!        do ik=1,nk
-!         Elamcont=zero
-!          kcont=kmin+(kmax-kmin)*(ik-1)/(nk-1)  !new kcont for schcc
-!          econt=(hc*kcont)**2/2/mu12
-!        do m=1,nchan
-!          do n=1,ncni
-!        qjcir=1d0*qjci(n)
-!        qjcr=1d0*qjc(m)
-!           do iil=ili,il
-!	    krel=sqrt(2d0*mu12*(econt-exc(iil)))/hc
-!		if (krel.gt.eps) then
-!		  dkrdk=kcont/krel
-!		  else
-!		  dkrdk=1d0
-!		endif
-!c core contribution
-!	   if (qjci(n).ne.qjc(m)) then
-!             if (.not.fail3(qjci(n),lambdar,qjc(m))) then
-!             if ((qj(m).eq.qji(n)).and.(qli(n).eq.ql(m))) then
-!        if (rms.eq.0d0) then
-!        Elamcore=Elamcorem*cleb(qjcir,0d0,lambdar,0d0,qjcr,0d0)*                    ! this is only for K=0, but this is the same. (old version)
-!     &sqrt((2*qjcir+1)/(2*qjcr+1))*(-1)**(2*lambda)
-!        else
-!        Elamcore=rotor(qjcir,qjcr,0d0,lambdar,rms,delta,zc)                         ! this is only for K=0, but this is the same.
-!        endif
-!        Elamcore=Elamcore*(-1.)**(lambda+qj(m)+qjci(n)+jtot)*
-!     &sqrt((2.*jtoti+1.)*(2.*qjc(m)+1.))*
-!     &sixj(jtot,jtoti,lambdar,qjcir,qjcr,qj(m))
-!              gaux(:)=ugs(:,n)*wfcont(ik,iil,m,:)*sqrt(dkrdk) !only one incoming channel
-!              faux(:)=dreal(gaux(:))
-!              coef=0d0
-!              res=0d0
-!              call sim(faux,res,1,nr,dr,nr)  
-!               faux(:)=dimag(gaux(:))
-!              res2=0d0
-!              call sim(faux,res2,1,nr,dr,nr)    !it will improve if we go only until rlast
-!               Elamcont=Elamcont+Elamcore*cmplx(res,res2)*sqrt(pi/2)*
-!     &                  (4*pi)/kcont
-!               Elamcore=0d0
-!             endif
-!             endif
-!           else
-!      if ((.not.fail3(qji(n),lambdar,qj(m)))                                !lamda is enough to connect the two states
-!     &.and.(cindexi(n).eq.cindex(m))) then                                  !we avoid different channels with same Jpi
-!              if (.not.fail3(qlir(n),lambdar,qlr(m))) then                  !I already checked that without these fail3s, the matel gives zero contribution in the not allowed cases
-!             Elamcore=0d0
-!             if ((qj(m).eq.qji(n)).and.(qli(n).eq.ql(m))) then
-!        if (rms.eq.0d0) then
-!        Elamcore=Elamcorem*cleb(qjcir,0d0,lambdar,0d0,qjcr,0d0)*                    ! this is only for K=0, but this is the same. (old version)
-!     &sqrt((2*qjcir+1)/(2*qjcr+1))*(-1)**(2*lambda)
-!        else
-!        Elamcore=rotor(qjcir,qjcr,0d0,lambdar,rms,delta,zc)                         ! this is only for K=0, but this is the same.
-!        endif
-!        Elamcore=Elamcore*(-1.)**(lambda+qj(m)+qjci(n)+jtot)*
-!     &sqrt((2.*jtoti+1.)*(2.*qjc(m)+1.))*
-!     &sixj(jtot,jtoti,lambdar,qjcir,qjcr,qj(m))
-!              gaux(:)=ugs(:,n)*wfcont(ik,iil,m,:)*sqrt(dkrdk) !the gs have already an r
-!              faux(:)=dreal(gaux(:))
-!              res=0d0
-!              call sim(faux,res,1,nr,dr,nr)    !it will improve if we go only until rlast
-!        Elamcont=Elamcont+cmplx(Elamcore*res,0d0)*sqrt(pi/2)*
-!     &(4*pi)/kcont
-!              faux(:)=dimag(gaux(:))
-!              res=0d0
-!              call sim(faux,res,1,nr,dr,nr)    !it will improve if we go only until rlast
-!        Elamcont=Elamcont+cmplx(0d0,Elamcore*res)*sqrt(pi/2)*
-!     &(4*pi)/kcont
-!             else
-!             Elamcore=0d0
-!             endif
-!c Valence
-!              gaux(:)=rvec(:)**(lambda)*ugs(:,n)*wfcont(ik,iil,m,:)*
-!     &sqrt(dkrdk) !only one incoming channel
-!              faux(:)=dreal(gaux(:))
-!              coef=0d0
-!              coef=zeff*matel(lambdar,sn,qjc(m),jtoti,qji(n),
-!     &qlir(n),jtot,qj(m),qlr(m))
-!              res=0d0
-!              call sim(faux,res,1,nr,dr,nr)  
-!               faux(:)=dimag(gaux(:))
-!              res2=0d0
-!              call sim(faux,res2,1,nr,dr,nr)    !it will improve if we go only until rlast
-!          Elamcont=Elamcont+coef*cmplx(res,res2)*sqrt(pi/2)*(4*pi)/kcont
-!              endif
-!           endif
-!           endif
-!           enddo
-!          enddo
-!          enddo
-!	      BEl=(2*jtot+1)*abs(Elamcont)**2/(2*jtoti+1)
-!          BEl=BEl*mu12*kcont/hc**2/(2*pi)**3
-!          besum=besum+BEl*hc**2*kcont/mu12*(kmax-kmin)/(nk-1) !de/dk*dk
-!          write(96,*)econt,BEl
-!          enddo
-!         written(96)=.true.
-!         write(*,*)'- From Continuum wfs:'
-!		 write(*,'(30x,"Total BE=",1f10.6," e^2 fm^",i1)')besum,2*lambda
-
 
 
 c-----------------------------------------------------------------------------

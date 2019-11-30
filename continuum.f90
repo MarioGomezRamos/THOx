@@ -24,7 +24,7 @@ c -------------------------------------------------------------------------
       integer  ici,icf,il
       integer  nchani,nchanf,nchan,li,lf,nphi,nphf
 c     -----------------------------------------------------------------------
-      real*8:: fact,ji,jf,xl,jci,jcf,coefss,corels
+      real*8:: fact,ji,jf,xl,jci,jcf,coefss,corels,vaux
       real*8:: all,ass,als,alsc,allp,ccoef,vcp,rm,conv,faux(nr),zero
       real*8:: lambdar,sixj,cleb,lfr,lir,cl
       real*8:: allp2, gcoup,big,small
@@ -54,14 +54,16 @@ c     -----------------------------------------------------------------------
       rm=av*ac/(av+ac)
       conv=2*amu*rm/hc**2
 
-      if (first) then
+!      if (first) then
 !        write(*,*)'coefmat: ql=',ql(1:nchan)
 !        write(*,*)'coefmat: qj=',qj(1:nchan)
-!        write(*,*)'coefmat: qjc=',qjc(1:nchan)
-!        write(*,*)'coefmat: laminc=',laminc(:)
+!       write(*,*)'coefmat: qjc=',qjc(1:nchan)
+!       write(*,*)'coefmat: laminc=',laminc(:)
 !         write(*,*)'coefmat: small=',small
 !         write(*,*)'coefmat:conv=',conv
-      endif 
+!        write(*,*)' partot=',partot
+!        first=.false.
+!      endif 
 
       do nchani=1,nchan
       do nchanf=1,nchan
@@ -202,20 +204,33 @@ c spin.spin term
              cl=1d0
            endif
 
-            if (partot.eq.1) then
-           faux(ir)=faux(ir)+((-1d0)**(ji+jcf+jtot)*sixj(jf,ji,lambdar
-     &,jci,jcf,jtot)*sqrt((2*jf+1.)*(2*ji+1.))*sixj(jf,ji,lambdar,
-     &lir,lfr,sn)*(-1d0)**(lambdar+lfr+ji+sn)*sqrt((2.*lf+1)*(2.*il+1.)
-     &/4/pi)*cleb(lambdar,0d0,lfr,0d0,lir,0d0)*
-     &vtran(ici,icf,il,ir,1))*cl
-            else
-           faux(ir)=faux(ir)+((-1d0)**(ji+jcf+jtot)*sixj(jf,ji,lambdar
-     &,jci,jcf,jtot)*sqrt((2*jf+1.)*(2*ji+1.))*sixj(jf,ji,lambdar,
-     &lir,lfr,sn)*(-1d0)**(lambdar+lfr+ji+sn)*sqrt((2.*lf+1)*(2.*il+1.)
-     &/4/pi)*cleb(lambdar,0d0,lfr,0d0,lir,0d0)*
-     &vtran(ici,icf,il,ir,2))*cl
-            endif
-!     &vtran(jci,jcf,ici,icf,il,ir))*cl
+           if (partot.eq.1) then
+            vcp=vtran(ici,icf,il,ir,1)
+           else
+            vcp=vtran(ici,icf,il,ir,2)
+           endif
+           
+           faux(ir)=faux(ir)+((-1d0)**(ji+jcf+jtot)*
+     &          sixj(jf,ji,lambdar,jci,jcf,jtot)*
+     &          sqrt((2*jf+1.)*(2*ji+1.))*
+     &			sixj(jf,ji,lambdar,lir,lfr,sn)*
+     &		    (-1d0)**(lambdar+lfr+ji+sn)*
+     &			sqrt((2.*lf+1)*(2.*il+1.)/4/pi)*
+     &			cleb(lambdar,zero,lfr,zero,lir,zero))*vcp*cl            
+
+!            if (partot.eq.1) then            
+!           faux(ir)=faux(ir)+((-1d0)**(ji+jcf+jtot)*sixj(jf,ji,lambdar
+!     &,jci,jcf,jtot)*sqrt((2*jf+1.)*(2*ji+1.))*sixj(jf,ji,lambdar,
+!     &lir,lfr,sn)*(-1d0)**(lambdar+lfr+ji+sn)*sqrt((2.*lf+1)*(2.*il+1.)
+!     &/4/pi)*cleb(lambdar,0d0,lfr,0d0,lir,0d0)
+!     &vtran(ici,icf,il,ir,1))*cl
+!            else
+!           faux(ir)=faux(ir)+((-1d0)**(ji+jcf+jtot)*sixj(jf,ji,lambdar
+!     &,jci,jcf,jtot)*sqrt((2*jf+1.)*(2*ji+1.))*sixj(jf,ji,lambdar,
+!     &lir,lfr,sn)*(-1d0)**(lambdar+lfr+ji+sn)*sqrt((2.*lf+1)*(2.*il+1.)
+!     &/4/pi)*cleb(lambdar,0d0,lfr,0d0,lir,0d0)*
+!     &vtran(ici,icf,il,ir,2))*cl
+!            endif
             enddo !il
         if (abs(faux(ir)).lt.small) faux(ir)=small ! avoid underflow
           enddo ! ir
@@ -265,36 +280,53 @@ c ------------------------------------------------------------
       use parameters, only: maxchan
       use constants
       use channels, only: jpiset,ql,jpsets
-      use wfs     , only: nr,dr,rvec
+      use wfs     , only: nr,dr,rvec,energ,wfc
+      use scattering, only: ifcont
       implicit none
 c     ........................................................
-      logical :: energy,ifcont,writewf
+      logical :: energy,writewf,writesol
       character*5::jpi
       integer:: il, pcon ! backward compatibility
       integer inc,ilout,ili,jset,partot,nchan,nk,n,ir,ik
-      real*8 :: emin,emax,eout,jtot,ecm
-      real*8 :: kmin,dk,de,kmax,kcont
+      real*8 :: emin,emax,eout,jtot,ecv
+      real*8 :: kmin,dk,de,kmax,kcv
       real*8 :: r0,conv,rm
       real*8,allocatable :: psh_el(:)
 !      real*8 :: deladd,deltai,deltap
+
+! ... Overlaps
+	  integer :: ic,ich,li,lf,nex,nho
+      real*8, parameter :: eps=1e-3
+      real*8 :: sumr,jac,excore,jci,jcf,jf
+      real*8, allocatable:: erel(:)
+      complex*16,allocatable,target:: gsolap(:,:)
+      complex*16 :: gaux(nr)
+      complex*16 :: resc,caux,raux
+      
+
       complex*16,allocatable:: smate(:,:),wfcont(:,:,:)
       namelist/scatwf/ emin, emax,ifcont,nk,inc,writewf,ilout,eout,jset,
-     &                 energy,
+     &                 energy, writesol,
      &                 il,pcon ! not used, backward compatibility only (AMM)
 
       inc=0; il=0
       jset=0; pcon=0
   
-      writewf=.false.
-      energy=.false.
+      writewf  =.false.
+      writesol =.false.
+      energy   =.false.
+      
+      write(*,'(//,5x,"******  PROJECTILE SCATTERING STATES ******")')
       read(kin,nml=scatwf)
+      
+      
       if ((.not.ifcont).or.(nk.eq.0)) return
       if ((jset.gt.jpsets).or.(jset.eq.0)) then
        write(*,*)'jset',jset,' not valid!'
        return
       endif
       if (il.gt.0) then
-       write(*,*)' IL deprecated; use INC instead!'
+       write(*,*)' ** WARNING ** IL deprecated; use INC instead!'
       endif
 
 
@@ -317,6 +349,17 @@ c     ........................................................
         dk=(kmax-kmin)/(nk-1)
       endif
 
+! Store continuum energies in erel() grid
+      allocate(erel(nk))
+      do ik=1,nk
+      if (energy) then
+        ecv=emin+(ik-1)*de
+      else
+        kcv=kmin+ (ik-1)*dk  !new kcv for schcc
+        ecv=(hc*kcv)**2/2/mu12
+      endif
+      erel(ik)= ecv
+      enddo ! ik
 
       if(allocated(smate)) deallocate(smate)
       allocate(smate(nk,maxchan),psh_el(nk))
@@ -339,14 +382,9 @@ c ... Write WFS
        write(50,'(1x,i4,2x,2f8.4)') nk,dk,kmin
       endif
 
-      do ik=1,nk
-      if (energy) then
-        ecm=emin+(ik-1)*de
-      else
-        kcont=kmin+ (ik-1)*dk  !new kcont for schcc
-        ecm=(hc*kcont)**2/2/mu12
-      endif
-      write(50,*)'# Continuum wf with Ecm=',Ecm
+      do ik=1,nk   
+      ecv=erel(ik)
+      write(50,*)'# Continuum wf with Ecm=',ecv
       do ir=1,nr
       write(50,'(1f8.3,2x,50f12.8)')rvec(ir),
      &       (wfcont(ik,n,ir),n=1,nchan)
@@ -354,6 +392,114 @@ c ... Write WFS
       write(50,*)'& '
       enddo ! ik
       endif !writewf
+      
+      
+! ... Compute ovelaps between scattering states and PS's (if defined)
+      nho= jpiset(jset)%nho
+      if (nho.eq.0) return ! no PS's in this jset
+      nex =jpiset(jset)%nex             ! number of states in this jset
+      allocate(gsolap(nex,nk))
+      gsolap(:,:)=0
+      
+!      if (emax<0)     emax=maxval(energ(:,:))
+!      if (emin.le.0.) emin=0.01
+!      if (emax>Ethr)  emax=Ethr-0.001
+!      dec=(emax-emin)/dble(nk-1)
+!      do jset=1,jpsets
+!      if (.not.jsets(jset)) cycle
+!      if (jpiset(jset)%nho.eq.0) cycle
+!      nchan=jpiset(jset)%nchan
+!      do inc=1,nchan 
+      if (inc.gt.nchan) stop'inc too large in SCATWF!'
+      jci    =jpiset(jset)%jc(inc)
+      li     =jpiset(jset)%lsp(inc)
+      excore =jpiset(jset)%exc(inc)     ! core energy
+      ic     =jpiset(jset)%cindex(inc)  
+!      if (ic.ne.icore) then
+!         if (verb.ge.2)
+!     &   write(*,'(4x,"-> skipping core state",i3)')ic 
+!      cycle
+!      endif
+
+!      if (allocated(wfcont)) deallocate(wfcont)
+!      if (ncont.gt.0) then
+!        allocate(wfcont(ncont,nchan,nr)); wfcont=0.
+!        call wfrange(jset,nchan,inc,emin,emax,ncont,energy,wfcont,
+!     & smate,delta)
+!      else
+!       write(*,*)'*ERROR* ncont,nchan=',ncont,nchan
+!      endif
+
+      do n=1,nex
+      if (energ(jset,n).lt.0)    cycle ! bound state
+      do ik=1,nk
+      ecv=erel(ik)
+      if (ecv.lt.eps) ecv=eps
+      kcv=sqrt(2.d0*mu12*ecv)/hc    
+          
+      sumr=0
+      caux=0.
+      do ich=1,nchan !  sum over outgoing channels
+      jcf =jpiset(jset)%jc(ich)
+      lf  =jpiset(jset)%lsp(ich)
+      jf  =jpiset(jset)%jc(ich)
+      do ir=1,nr   
+      gaux(ir)=wfc(jset,n,ich,ir)*wfcont(ik,ich,ir)*rvec(ir)*
+     &         (-1)**(li+jci+lf+jcf) ! AMM: I think this phase is always 1! 
+      enddo !ir
+
+      call simc(gaux,resc,1,nr,dr,nr)
+      caux=caux+resc
+      sumr = sumr+abs(caux)**2
+      enddo ! ich 
+      gsolap(n,ik)=caux
+      enddo ! ik (c-v relative energy)
+      enddo ! n  (PS within this j/pi set)
+!      enddo ! inc  (incoming channel)
+!      enddo ! jset (j/pi set)
+     
+c *** -------------- PRINT OVERLAPS  ----------------------------
+      if (writesol) then
+!      do jset=1,jpsets
+!      if (.not.jsets(iset)) cycle
+!      nex  =jpiset(iset)%nex
+!      nchan=jpiset(iset)%nchan
+      if (jpiset(jset)%nho.eq.0) return
+      
+      write(52,'(1x,"# Overlaps for set with J/pi=",a5)')
+     &     jpi(jtot,partot)
+      write(52,'(1x,"# THO basis with nho=",i3," functions")') nho
+      write(52,'(1f8.3,2x,1f8.3,2x,i5,3x,L1,3x,i3)') 
+     & emin,emax,nk,energy,nex
+      
+      do n=1,nex
+      write(52,'(i3,1f10.4)') n , energ(jset,n)
+      raux=0
+      write(520,'(a,i3,a,i3,a,1f10.4)')'# Set:',jset,
+     & ' n=',n,' Ex=',energ(jset,n)
+      do ik=1,nk
+       ecv=erel(ik)
+       if (energ(jset,n).lt.0)    cycle ! bound state
+       if (ecv.lt.eps) ecv=eps
+       kcv=sqrt(2.d0*mu12*ecv)/hc
+       jac=mu12/(hc**2)/kcv
+       write(520,111)ecv, jac*abs(gsolap(n,ik))**2
+       write(52,'(1f8.3,3x,2g14.6)')ecv,gsolap(n,ik)
+!     &  (jac*abs(gsolap(n,ik))**2,inc=1,nchan)
+111    format(2x,1f12.6,2x,10g14.6)
+!       do inc=1,nchan
+!       raux=raux+jac*abs(gsolap(n,inc,ik))**2*dec
+!       enddo ! inc
+      enddo !ik
+!      if (verb.ge.3) then
+!      write(97,'(3x,a,i3,a,i3,a,1f8.5)')'# -> Set:',jset, '  PS=',n,
+!     & ' Norm solap=',raux*2/pi
+!      endif
+      write(520,*)'&'
+      enddo ! n
+!      enddo !iset
+      endif ! verb
+c-------------------------------------------------------------------------------
       
       end subroutine 
 

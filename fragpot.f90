@@ -587,7 +587,7 @@ c Next lines: real, imag
           write(0,*) 'Potential file:', filename,' not found!'
           stop
         endif
-        write(*,'(8x, "Potential file:",a20)') filename 
+        write(*,'(8x, "Potential file:",a30)') filename 
         open(kpot,file=filename,status='old')
         read(kpot,*) header
         npt=0

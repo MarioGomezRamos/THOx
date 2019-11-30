@@ -28,8 +28,9 @@ c
        real*8:: alpha,fival
        parameter(alpha=0.)
        real*8 a13,r,rc,rabs,rcp,rcpabs,raux,aaux
-       real*8:: vcoul,ws,pt,gausspot,vlsaux,wsso,gausder,dws,vllaux
-       real*8:: vaux,vaux2,vssaux
+       real*8:: vcoul,ws,pt,gausspot,gausspotr2
+       real*8:: vlsaux,wsso,gausder,dws,vllaux
+       real*8:: vaux,vaux2,vssaux,sqwell
        real*8:: vcpaux,vdef(0:mmultipole)
        real*8:: YLMC,pl(4,4),test,theta,w
        integer np,nv,iv
@@ -169,15 +170,15 @@ c ------------------------------------------------------
      &      rso*A13,aso !MGR
 
  119       format(7x,'o ',a15,"V0(l=0-3)=(",4f8.3,') MeV, R0=',
-     &           f5.2,' fm, ar=',f5.2,' fm ')
+     &           f6.3,' fm, ar=',f6.3,' fm ')
 
  120       format(7x,'o Central   : V0(l=0-3)=(',4f8.3,') MeV, R0=',
-     &           f5.2,' fm, ar=',f5.2,' fm ')
+     &           f6.3,' fm, ar=',f6.3,' fm ')
 !     &           ' Rc=',f6.3,' fm ]')
- 122       format(7x,'o Spin-orbit: Vso=(0:3)',4f8.3,' MeV, Rso=',f5.2, !MGR
-     &           ' fm, aso=',f5.2,' fm ',/)
+ 122       format(7x,'o Spin-orbit: Vso=(0:3)',4f8.3,' MeV, Rso=',f6.3, !MGR
+     &           ' fm, aso=',f6.3,' fm ',/)
  124       format(7x,'o Spin-spin : Vss(l=0-3)=(',4f8.3,') MeV, Rss=',
-     &          f5.2, ' fm, ass=',f5.2,' fm ',/)
+     &          f6.3, ' fm, ass=',f6.3,' fm ',/)
 
 c ------------------------------------------------------
         case(2) !  Posch-Teller
@@ -192,7 +193,7 @@ c ------------------------------------------------------
 c ------------------------------------------------------
              write(potname,*) "Gaussian"
              write(*,*)'type=3 => Gaussian'
-             write(*,119) potname,Vl0(0:3),r0*a13,aso
+             write(*,119) potname,Vl0(0:3),r0*a13,a0
          if (abs(maxval(Vso(0:3))).gt.0) write(*,122) Vso(0:3),
      &    rso*A13, aso!MGR
              if (maxval(abs(Vss0)).gt.0) 
@@ -200,6 +201,21 @@ c ------------------------------------------------------
 
  140       format(3x,'[Vso(l=0-3)=(',4f8.3,') MeV  Rso=',f6.3,
      &           'aso=',f6.3,' fm  Rc0=',f6.3,' fm ]',/)
+
+c ------------------------------------------------------
+        case(30) ! Gaussian  x r2
+c ------------------------------------------------------
+             write(potname,*) "Gaussian"
+             write(*,*)'type=30 => Gaussian x r2' 
+             write(*,119) potname,Vl0(0:3),r0*a13,a0
+         if (abs(maxval(Vso(0:3))).gt.0) write(*,122) Vso(0:3),
+     &    rso*A13, aso!MGR
+             if (maxval(abs(Vss0)).gt.0) 
+     &          write(*,124) Vss0(0:3),rss*A13, ass
+
+ 142       format(3x,'[Vso(l=0-3)=(',4f8.3,') MeV  Rso=',f6.3,
+     &           'aso=',f6.3,' fm  Rc0=',f6.3,' fm ]',/)
+
 
 
 c ------------------------------------------------------
@@ -217,6 +233,11 @@ c ------------------------------------------------------
 154        format(3x,i5,' points & ',i3,' potentials')
            write(*,*)'- +WS s.o. with parametres:'
            write(*,122) Vso,rso*A13, aso
+
+
+c ------------------------------------------------------
+        case(10) !  Externally read
+c -----------------------------------------------------
 
 c ------------------------------------------------------
         case default
@@ -426,10 +447,20 @@ c .. Gaussian
            case(3) ! Gaussian 
  	      if (abs(v0).gt.1e-6) vaux=gausspot(r,v0,r0*a13,a0)
               if (abs(v02).gt.1e-6)vaux2=gausspot(r,v02,rcp*a13,acp)
+c .. Gaussian x r2
+           case(30) ! Gaussian x r2 
+ 	      if (abs(v0).gt.1e-6) vaux=gausspotr2(r,v0,r0*a13,a0)
+              if (abs(v02).gt.1e-6)vaux2=gausspotr2(r,v02,rcp*a13,acp)
+c .. Square well
+           case(10) ! Square well 
+ 	      if (abs(v0).gt.1e-6) vaux=sqwell(r,v0,r0*a13)
+              if (abs(v02).gt.1e-6)vaux2=sqwell(r,v02,rcp*a13)
+
+
 	   end select
 	    vc(l,ir)= vaux
-            if (ir.eq.1) 
-     &    print*,'adding central potential ptype,v=',ptype,vaux
+!            if (ir.eq.1) 
+!     &    print*,'adding central potential ptype,v=',ptype,vaux
            if (abs(v02).gt.1e-6) then
               vcp(l,ir)=vcp(l,ir)+ vaux2
            else
@@ -696,6 +727,18 @@ c *** Woods-Saxon (volume)
 	endif
  	end function 
 
+c *** Square well potential
+	function sqwell(r,v0,r0)
+	implicit none
+	real*8 r,v0,r0,sqwell,aux,small
+        small=epsilon(small)
+        sqwell=0
+        if (abs(v0).lt.1e-6) return
+        if (r<r0) sqwell=v0
+ 	end function 
+
+
+
 c *** Spin-orbit with WS derivative
 c     This form factor will be then multiplied by l.s
 c     We use fresco definiton for spin-orbit
@@ -733,7 +776,7 @@ c     We use fresco definiton for spin-orbit
 
  
 c *** WS derivative
-        function dws(r,v0,r0,a)
+       function dws(r,v0,r0,a)
 	implicit none
 	real*8 r,v0,r0,a,dws,aux
         if (r<1e-6) r=1e-6
@@ -767,9 +810,31 @@ c *** Gaussian
          endif
          if (abs(gausspot).lt.small) gausspot=0
 	end function
+	
+	
+c *** Gaussian 
+	function gausspotr2(r,v0,r0,a)
+	 implicit none
+         real*8 small,big,aux,logsm,logbig
+	  real*8 r,v0,r0,gausspotr2,a
+         gausspotr2=0.0
+         big=huge(big)
+         small=epsilon(small)
+         logsm=log(small)
+         logbig=log(big)
+         if (a.gt.1e-6) then
+          aux=((r-r0)/a)**2
+          if (aux.gt.logbig) return
+	     gausspotr2=V0*r**2*exp(-(r-r0)**2/a**2)
+         else
+          write(*,*)'a too small in gausspotr2!'
+          stop
+         endif
+         if (abs(gausspotr2).lt.small) gausspotr2=0
+	end function
          
 
-c *** Gaussian 
+c *** Yukawa
 	function yukawa(r,v0,r0,a)
 	implicit none
 	real*8 r,v0,r0,yukawa,a

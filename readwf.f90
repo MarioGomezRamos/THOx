@@ -57,7 +57,7 @@ c interpolate in THOx grid
       do ich=1,nch
       wfc(iset,i,ich,ir)=cfival(r,rv(:),ucwf(:,ich),npt,alpha)/r
       enddo !ich
-      write(99,*)r,real(r*wfc(iset,i,1,ir))
+!      write(99,*)r,real(r*wfc(iset,i,1,ir))
       enddo !ir
       deallocate(ucwf)
       enddo !i

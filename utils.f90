@@ -907,7 +907,7 @@ c without h^2/(2m*b^2) factor
       real*8 function plm_nr(il,imm,c,c2,s,s2)
       implicit real*8(a-h,o-z)
 *-----------------------------------------------------------------------
-* Associated Legendre functions for l<=8
+* Associated Legendre functions for l<=9
 *-----------------------------------------------------------------------
       plm_nr=1.d0
       if(il.eq.0) return
@@ -989,24 +989,24 @@ c without h^2/(2m*b^2) factor
 *-----------------------------------------------------------------------
       else if(il.eq.7) then 
          if(im.eq.0) then 
-            plm=(-35*z + 315*z**3 - 693*z**5 + 429*z**7)/16.
+            plm=(-35*c + 315*c**2*c - 693*c2*c2*c + 429*c2*c2*c2*c)/16.
          else if(im.eq.1) then
-            plm=(7*Sqrt(1 - c**2)*
-     -    (-5 + 135*c**2 - 495*c**4 + 429*c**6))/16.
+            plm=(7*s*
+     -    (-5 + 135*c**2 - 495*c2*c2 + 429*c2*c2*c2))/16.
          else if(im.eq.2) then
-            plm=(-63*(-1 + c**2)*(15*c - 110*c**3 + 143*c**5))/8.
+            plm=(-63*(-s2)*(15*c - 110*c**3 + 143*c**5))/8.
          else if(im.eq.3) then
-            plm= -(315*Sqrt(1 - c**2)*(-1 + c**2)*
-     -    (3 - 66*c**2 + 143*c**4))/8.
+            plm= -(315*s*(-s2)*
+     -    (3 - 66*c2 + 143*c2*c2))/8.
          else if(im.eq.4) then
-            plm=(3465*(-1 + c**2)**2*(-3*c + 13*c**3))/2.
+            plm=(3465*(-s2)**2*(-3*c + 13*c**3))/2.
          else if(im.eq.5) then
-            plm= (10395*Sqrt(1 - c**2)*(-1 + c**2)**2*
-     -    (-1 + 13*c**2))/2.
+            plm= (10395*s*(-s2)**2*
+     -    (-1 + 13*c2))/2.
          else if(im.eq.6) then
-            plm=-135135*c*(-1 + c**2)**3
+            plm=-135135*c*(-s2)**3
          else if(im.eq.7) then
-            plm=135135*(1 - c**2)**3.5
+            plm=135135*(s2)**3.5
          endif
 *-----------------------------------------------------------------------
       else if(il.eq.8) then
@@ -1044,6 +1044,62 @@ c without h^2/(2m*b^2) factor
 !            plm=2027025*(-1 + c**2)**4
             plm=-2027025*(s2)**4
          endif
+      else if(il.eq.9) then
+         if(im.eq.0) then 
+            plm=(c*(315 - 4620*c2 + 18018*c2*c2 - 25740*c2**3 
+     &          + 12155*c**8))/128.
+         else if(im.eq.1) then 
+            plm=-(-45*s*(7 - 308*c2 + 2002*c2*c2 - 4004*c2*c2*c2 
+     &          + 2431*c2**4))/128.
+         else if(im.eq.2) then 
+			plm=(-495*c*(-s2)*(-7 + 91*c2 - 273*c2*c2 
+     &          + 221*c**6))/16.
+         else if(im.eq.3) then 
+           plm=(3465*(s2)**1.5*(-1 + 39*c2-195*c2**2 + 221*c2**3))/16.
+         else if(im.eq.4) then 
+           plm=(135135*(-s2)**2*(c - 10*c2*c + 17*c2*c2*c))/8.
+         else if(im.eq.5) then
+		    plm=(135135*(s2)**2.5*(1 - 30*c2 + 85*c2*c2))/8.
+         else if(im.eq.6) then 
+            plm=(-675675*c*(-s2)**3*(-3 + 17*c2))/2.
+         else if(im.eq.7) then
+			plm=(2027025*(s2)**3.5*(-1 + 17*c2))/2.
+         else if(im.eq.8) then
+			plm=34459425*c*(-s2)**4
+         else if(im.eq.9) then
+			plm=34459425*(s2)**4.5
+         endif
+       else if(il.eq.10) then
+         if(im.eq.0) then 
+            plm=(-63 + 3465*c2 - 30030*c2*c2 + 90090*c2**3 
+     &		- 109395*c2**4 + 46189*c2**5)/256.
+         else if(im.eq.1) then 
+            plm=-(-55*s*(63*c - 1092*c2*c + 4914*c2*c2*c - 
+     &      	7956*c**7 + 4199*c**9))/128.
+         else if(im.eq.2) then 
+ 			plm=(-495*(-s2)*(7 - 364*c2 + 2730*c2*c2 - 
+     &           6188*c**6 + 4199*c**8))/128.
+         else if(im.eq.3) then 
+           plm= -(6435*s*(-s2)*
+     &    (-7*c + 105*c2*c - 357*c2*c2*c + 323*c**7))/16.
+         else if(im.eq.4) then 
+           plm= (45045*(-s2)**2*(-1 + 45*c2 -
+     &           255*c2*c2 + 323*c2**3))/16.
+         else if(im.eq.5) then
+		    plm=(135135*s*(-s2)**2*
+     &    (15*c - 170*c2*c + 323*c2*c2*c))/8.
+         else if(im.eq.6) then 
+            plm=(-675675*(-s2)**3*(3 - 
+     &		102*c2 + 323*c2*c2))/8.
+         else if(im.eq.7) then
+			plm=-(11486475*s*(-s2)**3*(-3*c + 19*c**3))/2.
+         else if(im.eq.8) then
+			plm=(34459425*(-s2)**4*(-1 + 19*c**2))/2.
+         else if(im.eq.9) then
+			plm=+654729075*c*(s2)**4.5
+	      else if(im.eq.10) then
+			plm=-654729075*(-s2)**5
+         endif             
       endif
       plm_nr=plm
       return

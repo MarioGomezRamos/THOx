@@ -99,7 +99,7 @@ c
         use parameters
         real*8 :: jtot,sn
         integer:: partot
-        integer:: nchan,nsp,nce,bas2,lmax,nchmax
+        integer:: nchan,nsp,nce,bas2,nchmax
         integer:: ql(maxchan),qspl(maxchan)
         integer:: spindex(maxchan) ! identify the s.p. channel associated to this core/valence channel
         integer:: cindex(maxchan)
@@ -143,22 +143,23 @@ c
       TYPE(PCHANNEL),allocatable:: jpiset(:)
 
       TYPE PTCHANNEL
-!          use parameters, only: maxch
+!          use parameters !, only: maxch
 !          integer, parameter:: maxch=500
           integer partot           ! parity of system
+!          integer:: mmm=60000
           real*8  jtot             ! total angular momentum (Jp+L+Jt)
-          real*8  jt(2000)               ! spin of target MGR
-          real*8  ext(2000)        ! energy of target MGR
-          real*8  idt(2000)        !index of target MGR
+          real*8  jt(6000)               ! spin of target MGR
+          real*8  ext(6000)        ! energy of target MGR
+          real*8  idt(6000)        !index of target MGR
           real*8  nchan            ! number of channels (p+t configurations)
           logical interp           ! true if this J/pi set will be obtained by interpolation
 c         .................... can we allocate these vars dynamically?????????????
-          integer l(2000)       ! p-t orbital angular momentum
-          integer idx(2000)     ! index of projectile state
-          real*8  jp(2000)      ! projectile spin
-          real*8  jlp(2000)      ! J=L+Jp MGR
-          real*8  exc(2000)     ! excitation energy of projectile
-          real*8  kcm(2000)     ! wavenumber
+          integer l(6000)       ! p-t orbital angular momentum
+          integer idx(6000)     ! index of projectile state
+          real*8  jp(6000)      ! projectile spin
+          real*8  jlp(6000)      ! J=L+Jp MGR
+          real*8  exc(6000)     ! excitation energy of projectile
+          real*8  kcm(6000)     ! wavenumber
           integer iex           ! index of excited state
 
       END TYPE
@@ -215,12 +216,12 @@ c       for all j/pi sets
         real*8,allocatable,target:: wfr(:,:,:,:)     !wfs for (jpiset,n,nchan,nr)
         complex*16,allocatable,target:: wfc(:,:,:,:) !wfs for (jpiset,n,nchan,nr)
         real*8,allocatable,target:: energ(:,:)       !energs for each jpiset
-        real*8,allocatable       :: wbin(:,:)        !energs for each jpiset
+!        real*8,allocatable       :: wbin(:,:)        !energs for each jpiset
         real*8,allocatable,target:: idx(:,:)      
       end module wfs
 
       module xcdcc
-      logical iftrans,realwf
+      logical iftrans,realwf,rel
       integer nrad1,nquad,nex,numfilmax,nrad2,nrad3
       real*8 rin,dr, hin, rstep
       real*8, allocatable:: rvin(:),rvcc(:)
@@ -255,6 +256,7 @@ c ... to store bin information
          logical :: ifhat
          integer :: nbins,nk(200)
          real*8 klow(200), kup(200), kmid(200),ebin(200),khat(200)
+         real*8 wbin(200)
          real*8 emin, emax, kmin,kmax
          real*8 pshel(100,200)
          complex*16 wk(100,200)
@@ -319,10 +321,10 @@ c for proj-target coupling potentials
 c--------------------------------------------------------------------------Added for laguerre cuadratures
 
       module factorials
-        real*8:: dlfac(0:2500)
-        real*8:: dl2fac(0:2500)
-        real*8:: dlfac2(0:2500)
-        real*8:: FACT(0:2500)
+        real*8:: dlfac(0:20500)
+        real*8:: dl2fac(0:20500)
+        real*8:: dlfac2(0:20500)
+        real*8:: FACT(0:20500)
       end module factorials
 
 c from DCE
@@ -358,3 +360,6 @@ c--------------------------------------------------------------------------B(Ela
         real*8:: zeff,besr,jtoti,sni,eneri
         integer,allocatable:: qli(:),cindexi(:)
       end module belambdamod
+
+
+ 

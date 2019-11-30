@@ -21,14 +21,16 @@ c     --------------------------------------------------------------------------
       character*3:: jname
       CHARACTER PARITY(3)
       DATA PARITY / '-','?','+' / 
-      character*40 filename,couplings,comment,fileamps
+      character*40 filename,couplings,comment,fileampsd
 c     -------------------------------------------------------------------------------
       real*8 factor,ptr,ttr,jt,iin,ifi,kband1,kband2
       real*8,allocatable:: xrad2(:),xrad3(:)
+      real*8 :: qfactorc(0:50),qfactorn(0:50)
+      
 c changed to complex in v2.3
       complex*16,pointer:: ui(:),uf(:)
       complex*16 :: fprod
-      complex*16 xi,pot,xsum, xsumn,xsumc !,gunc
+      complex*16 xi,pot,xsum, xsumn,xsumc
 !      parameter(Kmax=6,xKrot=0.d0,nkmax=300)
       parameter(xKrot=0.d0,nkmax=300)
 c     ------------------------------------------------------------------------------
@@ -63,7 +65,8 @@ c      integer, allocatable:: np(:)
       namelist /trans/ skip,rcc,writeff
       namelist /grid/ nquad,radmax,rmax,rextrap,rstep,rvecin,drvec,hin
       namelist /wf/ filename,eminf,emaxf
-      namelist /coupling/ qcmin,qcmax,kcmax,lamin,lamax,coups,ncoul
+      namelist /coupling/ qcmin,qcmax,kcmax,lamin,lamax,coups,ncoul,
+     &          qfactorn,qfactorc
       namelist /BEQ/ bel
 !      interface
 !      subroutine gauleg(x1,x2,x,w,n)
@@ -80,6 +83,7 @@ c      integer, allocatable:: np(:)
       ken=8
       pi=acos(-1d0)
       writeff=.false.
+      qfactorc(:)=1.0; qfactorn(:)=1.0; 
 c     ----------------------------------------------------------------------------      
       write(*,'(/,5x,"*********** COUPLING POTENTIALS  *********** ")')
       
@@ -120,6 +124,9 @@ c *** Quantum number limits for transition potentials
        write(*,*) ' [ coups=0=> All transitions will be considered]'
       case (1)
        write(*,*) ' [ coups=1=> ONLY gs->cont couplings considered]'
+      case (2)
+       write(*,*) ' [ coups=2=> Diag nucl. + ALL Coulomb]'
+       if (ncoul.ne.0) write(*,*) ' ( ncoul will be ignored )'
       end select
       
       select case(ncoul)
@@ -131,7 +138,9 @@ c *** Quantum number limits for transition potentials
         write(*,*)' [ ncoul=2 => COULOMB couplings only]'
       end select
 
-
+!	  if (any(qfactorc(1:50)).ne.1.0)
+!      write(*,*)"qfactorc=",qfactorc(0:5)
+!      write(*,*)"qfactorc=",qfactorn(0:5)
 
 c *** Radial grids ------------------------------------------------------------
       read(kin,nml=grid)
@@ -269,12 +278,12 @@ c commented by AMoro, to save memory
         if(nq.eq.0) then                      !monopole
         potn= pot(r1,r2,nq,k,coefc,nc)
      &      + pot(r1,r2,nq,k,coefv,nc)
-        else
+        else !      no core excitation for valence fragment! 
         potn=pot(r1,r2,nq,k,coefc,nc)
         endif
       endif
-      if ((ncoul.eq.0).or.(ncoul.eq.2)) then ! coulomb part
-       nc=2 ! coulomb part
+      if ((ncoul.eq.0).or.(ncoul.eq.2)) then ! Coulomb part
+       nc=2 ! Coulomb part
        potc= pot(r1,r2,nq,k,coefc,nc)
      &     + pot(r1,r2,nq,k,coefv,nc)
       endif       
@@ -298,7 +307,7 @@ c commented by AMoro, to save memory
 
       if (rextrap.gt.rmax) then
        write(*,301) rextrap
-301   format(5x,"[ Coulomb couplings extrapolated to",1f6.1," fm]",/)
+301   format(5x,"[ Coulomb couplings extrapolated to",1f8.1," fm]",/)
       endif
       nff=0
       do m=1,jpsets
@@ -334,7 +343,7 @@ c commented by AMoro, to save memory
      
       do k=0,kmax
       do nq=max(nint(Iin-Ifi),nqmin),nqmax
-      do l=0,nq !small \lambda
+      do l=0,nq ! small lambda
 ! CHECK AMM : i <-> f
 !      call rmatel(m,n,xlc,i,j,k,nq,l,xjp1,xjp2,xKrot,rmatn,rmatc)
       call rmatel(n,m,xlc,j,i,k,nq,l,xjp2,xjp1,kband1,rmatn,rmatc)
@@ -371,7 +380,7 @@ c commented by AMoro, to save memory
 
 
       if (nk.gt.0) then
-      write(*,'(4x,a5,"-> ",a5," with LAM=",1i2,
+      write(*,'(4x,a6,"-> ",a6," with LAM=",1i2,
      &   2x,"NK=",i3,2x, "non-zero P(K)  ",$)') 
      &   jpi(xjp1,jpiset(m)%partot),
      &   jpi(xjp2,jpiset(n)%partot),lc,nk
@@ -392,14 +401,14 @@ c ---------------------------------------------------------
       id2=idx(n,ie2)
       nff=nff+1 !number of FF
       do irad2=1,nrad2
-	do ik=1,NK
+		do ik=1,NK
         i=pk(ik)%i 
-  	j=pk(ik)%f
+		j=pk(ik)%f
         k=pk(ik)%k
-	nq=pk(ik)%nq
-	l=pk(ik)%l
+		nq=pk(ik)%nq
+		l=pk(ik)%l
         rmatc=pk(ik)%rmatc
-	rmatn=pk(ik)%rmatn
+		rmatn=pk(ik)%rmatn
 !  radial integral: R(ik)=f*V(K,Q)*f'
         xsumn=(0.d0,0.d0)
         xsumc=(0.d0,0.d0)
@@ -423,6 +432,7 @@ c subtract projectile-target monopole Coulomb
 !     &  .and.(m.eq.n).and.(ie1.eq.ie2)) then 
        vmon=VCOUL(xrad2(irad2),zp,zt,Rcc)     
       endif
+
       xintgc(iquad)=fprod*
      & (potQKc(iquad,irad2,nq,k)*xrad2(irad2)**l-vmon)
       
@@ -441,6 +451,15 @@ c subtract projectile-target monopole Coulomb
 
 1200  fauxn=rmatn*xsumn*dsqrt(2.d0*dble(k)+1.d0)*0.5d0*radmax
       fauxc=rmatc*xsumc*dsqrt(2.d0*dble(k)+1.d0)*0.5d0*radmax
+      
+! April 2019: only diagonal nuclear couplings for coups=2
+      if (coups.eq.2.and.(ie1.ne.ie2.or.m.ne.n)) fauxn=0 
+      
+! Scale formfactors by qfactor()
+!       write(*,*) lc,qfactorc(lc), qfactorn(lc),fauxc,fauxn
+	   if (lc.lt.50) fauxc=fauxc*qfactorc(lc)
+	   if (lc.lt.50) fauxn=fauxn*qfactorn(lc)
+!       write(*,*) lc,qfactorc(lc), qfactorn(lc),fauxc,fauxn
  
 !      Fc(id1,id2,lc,irad2)=Fc(id1,id2,lc,irad2)+fauxc    ! coulomb
 !      Fn(id1,id2,lc,irad2)=Fn(id1,id2,lc,irad2)+fauxn    ! nuclear
@@ -498,8 +517,7 @@ c    -----------------------------------------------------------
       do ie2=1,jpiset(if2)%nex  ! np(if2)
       e1=energ(if1,ie1)
       e2=energ(if2,ie2)
-!      m1=if1+ie1-1
-!      m2=if2+ie2-1
+
       m1=ie1+npa1-jpiset(if1)%nex !np(if1)
       m2=ie2+npa2-jpiset(if2)%nex !np(if2)
 
@@ -510,8 +528,7 @@ c    -----------------------------------------------------------
           if ((if2.ne.if1).or.(ie2.ne.ie1)) cycle
         endif
       end select
-!!!!!!!!!!!!!!!!
-! Commented for TEST 11/OCT/16
+
       if ((m1.gt.m2).and.realwf) cycle !!!! AMORO
 c for fresco
       do lc= nint(dabs(xjp1-xjp2)),min(nint(xjp1+xjp2),lambmax)
@@ -519,7 +536,7 @@ c for fresco
       ltr=lc
       ptr=lc
       
-c \hat{J_p}*hat{J'_p}*(2*\Lambda+1)*(-1)^\Lambda
+c \hat{Jp}*hat{Jp'}*(2*Lambda+1)*(-1)^Lambda
       factor=(2d0*ptr+1)*sqrt(2*xjp1+1)*sqrt(2*xjp2+1)*(-1)**ptr
 
       if (debug) then
@@ -533,8 +550,10 @@ c \hat{J_p}*hat{J'_p}*(2*\Lambda+1)*(-1)^\Lambda
      & write(kfr,500) nrad3,rstep,rfirst,fscale,ltr,ptr,ttr,m2,m1,
      &               comment   ! ORIG
 
-!     & write(kfr,500) nrad3,rstep,rfirst,fscale,ltr,ptr,ttr,m1,m2,
-!     &               comment    ! FIXED???
+!!! TEST APRIL
+!      if (writeff) 
+!     & write(888,500) nrad3,rstep,rfirst,fscale,ltr,ptr,ttr,m2,m1,
+!     &               comment   ! ORIG
 
 
       if (verb.ge.4) write(120,'("# <",i3,"|",i2,"|",i3,">")') m1,lc,m2
@@ -567,9 +586,9 @@ c Check that imaginary part is small
 
 c Extrapolate Coulomb formactors from R=Rmax to Rextrap
       if (rextrap.gt.rmax) then
-      caux=real(fauxc)*rmax**(lc+1) 
+      caux=real(fauxc)*rmax**(lc+1)
+      
       do ir=nrad2+1,nrad3
-!      r2=rmax+dble(rstep)*ir
       r2=rstep+rstep*(ir-1)
       fauxc=0
       if ((lc.gt.0).and.(ncoul.ne.1)) then
@@ -582,6 +601,17 @@ c Extrapolate Coulomb formactors from R=Rmax to Rextrap
       Ff(m1,m2,lc,ir)=fauxc ! total  
       enddo !nrad3
       endif ! rextrap> rmax
+      
+!!! TEST APRIL 18 
+!      do ir=1,nrad3
+!      r2=rstep+rstep*(ir-1)
+!      fauxc=0
+!      if ((lc.gt.0).and.(ncoul.ne.1)) then
+!      fauxc=caux/r2**(lc+1)
+!      endif
+!      if (writeff) write(888,'(2x,1g16.10,2x,1g16.10)') factor*fauxc
+!      enddo
+!!!!!!!!!!! END TEST
 
       enddo !lc (next multipole)
      
@@ -608,7 +638,9 @@ c ---------- nuclear + coulomb
       write(12,900) r2, (Ff(m1,m2,i,irad),i=i1,i2)
 !      write(10,900) r2, (Fn(m1,m2,i,irad),i=i1,i2)
 !      write(11,900) r2, (Fc(m1,m2,i,irad),i=i1,i2)
+! TEST I4 -> I5
 500   format(i4,3f8.4,i4,2f4.0,2i4,a35)
+!500   format(i5,3f8.4,i4,2f4.0,2i4,a35)
 800   format (a,2(a,(f8.4),2x,a,i3,2x),2(a,(f8.4),2x),/)
 820   format (a,a5,a,a5,2(a,(f8.4),2x))
 900   format (1f8.3,2x,100(e12.4,2x,e12.4,4x))
@@ -630,7 +662,7 @@ c ---------- nuclear + coulomb
       endif ! verb
 
 c     -----------------------------------------------------------
-c     Write energies in Fresco fromat
+c     Write states & energies in Fresco format
 c     ----------------------------------------------------------- 
       open(ken,file="states.fr",status='unknown')     
       i=0
@@ -873,6 +905,7 @@ c     --------------------------------------------------------------
        else                ! core-target
 !        Vq=fival(xrvec,rfrag,vcorec(:,iq),nr,alpha)
         Vq=FFR4(xpos,vcorec(:,iq),nr)
+!        if (iq.eq.2) write(199,*)xx, vq
        endif
        func=Vq*fleg(xx,k)/(2.d0*xrvec**iq) !c.f. Eq. (22) of Summers
       endif     

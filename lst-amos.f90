@@ -4,6 +4,7 @@ c *** -----------------------------------------------
       subroutine thobasis(l,m,bosc,gam,nho)
         use wfs, only: wftho,rmin,rmax,dr,rvec,nr,rweight
         implicit none
+        logical:: debug=.false.
         integer:: l,nho,n,ir,m,kbout,nmin,ibas
         real*8:: r,wf,wfho,nu,bosc,gam,eps
 !        real*8:: rstart,rmax,dr
@@ -13,6 +14,7 @@ c *** -----------------------------------------------
         parameter(eps=1e-6)
         nu=1d0/bosc**2d0
 	kbout=10
+
 
 !        open(50,file='lst.out',status='unknown')                !uncoment to check local scale transformation
 
@@ -40,21 +42,21 @@ c	write(*,*)'nr=',nr
 !	      write(*,*)ir,rvec(ir)
               if (r<eps) r=eps
               sr=lst(m,gam,r)
-!              if (n.eq.0)write(50,*) r,sr                     !uncoment to check local scale transformation
+!              if (debug)write(50,*) r,sr                     !uncoment to check local scale transformation
               dsr=dlst(m,gam,r)  
               call ho3d(nu,n, l, sr,wfho)
             
               wf=wfho *sr*sqrt(dsr)/r
               wftho(ibas,l,ir)=wf
-!              write(kbout,*) r,r*wf !,sr,dsr
+              if(debug) write(kbout,*) r,r*wf !,sr,dsr
 	      if (.not.allocated(rweight)) then
               norm=norm+dr*(wf*r)**2
 	      else
 	      norm=norm+rweight(ir)*(wf*r)**2
 	      endif
            enddo
-!           write(kbout,*)'#Norm=',norm
-!           write(kbout,*)'&'
+           if (debug)write(kbout,*)'#Norm=',norm
+           if (debug)write(kbout,*)'&'
 	      test=test+(norm-1)**2
 !        write(*,*)'l,n,norm=',l,n,norm
         enddo

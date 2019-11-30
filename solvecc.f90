@@ -259,8 +259,8 @@ c *** Channel energy
        jptset(icc)%jtot   =jtot
        if (nch.gt.nchmax) nchmax=nch
        if (mod(ijt-iblock,ijump).ne.0) jptset(icc)%interp=.true.
-       if (mod(ijt-iblock,ijump).ne.0) write(*,*)'icc,Jp=',
-     &     icc,Jtot,' interp'
+!       if (mod(ijt-iblock,ijump).ne.0) write(*,*)'icc,Jp=',
+!     &     icc,Jtot,' interp'
        if (verb.gt.3) write(*,*)'[',nch,' channels]'
 !      endif
       enddo !ipar
@@ -268,16 +268,16 @@ c *** Channel energy
 
       dry=.false.
       ncc=icc
-      write(*,'(/,8x,"=> Number of CC sets=",i4)') ncc  
-      write(*,'(8x,  "=> Max number of chans =",i3)') nchmax  
-      write(*,'(8x,  "=> Max L =",i4)') maxval(jptset(icc)%l(:))  
-      write(*,'(8x,  "=> Max Jp =",f4.1)') maxval(jptset(icc)%jp(:)) 
-      write(*,'(8x,  "=> Max Jlp =",f4.1)') maxval(jptset(icc)%jlp(:))
-      write(*,'(8x,  "=> Max Jt =",f4.1)') maxval(jptset(icc)%jt(:))     
-      write(*,'(8x,  "=> Max JTOT =",f5.1)') jtotmax 
+      write(*,'(/,8x,"=> Number of CC sets=",i6)') ncc  
+      write(*,'(8x,  "=> Max number of chans =",i5)') nchmax  
+      write(*,'(8x,  "=> Max L=",i6)') maxval(jptset(icc)%l(:))  
+      write(*,'(8x,  "=> Max Jp =",f7.1)') maxval(jptset(icc)%jp(:)) 
+      write(*,'(8x,  "=> Max Jlp =",f7.1)') maxval(jptset(icc)%jlp(:))
+      write(*,'(8x,  "=> Max Jt =",f7.1)') maxval(jptset(icc)%jt(:))     
+      write(*,'(8x,  "=> Max JTOT =",f8.1)') jtotmax 
       
 !!!! TEMPORARY SOLUTION
-      if (ncc.gt.3000) then
+      if (ncc.gt.8000) then
         write(*,*)'too many J/pi sets!.Increase dim of jptset'
         stop
       endif
@@ -366,7 +366,7 @@ c ***
         xsinel=0      ! inelastic x-section
 
         write(*,300) icc,jtot,parity(partot+2)
-300     format(/,5x, 35("*")," CC SET",i4, " J/pi=",1f6.1,a1,2x,35("*")) 
+300     format(/,5x, 35("*")," CC SET",i6, " J/pi=",1f5.1,a1,2x,35("*")) 
         if (nch.eq.0) then 
           write(*,*) '  [no channels for this J/pi]'; cycle
         endif
@@ -450,11 +450,8 @@ c ... write channels quantum numbers in CDCC file
          write(85,317) ich,iex,l,jp,jt,kcmf
 317    format(2x,3i3,2f5.1,2f8.4)
        enddo ! ich
-       call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)
 
-
-
-    
+       call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)    
           
 c ... Compute integrated cross sections
        do inc=1,nch
@@ -477,11 +474,11 @@ c ... Compute integrated cross sections
        deallocate(incvec)
 !-----------------------------------------------------------------------
       if (allocated(vcoup)) deallocate(vcoup)
-      write(440,*) 'Jtot',jtot,partot
-      do inc=1,nch
-      write(440,*) (dble(smats(icc,inc,ich)),dimag(smats(icc,inc,ich)),
-     & ich=1,nch)
-      enddo
+!      write(440,*) 'Jtot',jtot,partot
+!      do inc=1,nch
+!      write(440,*) (dble(smats(icc,inc,ich)),dimag(smats(icc,inc,ich)),
+!     & ich=1,nch)
+!     enddo
       
        write(*,320)xsr,xsinel,xsr-xsinel
 320    format(5x,"o X-sections: Reac=", 1f8.3,5x,
@@ -645,8 +642,6 @@ c -----------------------------------------------------
      &  rstart,nr,wf,phase,smat,method,info)
 
       case(4)     ! Enhanced Numerov (Fresco version of T&C)
-!        write(0,*) 'Entering schcc_erwin Jtot',jptset(icc)%jtot,
-!     &   jptset(icc)%partot
         call schcc_erwin(nch,ecm,zp*zt,inc,ql,factor,hcm,
      &  rstart,nr,wf,phase,smat,method,info)
 
@@ -664,16 +659,6 @@ c -----------------------------------------------------
      &write(*,'(5x,"[ CC solved in",1f8.3," sec ]")') tf-ti
 !      tcc=tcc+finish-start
       smats(icc,inc,1:nch)=smat(1:nch)
-
-      
-!!!!! TEST!!!!!!!!!!!!!!!!!!!!!!!!!!
-!      if (icc.eq.1) then 
-!      do ir=1,nr
-!      write(50,'(1f8.3,2x,50f12.8)') rvcc(ir),(wf(n,ir),n=1,min(2,nch))
-!      enddo
-!      write(50,*)'&'
-!      endif
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 c     Deallocate variables
 !      if (allocated(vcoup)) deallocate(vcoup)
@@ -760,7 +745,7 @@ c -----------------------------------------------------
 
       case(5)     ! R-matrix method (P. Desc. subroutine)
       write (0,*) 'R-matrix not properly implemented STOP'
-      STOP
+!      STOP
         call schcc_rmat_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
      &  rstart,nr,wf,phase,smat,info,nlag,ns,einc,icc)
 
@@ -770,7 +755,8 @@ c -----------------------------------------------------
       end select
 
       call cpu_time(tf)
-      write(*,'(5x,"[ CC solved in",1f8.3," sec ]")') tf-ti
+      if (verb.ge.3)
+     & write(*,'(5x,"[ CC solved in",1f8.3," sec ]")') tf-ti
 !      tcc=tcc+finish-start
 !      smats(icc,inc,1:nch)=smat(1:nch)
 
@@ -1184,7 +1170,7 @@ c ... Memory requirements
       enddo     
  
       write(*,170) nrcc, hcm,rmaxcc,hcm
-170   format(/,5x,"=>  Interpolating F(R) in grid with ",i5, ' points:',
+170   format(/,5x,"=>  Interpolating F(R) in grid with ",i10, ' points:',
      &           2x,"[ Rmin=",1f5.2,2x," Rmax=",
      &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
 

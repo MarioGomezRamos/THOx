@@ -64,17 +64,17 @@ c AMM: final??
       if((-1)**nint(dble(K)+dble(nQ-lambda)+dble(i)).ne.1) cycle
       if((-1)**nint(dble(i)+xl1+xl2).ne.1) cycle
       if(WIGN6J(dble(i),xlambdac,dble(nQ),dble(lambda),
-     .dble(nQ-lambda),dble(K)).eq.0.d0) cycle
+     &          dble(nQ-lambda),dble(K)).eq.0.d0) cycle
       if(WIGN6J(xj1,xj2,dble(i),xl2,xl1,s1).eq.0.d0) cycle
       if(WIGN9J(xjp1,xjp2,xlambdac,xj1,xj2,dble(i),xI1,xI2,dble(nQ))
-     ..eq.0.d0) cycle
+     &   .eq.0.d0) cycle
       red=red+(2.d0*dble(i)+1.d0)
-     .*WIGN3J(dble(K),dble(nQ-lambda),dble(i),0.d0,0.d0,0.d0)
-     .*WIGN3J(dble(i),xl1,xl2,0.d0,0.d0,0.d0)
-     .*WIGN6J(dble(i),xlambdac,dble(nQ),dble(lambda),dble(nQ-lambda),
-     .dble(K))
-     .*WIGN6J(xj1,xj2,dble(i),xl2,xl1,s1)
-     .*WIGN9J(xjp1,xjp2,xlambdac,xj1,xj2,dble(i),xI1,xI2,dble(nQ))
+     &  *WIGN3J(dble(K),dble(nQ-lambda),dble(i),0.d0,0.d0,0.d0)
+     &  *WIGN3J(dble(i),xl1,xl2,0.d0,0.d0,0.d0)
+     &  *WIGN6J(dble(i),xlambdac,dble(nQ),dble(lambda),dble(nQ-lambda),
+     &   dble(K))
+     &  *WIGN6J(xj1,xj2,dble(i),xl2,xl1,s1)
+     &  *WIGN9J(xjp1,xjp2,xlambdac,xj1,xj2,dble(i),xI1,xI2,dble(nQ))
       enddo
 !!! CHECK IF THIS IS VALID ALSO FOR NQ=0!!!!!!! AMORO!!!!!!!!!!!!!!!1
 !      strmat=WIGN3J(dble(nQ),xI1,xI2,0.d0,-xKc,xKc)

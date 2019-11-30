@@ -316,15 +316,15 @@ c *** ---------------------------------------------------
       implicit none
       real*8:: hnm,res,wfpau
       real*8::h,fact,d2wf,xl,r,d1wfm,d1wfn
-      real*8::deriv1,als,ass,alsc,corels,coefss
-      real*8 allp,aspsp,ccoef,crotor,gcoup,all
+      real*8::deriv1,als,ass,alsc,corels,coefss,atens
+      real*8 allp,aspsp,ccoef,crotor,gcoup,all,ctens
       integer::i,ip,n,nchani,m,nchanf,ichn,ichm
       integer li,lf
       real*8::ji,jf
       real*8:: un,um,um1,um2,um3,um4,um5,aux,knm,vnm
       real*8,allocatable:: fmaux(:),fnaux(:),hnmaux(:)
       real*8,allocatable:: fpaux(:),gpaux(:)
-      real*8:: r1,r2,uno,cero
+      real*8:: uno,cero
       parameter(uno=1d0, cero=0d0)
       integer:: ici,icf,il,ichsp,nphi,nphf
       real*8:: jci,jcf,lambdar,sixj,cleb,lfr,lir,cl
@@ -373,6 +373,8 @@ c spin-orbit for core (added to v2.0.2 version by AMoro)
 c spin.spin term 
       ass= coefss(li,sn,ji,qjc(nchani),lf,sn,jf,qjc(nchanf),jtot)
       
+c tensor
+      atens=ctens(li,sn,ji,qjc(nchani),lf,sn,jf,qjc(nchanf),jtot)
 
 c l.l term -----------------------------------------------
        all=xl*(xl+1.d0)
@@ -490,14 +492,11 @@ c Diagonal term
 
            endif
 
-
 c Non-diagonal
            vnm=vnm  
      &  + (alsc*vlsc(li,i)        ! core spin-orbit MGR l-dependence     
-     &  + sum(acoup(:)*vcp(:)) ! particle-core coupling
+     &  + sum(acoup(:)*vcp(:))    ! particle-core coupling
      &    )*un*um
-
-!     &  + ass*vss(i)           ! spin-spin  
 
        if ((li.eq.lf).and.abs(ass*vss(li,i)).gt.0) then
 !       if (i.eq.1) write(*,*)'spin.spin included! ass=',ass,vss(li,i)
@@ -536,12 +535,6 @@ c Non-diagonal
            endif ! cptype.eq.5
 
            hnmaux(i)=knm+vnm
-
-
-        if (i.lt.5) 
-     &   write(99,'(i2,1f4.1,i2,1f4.1,4g16.6)')li,jci,lf,jcf,
-     &   acoup(2),vcp(2)
-
 
         enddo !ir
 
@@ -629,6 +622,30 @@ c *** Calculate du(r)/dr using five points derivative formula
            deriv1=(f(j-2)-8*f(j-1)+8*f(j+1)-f(j+2))/h/12.
          end if
       end function deriv1
+
+
+c *** Calculate d^2u(r)/dr^2 using five points derivative formula
+c     f(ndim)=function to make derivative
+c     h      =step
+c     j      =point for derivative
+      function deriv2(f,h,ndim,j)
+        implicit none
+        integer ndim,j,i
+        real*8 f(ndim),h,deriv2
+!        write(*,*) 'deriv'
+!        do i=1,ndim
+!           write(96,*) i,f(i)
+!        enddo
+
+        if ((j.eq.1).or.(j.eq.2)) then
+           deriv2=(f(j+2)-2*f(j+1)+f(j))/2d0/h
+        else if ((j.eq.ndim).or.(j.eq.ndim-1)) then
+           deriv2=(f(j)-2*f(j-1)+f(j-2))/h/h
+        else 
+           deriv2=(f(j+1)-2*f(j)+f(j-1))/h/h ! O(h^2)
+           deriv2=(-f(j+2)+16*f(j+1)-30*f(j)+16*f(j-1)-f(j-2))/(12*h*h)
+        end if
+      end function deriv2
 
 
 c---------------------------------------------------------------------------------------------
@@ -853,8 +870,8 @@ c (uses Brink&Satchler convention for r.m.e.)
 
 
 
-c spin.spin 
-       function coefss(l,s1,j,s2,lp,s1p,jp,s2p,jt)
+c spin.spin (borrowed from Fresco frxx4.f)
+      function coefss(l,s1,j,s2,lp,s1p,jp,s2p,jt)
       IMPLICIT NONE
       integer:: l,lp,is,ns
       real*8:: s1,s2,s1p,s2p,j,jp,jt, coefss
@@ -879,8 +896,54 @@ c spin.spin
       COEFSS = T
       RETURN
  95   RETURN
+      END
 
-       end 
+c tensor (borrowed from Fresco frxx4.f)
+c Fresco-> THOx
+c racah -> RAC
+c WIG9J -> U9
+c cleb6 -> cleb ???
+      function ctens(l,s1,j,s2,lp,s1p,jp,s2p,jt)
+      IMPLICIT NONE
+      integer:: l,lp,is,isp,ns,nsp
+      real*8:: ctens
+      real*8:: s1,s2,s1p,s2p,j,jp,jt, coefss
+      real*8:: s,smin,smax,spmin,spmax,sp ! CHECK!!
+      real*8:: z,rac,u9,cleb
+      real*8:: t,j2,t1,t2,t3,t4,t5
+      parameter(z=0.0)
+      ctens=0d0
+      SMIN = MAX(ABS(L-JT),ABS(S1-S2))
+      SMAX = MIN(    L+JT ,    S1+S2 )
+      T = 0.0
+!      DO 80 S=SMIN,SMAX
+      NS=NINT(SMAX-SMIN)
+      DO 80 IS=0,NS
+      S=SMIN+IS
+      T1 = SQRT((2*J+1)*(2*S+1)) * RAC(L+Z, S1,JT,S2,J,S)
+        SPMIN= MAX(ABS(LP-JT),ABS(S1-S2),ABS(S-2))
+        SPMAX= MIN(    LP+JT ,    S1+S2 ,    S+2 )
+!      DO 80 SP=SPMIN,SPMAX
+      NSP=NINT(SPMAX-SPMIN)
+      DO 80 ISP=0,NSP
+      SP=SPMIN+ISP
+      T2 = SQRT((2*JP+1)*(2*SP+1)) * RAC(LP+Z,S1,JT,S2, JP,SP)
+      T3 = SQRT((2*L+1.)*(2*S+1.)) * (-1)**NINT(JT-L-SP)
+     &      * RAC(L+Z,LP+Z,S,SP,2+Z,JT)
+      T4 = SQRT(2*(2*LP+1)/(3.*(2*L+1.))) *CLEB(LP+Z,Z,2+Z,Z,L+Z,Z)
+      T5 = SQRT((2*SP+1)*(2*2+1)*(2*S1+1)*(2*S2+1))
+     &      * U9(S,   SP,   2+Z,
+     &              S1,  S1,   1+Z,
+     &              S2,  S2,   1+Z)
+     &      * SQRT(S1*(S1+1) * S2*(S2+1))
+      T = T + T1 * T2 * T3 * T4 * T5
+ 80    CONTINUE
+!      write(*,*)'TENSOR: type,L,S1,J,S2,JT,LP,S1P,JP,S2P,LAM',
+!     & L,S1,J,S2,JT,LP,S1P,JP,S2P,LAM
+      CTENS = T
+      RETURN
+      END
+
 
 c Core spin-orbit (OJO 2L.S) 
 c  < (L,S1)J, S2; JT  /  2 l.s2  / (LP,S1P)JP, S2P; JT>
@@ -927,13 +990,15 @@ c Build and diagonalize full Hamiltonian
       use hmatrix
       use globals
       use trace
+      use constants, only: hc
       implicit none
       integer:: i,ir,m,n,ip,n1,m1,inchani,inchanf,ninc
       integer:: incn,np,nho,nset
       real*8:: norm,r,norm2,rms,rl,rmstot,ex
       real*8,parameter:: uno=1.0
       real*8 :: wcut(1:maxchan)
-      real*8,allocatable:: faux(:),ebaux(:)
+      real*8,allocatable:: faux(:),ebaux(:),vertex(:,:)
+      real*8 :: raux,d2wf,deriv2
 !      integer,allocatable:: iord(:)
       integer:: ifail
       CHARACTER(LEN=80) formato
@@ -1032,9 +1097,12 @@ c *** Construct eigenfunctions
       if (allocated(wchan)) deallocate(wchan)
       if (allocated(ebin))  deallocate(ebin)
       if (allocated(iord))  deallocate(iord)
-	  if (allocated(ebaux))  deallocate(ebaux)
+      if (allocated(ebaux))  deallocate(ebaux)
+      if (allocated(vertex))  deallocate(vertex)
+
       allocate(faux(nr))
       allocate(wfeig(hdim,nchan,nr))
+      allocate(vertex(nchan,nr))
 
 c *** we need to allocate this only for the first j/pi set
 c     (changed in version 2.3 to complex)
@@ -1058,7 +1126,7 @@ c     (changed in version 2.3 to complex)
 !     Let's try ordering by external subroutine
       do i=1,hdim
         ebaux(i)=hmatx(hdim-i+1,hdim-i+1)
-      enddo
+      enddo !i
       call m01daf(ebaux,1,hdim,'a',IORD,ifail)
       if (ifail.ne.0) then
          write(*,*)'m01daf: IFAIL=',ifail
@@ -1083,11 +1151,15 @@ c     (changed in version 2.3 to complex)
            write(79,*)hdim,hmatx(n1,n1),1.2
         endif
         if ((hmatx(n1,n1)<0).or.wfprint(i)) then   
-          write(100+i,246)nchan,i,hmatx(n1,n1)
+        write(100+i,246)nchan,i,hmatx(n1,n1)
+!        write(200+i,246)nchan,i,hmatx(n1,n1)
+
 246	   format('# ',i2,' Channels, Eigenvalue:',i2,' Energy: ',f8.4)
           write(100+i,247)jtot,partot
+!          write(200+i,247)jtot,partot
 247	   format('# J:',f4.2,' parity:',i2)
-          write(100+i,*)'# #channel #core Jc (l sn) jn'
+          write(100+i,*) '#  channel core Jc (l sn) jn'
+!           write(200+i,*)'#  channel core Jc (l sn) jn'
         endif
  
         ip=0
@@ -1130,8 +1202,6 @@ c store wfs and energies for all j/pi sets
         if((ex.lt.exmin).or.(ex.gt.exmax)) cycle
         if (any(wchan(i,1:nchan).lt.wcut(1:nchan))) then   ! Added dec/16.
           print*,'i=',i, 'excluded due to small weight'; 
-!          write(*,*)'wcut=',wcut(1:nchan),' wchan=',wchan(i,1:nchan); 
-!          stop
           cycle
         endif
           ninc=ninc+1
@@ -1156,10 +1226,9 @@ c this is included in basis.f90, so it should be redundant here
        write(*,'(/,5x,"[",i3, " out of", i4,
      & " eigenvalues retained ]")')  ninc,hdim
 
-!      write(80,'(11f12.6)')1d0*nho,(ebin(i),i=1,10)
- 
-       do i=1,hdim
-         if (written(100+i)) then
+! Write eigenfunctions 
+        do i=1,hdim
+        if (written(100+i)) then
         if ((rlast.gt.0).and.(rlast.lt.rmax)) then 
             np=idint((rlast-rmin)/dr)
         else
@@ -1167,23 +1236,57 @@ c this is included in basis.f90, so it should be redundant here
         endif
         write(100+i,248)np
 248     format("# ",i5," points")
+
+! Compute & write vertex functions (march 2019)
+       do m=1,nchan
+       do ir=1,np
+        r=rmin+dr*dble(ir-1)
+        faux(ir)=r*wfeig(i,m,ir)
+       enddo !ir
+
+       do ir=1,np
+       r=rmin+dr*dble(ir-1)
+       if (r.lt.1e-4) r=1e-4
+       d2wf=deriv2(faux,dr,np,ir)
+!       write(99,*)rmin+dr*dble(ir-1),faux(ir),d2wf
+       vertex(m,ir)=ebin(i)*faux(ir)
+     &      + (hc**2/2/mu12)*(d2wf-ql(m)*(ql(m)+1.)*faux(ir)/r/r)
+
+       enddo !ir
+       enddo !m
+
         do ir=1,np
         r=rmin+dr*dble(ir-1)
         if (r> rlast) cycle
-        write(100+i,'(1f8.3,2x,10f10.6)') r,(r*wfeig(i,m,ir),m=1,nchan)   !here we write out the eigenfunctions
-        enddo 
+        write(100+i,'(1f8.3,2x,10f10.6)') r,(r*wfeig(i,m,ir),m=1,nchan)   
+!        write(200+i,'(1f8.3,2x,10g14.6)') r,(vertex(m,ir),m=1,nchan)
+        enddo !ir
         write(100+i,*)'& '
-	endif
-       enddo
+!        write(200+i,*)'& '
+
+        do ir=1,np
+        r=rmin+dr*dble(ir-1)
+        if (r> rlast) cycle
+        write(100+i,'(1f8.3,2x,10g14.6)') r,(vertex(m,ir),m=1,nchan)
+        enddo !ir
+        write(100+i,*)'& '
+!        write(200+i,*)'& '
+	endif 
+
+
+       enddo !i 
        call flush(6)
 
+
+	   
+! Write CDCC wfs	   
        if (xcdcc) call writewf(hdim,np)
+       
 c Free memory
       deallocate(hmatx,hmat)
       if (allocated(ortmat)) deallocate(ortmat)
-!      if (allocated(gmat)) deallocate(gmat)
       if (allocated(wftho)) deallocate(wftho)
-	end subroutine
+	  end subroutine
 
 
 
@@ -1253,7 +1356,8 @@ c  --------------------------------
 c      u(r)
 !      write(99,*) 'writewf: ndim,exmin,exmax=',ndim,exmin,exmax
       do n=1,ndim
-          ex=hmatx(ndim-n+1,ndim-n+1)
+!          ex=hmatx(ndim-n+1,ndim-n+1)
+      	  ex=ebin(n)
           if((ex<exmin).or.(ex>exmax)) cycle
           write(kwf,*)  ex
 	   do ir=1,np ! changed in 2.2 from nr to np

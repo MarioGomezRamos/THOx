@@ -3,7 +3,7 @@ c     Construct continuum single or multi-channel bins
       use globals, only: mu12,egs,kin,written,verb
       use constants
       use sistema
-      use wfs, only:nr,dr,rvec,wfc,energ,wbin,rint,rmin
+      use wfs, only:nr,dr,rvec,wfc,energ,rint,rmin
       use channels, only: jpiset,jpsets,nchmax,ql
       use parameters, only: maxchan,maxeset
       use potentials, only: ccmat
@@ -16,7 +16,7 @@ c     ----------------------------------------------
       integer :: iset,inc,nbins,nchan,ib,ibp,ich,ik,ir,nk
       integer :: bastype,wftype
 c     .....................................................
-      real*8  :: emin,emax,ei,ef,ebin,excore,ehat,khatsq
+      real*8  :: emin,emax,ei,ef,ebin,excore,ehat,khatsq,wbin
       real*8  :: r,bnorm,raux,r2aux,bcoef,chnorm(maxchan),rms
       real*8  :: ddk,ki,kf,kmin,kmax,kstep,kmid,k,li
       real*8  :: psh_el(nk),deltap, deladd,deltai
@@ -90,10 +90,10 @@ c *** We need to allocate this only for the first j/pi set
            allocate(energ(jpsets,maxeset))
            energ(:,:)=0.
       endif
-      if (.not.allocated(wbin)) then 
-           allocate(wbin(jpsets,maxeset))
+      if (.not.allocated(binset)) then 
+!           allocate(wbin(jpsets,maxeset))
            allocate(binset(jpsets)) 
-           wbin(:,:)=0.
+!           wbin(:,:)=0.
       endif
       
       binset(iset)%emin=emin
@@ -115,7 +115,11 @@ c *** We need to allocate this only for the first j/pi set
       ei=fconv*ki**2
       ef=fconv*kf**2
 !!      ebin=fconv*kmid**2  
-      wbin(iset,ib) =ef-ei     
+
+!! Modified in v2.6
+!!     wbin(iset,ib) =ef-ei   
+       wbin=ef-ei   
+
 c < phi |H | phi> 
       khatsq=(kf-ki)**2/12.d0
       khatsq=khatsq+(kf+ki)**2/4.d0
@@ -135,6 +139,8 @@ c < phi |H | phi>
       binset(iset)%kmid(ib)=kmid
       binset(iset)%ebin(ib)=ebin
       binset(iset)%nk(ib)  =nk
+      binset(iset)%wbin(ib)=wbin
+
 !      write(*,*)'ib=',ib,'ei-ef=',ei,ef,' tres=',tres
          
       if (ei.lt.1e-3) ei=1e-3
@@ -323,7 +329,8 @@ c for fresco
 
       if (bnorm.gt.1.2) then 
         write(*,*)'** ERROR ** Bin',ib,' gave Norm=',bnorm
-!        stop
+        write(*,*)' Aborting' 
+        stop
       endif
 
 
