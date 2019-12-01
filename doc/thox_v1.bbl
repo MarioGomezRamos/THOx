@@ -1,0 +1,108 @@
+\begin{thebibliography}{10}
+\expandafter\ifx\csname url\endcsname\relax
+  \def\url#1{\texttt{#1}}\fi
+\expandafter\ifx\csname urlprefix\endcsname\relax\def\urlprefix{URL }\fi
+\expandafter\ifx\csname href\endcsname\relax
+  \def\href#1#2{#2} \def\path#1{#1}\fi
+
+\bibitem{Nupecc10}
+N.~report, Nupecc long range plan 2010: Perspectives of nuclear physics in
+  europe, NuPECC Long Range Plan 2010: Perspectives of Nuclear Physics in
+  Europe 1.
+
+\bibitem{Blum13}
+Y.~Blumenfeld, T.~Nilsson, P.~Van~Duppen, Phys. Scr. T 152 (2013) 014023.
+
+\bibitem{Nunes96}
+F.~Nunes, I.~Thompson, R.~Johnson, Nucl. Phys. A 596 (1996) 171.
+
+\bibitem{Ridi98}
+D.~Ridikas, et~al., Nucl. Phys. A 628 (1998) 363.
+
+\bibitem{Nun96}
+F.~Nunes, J.~Christley, I.~Thompson, R.~Johnson, V.~Efros, Core excitation in
+  three-body systems: Application to 12be, Nucl. Phys. A 609 (1996) 43.
+\newblock \href {http://dx.doi.org/10.1016/0375-9474(96)00284-9}
+  {\path{doi:10.1016/0375-9474(96)00284-9}}.
+
+\bibitem{HT70}
+A.~U. Hazi, H.~S. Taylor, Phys. Rev. A 1 (1970) 1109.
+
+\bibitem{Mat03}
+T.~{Matsumoto}, T.~{Kamizato}, K.~{Ogata}, Y.~{Iseri}, E.~{Hiyama},
+  M.~{Kamimura}, M.~{Yahiro}, New treatment of breakup continuum in the method
+  of continuum discretized coupled channels, Phys. Rev. C 68 (2003) 064607.
+
+\bibitem{manoli04}
+M.~Rodriguez-Gallardo, J.~M. Arias, J.~G{\'o}mez-Camacho, Phys. Rev. C 69
+  (2004) 034308.
+
+\bibitem{Amos}
+S.~{Karataglidis}, K.~{Amos}, B.~G. {Giraud}, Local scale transformations and
+  extended matter distributions in nuclei, Phys. Rev. C 71 (2005) 064601.
+
+\bibitem{Mor09}
+A.~M. Moro, J.~M. Arias, J.~G{\'o}mez-Camacho, F.~P{\'e}rez-Bernal, Analytical
+  transformed harmonic oscillator basis for cdcc calculations, Phys. Rev. C 80
+  (2009) 054605.
+
+\bibitem{Lay10}
+J.~A. {Lay}, A.~M. {Moro}, J.~M. {Arias}, J.~{Gomez-Camacho}, Exploring
+  continuum structures with a pseudo-state basis, Phys. Rev. C 82 (2010)
+  024605.
+
+\bibitem{Tam65}
+T.~TAMURA, Analyses of the scattering of nuclear particles by collective nuclei
+  in terms of the coupled-channel calculation, Rev. Mod. Phys. 37 (1965) 679.
+
+\bibitem{BS}
+D.~M. Brink, G.~R. {Satchler}, Angular Momentum, Clarendon, Oxford, 1968.
+
+\bibitem{BM}
+A.~Bohr, B.~Mottelson, Nuclear Structure, {New York, W. A. Benjamin} Edition,
+  1969.
+
+\bibitem{Lay12}
+J.~A. Lay, A.~M. Moro, J.~M. Arias, J.~G\'omez-Camacho,
+  \href{http://link.aps.org/doi/10.1103/PhysRevC.85.054618}{Particle motion in
+  a deformed potential using a transformed oscillator basis}, Phys. Rev. C 85
+  (2012) 054618.
+\newblock \href {http://dx.doi.org/10.1103/PhysRevC.85.054618}
+  {\path{doi:10.1103/PhysRevC.85.054618}}.
+\newline\urlprefix\url{http://link.aps.org/doi/10.1103/PhysRevC.85.054618}
+
+\bibitem{SP88}
+M.~V. Stoitsov, I.~Z. Petkov, Ann. Phys. (N. Y.) {\bf 184} (1988) 121.
+
+\bibitem{PS91}
+I.~Z. Petkov, M.~V. Stoitsov, Nuclear Density Functional Theory, Oxford Studies
+  in Physics, Clarendon, Oxford, 1991.
+
+\bibitem{Tos01}
+J.~A. Tostevin, F.~M. Nunes, I.~J. Thompson, Phys. Rev. C 63 (2001) 024617.
+
+\bibitem{lay10a}
+J.~A. {Lay}, D.~V. {Fedorov}, A.~S. {Jensen}, E.~{Garrido},
+  C.~{Romero-Redondo}, Three-body structure of low-lying 18ne states, Eur.
+  Phys. Jour. A 44 (2010) 261.
+
+\bibitem{Typ05}
+S.~{Typel}, G.~{Baur}, Electromagnetic strength of neutron and proton
+  single-particle halo nuclei, Nucl. Phys. A 759 (2005) 247.
+
+\bibitem{Mor06}
+A.~M. Moro, F.~P{\'e}rez-Bernal, J.~M. Arias, J.~G{\'o}mez-Camacho, Coulomb
+  breakup in a transformed harmonic oscillator basis, Phys. Rev. C 73 (2006)
+  044612.
+\newblock \href {http://dx.doi.org/10.1103/PhysRevC.73.044612}
+  {\path{doi:10.1103/PhysRevC.73.044612}}.
+
+\bibitem{Sat83}
+G.~R. Satchler, Direct nuclear reactions.
+
+\bibitem{Summers06}
+N.~C. {Summers}, F.~M. {Nunes}, I.~J. {Thompson}, Extended continuum
+  discretized coupled channels method: Core excitation in the breakup of exotic
+  nuclei, Phys. Rev. C 74 (2006) 014606.
+
+\end{thebibliography}

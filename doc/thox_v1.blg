@@ -1,0 +1,56 @@
+This is BibTeX, Version 0.99d (TeX Live 2015/Debian)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: thox_v1.aux
+The style file: elsarticle-num.bst
+Database file #1: thox.bib
+Warning--empty title in Blum13
+Warning--empty title in Nunes96
+Warning--empty title in Ridi98
+Warning--empty title in HT70
+Warning--empty title in manoli04
+Warning--empty publisher in BM
+Warning--empty title in SP88
+Warning--empty title in Tos01
+Warning--empty journal in Sat83
+You've used 23 entries,
+            2937 wiz_defined-function locations,
+            818 strings with 7913 characters,
+and the built_in function-call counts, 6018 in all, are:
+= -- 527
+> -- 229
+< -- 2
++ -- 91
+- -- 68
+* -- 420
+:= -- 872
+add.period$ -- 26
+call.type$ -- 23
+change.case$ -- 15
+chr.to.int$ -- 6
+cite$ -- 32
+duplicate$ -- 183
+empty$ -- 666
+format.name$ -- 88
+if$ -- 1540
+int.to.chr$ -- 0
+int.to.str$ -- 23
+missing$ -- 26
+newline$ -- 81
+num.names$ -- 23
+pop$ -- 142
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 389
+stack$ -- 0
+substring$ -- 255
+swap$ -- 27
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 9
+while$ -- 42
+width$ -- 25
+write$ -- 187
+(There were 9 warnings)

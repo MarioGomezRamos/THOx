@@ -1,0 +1,26 @@
+\contentsline {section}{\numberline {1}Introduction}{4}
+\contentsline {section}{\numberline {2}Calculation of projectile states [JAL]}{6}
+\contentsline {subsection}{\numberline {2.1}Effective Hamiltonian}{6}
+\contentsline {section}{\numberline {3}Projectile matrix elements in the PS basis [JAL]}{7}
+\contentsline {subsection}{\numberline {3.1}Axially symmetric particle-rotor model (PRM)}{9}
+\contentsline {subsection}{\numberline {3.2}Particle-vibrator model (PVM):}{11}
+\contentsline {subsection}{\numberline {3.3}Generic (model independent) matrix elements}{12}
+\contentsline {subsection}{\numberline {3.4}Basis functions}{12}
+\contentsline {section}{\numberline {4}Projectile scattering states [AMM] }{14}
+\contentsline {section}{\numberline {5}Electric transition probabilities [JAL] }{15}
+\contentsline {section}{\numberline {6}CDCC calculations [AMM]}{17}
+\contentsline {subsection}{\numberline {6.1}Couplings potentials with core excitations [RDD \& AMM]}{18}
+\contentsline {subsection}{\numberline {6.2}Couplings potentials with target excitations [MGR \& AMM] }{18}
+\contentsline {subsection}{\numberline {6.3}Solving the coupled equations [AMM]}{18}
+\contentsline {subsection}{\numberline {6.4}Stabilization procedure [AMM]}{18}
+\contentsline {section}{\numberline {7}Three-body observables [RDD \& AMM]}{18}
+\contentsline {section}{\numberline {8}Input description}{18}
+\contentsline {section}{\numberline {9}Compilation}{21}
+\contentsline {section}{\numberline {10}Test examples}{22}
+\contentsline {subsection}{\numberline {10.1}Calculation of projectile states: $^{11}$Be case}{22}
+\contentsline {subsection}{\numberline {10.2}CDCC calculation without core excitations: $d$+$^{58}$Ni case}{24}
+\contentsline {subsection}{\numberline {10.3}CDCC calculation with core excitations: $^{11}$Be+p case}{24}
+\contentsline {subsection}{\numberline {10.4}CDCC calculation with target excitations: $^{11}$Be+p case}{24}
+\contentsline {subsection}{\numberline {10.5}CDCC calculation with target excitations: d+$^{24}$Mg }{24}
+\contentsline {subsection}{\numberline {10.6}Calculation of three-body observables: $^{11}$Be+p case}{24}
+\contentsline {section}{\numberline {11}References}{24}

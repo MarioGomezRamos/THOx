@@ -1,0 +1,77 @@
+
+
+
+ Projectile two-body wave functions (radial part):
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   . wfc(jset,ie,ich,ir)= wave function (complex) values
+
+  with
+
+   . jset=1,2... jpsets   : the j/parity set as introduced in set input namelists "jpiset"
+                            "jpsets" accessible from "channels module
+
+   . ie=1,2....,ne        : index for each state within a given "jset"
+
+                            ne=jpiset(jset)%nex , with "jpiset" accessible form "channels" module
+  
+   . ich=1,2...,nchan     : channel index 
+			    
+                            nchan= jpiset(jset)%nchan 
+
+   . ir=1,2.... ,nr       : radial point with "nr" from wfs module
+
+ 
+  The radial grid (r) for the two-body wfs is defined as:
+
+    . rvec(ir) with ir=1,...,nr
+
+    . dr=radial step
+    
+    . rmin=rvec(1)
+  
+
+  
+  Solutions of CC equations:
+  ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    . Radial grid (R): rvcc(ir)=1,...,nrcc   (module "xcdcc"), defined as: 
+      
+         rvcc(ir)=dble(ir-1)*hcm,  with 
+  
+      with 
+
+    . ir=1,..,nrcc
+
+    . hcm=radial step in R   (module "xcdcc") 
+
+   
+  Projectile+target channels quantum numbers are stored in derived variable jptset(:), 
+  with:
+    . partot           	        : total parity 
+    . jtot                      : total angular momentum (Jp+L+Jt)
+    . jptset(icc)%l(nch)        : projectile-target orbital ang. momentum (L) 
+    . jptset(icc)%jp(nch)       : projectile angular momentum 
+    . jptset(icc)%jt(nch)       : target spin
+    . jptset(icc)%idx(nch)      : index of projectile state
+    . jptset(icc)%kcm(nch)      : CM wave number
+    . jptset(icc)%jt(nch)       : target spin 
+
+  
+  For the \chi_{beta,beta'}(R) functions, we do not store it in the present version. They are written as they are calculated in subroutine "matching3" at scatcc.f90:
+ 
+      if (cdccwf)then
+          do is=1,nch
+          write(85,*)'# Initial chan =>  Final chan'
+          write(85,'(2i7)') inc,is
+          write(85,'(6g16.6)') (wf(1,ir),ir=1,nr)
+          enddo !is (final channel)
+      endif
+
+  If really needed, we might store them (but in general the file can be heavy) or, alternatively, we may just read them form the fort.85 file, in which they are written now when the variable "cdccwf" is set to "true" in the "output" namelist of the input file:
+
+  &output wfout(:)=1 2 xcdcc=F verb=3 solapout(:)=0  cdccwf=T  /
+
+  
+
+

@@ -1,0 +1,1275 @@
+%\documentclass[12pt,english]{elsarticle}
+\documentclass[preprint,12pt]{elsarticle}
+\usepackage[T1]{fontenc}
+%\usepackage[latin1]{inputenc}
+%\usepackage{babel}
+\usepackage{graphics}
+\usepackage{verbatim}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{graphicx}% Include figure files
+\usepackage{bm}% bold math
+%\usepackage{cite}
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+\providecommand{\LyX}{L\kern-.1667em\lower.25em\hbox{Y}\kern-.125emX\@}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Textclass specific LaTeX commands.
+ \newcommand{\lyxaddress}[1]{
+   \par {\raggedright #1 
+   \vspace{1.4em}
+   \noindent\par}
+ }
+
+\journal{CPC}
+
+\makeatother
+\begin{document}
+
+\newcommand{\etal}{\textit{et al.~}}
+\newcommand{\be}{\begin{eqnarray}}
+\newcommand{\ee}{\end{eqnarray}}
+\newcommand{\bi}{\begin{itemize}}
+\newcommand{\ei}{\end{itemize}}
+\newcommand{\code}{THOx}
+\newcommand{\vecr}{{\vec r}}
+\newcommand{\vecR}{{\vec R}}
+
+
+\begin{frontmatter}
+\title{THOx???: A few-body coupled-channels code with core excitations}
+
+\author[famn]{A.~M. Moro}
+\author[famn]{R. de Diego}
+\author[famn]{M. G\'omez-Ramos}
+\address[famn]{Departamento de FAMN,
+Universidad de Sevilla, Apartado 1065, E-41080 Seville, Spain}
+%\author[famn]{J.~M.~Arias}
+\address[lisboa]{Centro de Ci\^encias e Tecnologias Nucleares, Instituto Superior T\'ecnico,
+Universidade de Lisboa, Estrada Nacional 10 (Km 139,7), P-2695--066 Bobadela LRS, Portugal}
+\author[padova,famn]{J.~A.~Lay}
+\address[padova]{Dipartimento di Fisica Galileo Galilei and INFN, Via Marzolo 8, I-35131 Padova, Italy}
+%\fntext[padova]{Dipartimento di Fisica Galileo Galilei and INFN, Via Marzolo 8, I-35131 Padova, Italy}
+%\author{$^{(1,2)}$  and A.M. Moro$^{(1)}$ }
+
+%\maketitle
+
+
+\begin{abstract}
+\code is a self-contained coupled-channels fortran code that solves the a three-body scattering problem consisting on a two-body projectile impinging on a target nucleus using the Continuum-Discretized Coupled-Channels (CDCC) formalism [REF]. A key feature of this code is the possiblity of including collective excitations of the projectile constituents (commonly referred to as ``core'' excitations'') or of the target nucleus. These capabilites are done with apropriate extensions of the CDCC formalism. 
+
+The projectile continuum states can be obtained with either a pseudo-state method (PS) or a binning method. In the former case, the coe diagonalises the projectile two-body Hamiltonian in a Transformed Oscillator Basis (THO),  obtained applying an appropriate analytic local scale transformation (LST) to the harmonic oscillator wave functions.
+
+Internal excitations of the projectile clusters and  of the  target  are included by deforming the corresponding fragment-potentials, using a rotor or vibrational collective models.  
+
+To solve the scattering problem, the code computes first the coupling potentials among the projectile+target states. These coupling potentials are later used to solve the system of coupled differential equations, for which several Numerov  and R-matrix solutions are available. A algorigthm of stabilization is also included, which is particularly suitable for situations for which linear independence is partially lost due to numerical instabilities [REF].
+%In addition  including core excitation. The effective two body interactions in the
+%Hamiltonian are modelled as Woods-Saxon potentials. The code diagonalises the
+%system Hamiltonian in a transformed harmonic oscillator (THO) basis. This is
+%obtained applying an appropriate analytic local scale transformation (LST) to
+%the solutions of the harmonic oscillator. 
+% This is one of the methods known as pseudostates (PS) which
+%consist in diagonalising  the system Hamiltonian in a basis of \cal{L}$^2$
+%integrable states. 
+
+As in other CDCC implementations, the code proviced differential cross sections for each included state as a function of the projectile c.m.\ scattering angle. Three-body observables, i.e., cross sectios as a function of the projectile-fragments energy or angle can be also computed by an apropriate transformation of the computed transition amplitudes [REF RAUL]. 
+
+In addition to the scattering calculations, the programme can be used  for obtaining energy spectra
+(bound and a representation of unbound states) and the corresponding
+wave functions of light exotic nuclei that can be treated as two-body
+systems. The code can also produce the reduced electric transition
+probabilities, B(E$\lambda$)'s, between the calculated states and its
+distribution as a function of energy.
+\end{abstract}
+
+\end{frontmatter}
+
+\newpage
+
+\tableofcontents{}
+
+\newpage
+
+% ----------------------------------------------------
+\section{Introduction}
+% -----------------------------------------------------
+
+The development of new techniques to manage radioactive nuclei and the
+current activity in radioactive beam facilities around the world have allowed in
+the last years to explore regions of the nuclear chart far off the
+stability valley~\cite{Nupecc10,Blum13}. Many experiments have already been performed and even
+more are
+programmed in the next few years to approach closer and closer the drip lines
+for neutrons and protons. Nuclei close to these lines are
+weakly bound and a proper description of both their structure and their role
+in collision processes requires necessarily the inclusion of their unbound
+states. Some of these weakly bound systems (as $^{11}$Be, $^{19}$C and many
+others) can be modelled as core + nucleon~\cite{Nunes96,Ridi98}. In early studies of
+these systems, no core excitations were considered, but its importance
+was soon realized~\cite{Nun96}. Here a code for studying weakly bound two-body
+systems including core excitation is presented.
+
+The Hamiltonian of a two-particle weakly bound system (core plus one
+valence particle) has three parts: the kinetic energy term, the
+potential interaction between core and particle, and the core Hamiltonian
+which takes into account the core excitation (details are given in Sect.II).
+The traditional approach to find eigenvalues and eigenfunctions for the
+Hamiltonian consists in integrating the corresponding Schroedinger equation
+with the proper asymptotic boundary conditions. This provides the
+bound and the scattering states. However, the unbound states form a
+continuum and are not normalizable which make them not very convenient for some
+numerical calculations. An alternative to solve the eigenvalue problem is to
+diagonalize the Hamiltonian in a basis of square-integrable, L$^2$, functions.
+This method is usually referred to in the literature
+as the Pseudostate Method (PS)~\cite{HT70,Mat03,manoli04}. In principle, any complete basis can be
+used, but in practical calculations the
+diagonalization has to be done in a truncated basis. Thus, the
+selection of an appropiate basis is important since it will improve
+the convergence of the calculations.
+%
+%As mentioned above, for weakly bound systems the scattering states need to
+%be necessarily considered. These  unbound states can be calculated by
+%integrating
+%the Schroedinger equation at each energy with the proper asymptotic boundary
+%conditions. However, the scattering states form a continuum and are not
+%normalizable which make them not very convenient for some numerical
+%calculations. One alternative to this is to discretize the continuum~\cite{}.
+%There are many ways of implementing the discretization, one of them is called
+%Pseudostate Method (PS)~\cite{}. In this the wave functions that describe the
+%internal motion of the composed system are the
+%eigenstates of the system Hamiltonian in a truncated basis of
+%square-integrable, L$^2$, functions. Many alternative basis have been used in
+%the
+%literature~\cite{}. 
+The code THOx uses one PS method based on a local scale point
+transformation (LST) on the harmonic oscillator wave functions, it is called
+Transformed Harmonic Oscillator (THO) method. The LST can be generated in
+several ways. In the present work an analytic transformation proposed
+by Karataglidis et al. is used~\cite{Amos}. This analytical transformation
+keeps the simplicity of the HO functions, but converts their Gaussian
+asymptotic behavior into an exponential one, more  appropriate to describe bound
+systems. This LST has several numerical advantages, namely: i) due to
+the analytical form of the 
+transformation, it can be easily implemented in a numerical code and there is
+no numerical problem to generate as many basis functions as required (in other
+methods wave functions are generated recursively and errors are accumulated),
+ii) the LST depends on three parameters that govern the radial extension 
+of the THO basis allowing the construction of an optimal basis for 
+each observable of interest, and iii) convergence with this basis seems to be
+faster than with other alternatives~\cite{Mor09,Lay10}.
+
+
+In order to solve the eigenvalue problem for the two-particle weakly bound
+system, including core excitation, the code THOx constructs the THO
+basis and diagonalizes the Hamiltonian in it. As a result,
+eigenvalues and the corresponding eigenvectors
+are obtained. Negative eigenvalues give the bound states of the system, while
+the positive ones provide a discrete representation of its continuum. Once the
+wave
+functions are available, the reduced electric transition probability from one
+state to the rest can be calculated provided with the appropriate transition
+operator.
+Since the calculated states in the continuum are discrete, the obtained
+B(E$\lambda$)'s
+are also discrete. To compare with experimental distributions of B(E$\lambda$)
+some smoothing is required. The best way of doing this, when it is possible, is
+to do the folding of the discrete sequence of B(E$\lambda$) values with the
+actual continuum wave functions. This provides a continuum B(E$\lambda$)
+distribution. For that purpose, THOx allows to generate the actual continuum
+wave functions by solving the corresponding Schroedinger equation. These
+functions can be calculated for any positive energy value and allow: on one
+hand, to calculate the B(E$\lambda$) distribution directly, and on the other
+hand perform the mentioned folding for the discrete B(E$\lambda$) distribution
+obtained with the PS method.
+
+The manuscript is structured as follows: Sects. II and III contain a
+description of the
+formalism. In Sect. II the Hamiltonian of the composed two-body
+system is
+described. In Sect. III the THO basis is constructed and relevant matrix
+elements,
+including different types of possible core excitations, are worked
+out. The code
+allows to generate the exact scattering states for the proposed Hamiltonian,
+this is also described in Sect. III.
+Diagonalization of the Hamiltonian provides eigenvalues and eigenfunctions of
+the system. With this information the required B(E$\lambda$) values can be
+evaluated. The input description of the code is presented in Sect. IV  while in
+Sect. V the sequence of sentences required for compilation is given. Finally, in
+Sect. VI a detailed input-output test example is discussed.
+
+
+
+\section{Calculation of projectile states [JAL]}
+\subsection{Effective Hamiltonian} % --------------- HAMILTONIAN ------------------
+
+In the weak-coupling limit, it is customary to separate the valence-core interaction into two terms, 
+one describing the motion of the valence particle in some average potential created by the core, and 
+a additional coupling potential bla,bla
+
+
+
+The full Hamiltonian is assumed to be of the form:
+\be
+%H= H_{vc}(\vec{r},\vec{\xi}) + h_{\rm core}(\vec{\xi}) + H_{coup}(\vec{r},\xi) 
+H= \hat{T}_r + V_{vc}(\vec{r},\xi) +   H_{\rm core}(\xi)
+%H= H_{sp}(\vec{r}) + h_{\rm core}(\vec{\xi}) + H_{coup}(\vec{r},\xi) 
+\label{hpc}
+\ee
+where $H_{\rm core}(\xi) $ is 
+the intrinsic Hamiltonian of the core, whose eigenstates will be
+denoted by $\{\phi_{I M_I} \}$. Additional quantum numbers, required to fully specify the core states,
+will be specified below. 
+
+In the models considered here, the valence-core interactions is written as the sum of two terms, 
+\be
+V_{vc}(\vec{r},\xi)= V_{sp}(\vec{r}) + V_\mathrm{coup}(\vec{r},\xi)
+\ee
+% where $H_{vc}(\vec{r},\vec{\xi})=\hat{T}_r + V_{vc}(\vec{r},\vec{\xi})$, with $\hat{T}_r$ the kinetic energy operator associated with  the relative motion. 
+% \be
+% H= H_{sp} +  h_{\rm core}(\vec{\xi}) + H_{coup}(\vec{r},\xi) 
+% \label{hpc}
+%\ee
+%  $$
+% H_{sp}=T_r  +V_{sp}(\vec{r}) 
+% $$
+
+The {\em single-particle} potential $V_{sp}(\vec{r})$  describes the  motion 
+of the valence particle relative to the core, in absence of core excitation. The following terms 
+are considered:
+\begin{align}
+V_{sp}(r)& = V_{cou}(r)+ V^{\ell}_c(r)
+        + V^{v}_{ls}(r) \vec{\ell}\cdot \vec{s}_v 
+        + V^{c}_{ls}(r) \vec{\ell}\cdot \vec{s}_c
+        + V_{ss}(r) \vec{s}_c \cdot \vec{s}_v     \nonumber \\
+      & + V_{ll}(r) \vec{\ell} \cdot \vec{\ell'}
+\label{vsp}
+\end{align}
+
+where:
+\bi
+\item $V_{cou}(\vec{r})$ is the Coulomb central
+\item  $V^{\ell}_c(r)$   = $\ell$-dependent nuclear central potential
+\item $V^{v}_{ls}(r)$  = spin-orbit potential for valence (spin of valence)
+\item $V^{c}_{ls}(r)$ = spin-orbit potential for core (spin of the core)
+\item $V_{ss}(r)$  = spin-spin potential 
+\item $V_{ll}(r)$  = $\ell\cdot \ell'$ potential          
+\ei
+
+The coupling potential $V_{coup}(r,\xi)$ is responsible for transitions between different core states or different valence configurations (preserving the total angular momentum of the system). It will be specified in the following section.
+
+The eigenstates of the Hamiltonian (\ref{hpc}) 
+will be a superposition of several valence configurations and core
+states, i.e. 
+%------------------------
+\be
+%\Psi_{\varepsilon; J M } \rangle = 
+\Psi_{\varepsilon; J M }(\vec{r},\vec{\xi}) 
+ =  \sum_{\alpha}^{n_\alpha} R_{\varepsilon,\alpha}(r) 
+\left[  {\cal Y}_{\ell s j}(\hat{r}) \otimes \phi_{I}(\vec{\xi}) \right]_{JM} .
+\label{wfx}
+\ee 
+where $n_\alpha$ is the number of channel configurations (\{$l$, $j$,$I$\}) compatible with the total angular momentum and parity $J^\pi$. 
+
+The functions $R_{\varepsilon,\alpha}(r)$ can be
+obtained using an expansion in a PS basis, such as the THO basis
+described below. 
+%In this case, the basis must include also the  core degree of freedom 
+\begin{equation}
+\langle \vec{r} \, \xi | n (ls) j I J M \rangle \equiv
+\Phi^\alpha_{n,J M }(\vec{r},\vec{\xi}) 
+ =  R^{THO}_{n,\alpha}(r) \left[  {\cal Y}_{\ell s j}(\hat{r}) \otimes
+   \phi_{I}(\vec{\xi}) \right]_{JM} . 
+\label{basis2}
+\end{equation}
+where $n$ is an index the labels the states of the basis for a given channel. 
+
+
+In this basis, the states of the system will be expressed as
+\begin{equation}
+\Psi^{(N)}_{i,J M }(\vec{r},\vec{\xi}) 
+ =  \sum_{n=1}^{N} \sum_{\alpha}^{n_\alpha} c^i_{n,\alpha,J} \Phi^\alpha_{n,J M
+ }(\vec{r},\vec{\xi}) ,
+\label{eigenvector}
+\end{equation}
+where $i$ is an index that labels the order of the eigenstate. The coefficients $c^i_{n,\alpha,J}$ are obtained by diagonalization of the full Hamiltonian 
+(\ref{hpc}) in a truncated basis ($n=1,\ldots,N$). This requires the evaluation of the matrix elements of the different parts of the Hamiltonian between different 
+functions. For the core Hamiltonian, these matrix elements are simply given by:
+\begin{eqnarray}
+& \langle n (\ell s)j I J || H_{core}(\vec{\xi}) || n' (\ell's')j' I' J' \rangle = \delta_{I,I'} \delta_{\alpha,\alpha'} E_I
+\end{eqnarray}
+because the basis states are, by construction, eigenstates of  $H_{core}(\vec{\xi})$
+
+
+For the valence-core Hamiltonian, the expression for the matrix elements depend on the assumed model.
+
+%-----------------------------------------------------------
+\section{Projectile matrix elements in the PS basis [JAL]}
+%-----------------------------------------------------------
+The coupling potenntial $V_\mathrm{coup}(\vec{r},\xi)$ 
+% Note that the valence-core interaction, $ V_{vc}(\vec{r},\vec{\xi})$, 
+% depends on the core degrees of freedom (denoted generically by
+% $\xi$) and 
+is written according to the following multipolar expansion:
+\be
+V_{coup}(\vec{r},\xi)= \sum_{\lambda } V_{\lambda \mu}^\mathrm{coup}(r,\xi) Y_{\lambda \mu }(\hat r)
+\label{vcoup1}
+\ee
+Since the full potential $V_{coup}(\vec{r},\xi)$ must be an scalar, the coefficients  $V_{\lambda \mu}^\mathrm{coup}$ correspond to a tensor 
+with the same transformation properties as the spherical harmonics $Y_{\lambda \mu }$.
+
+In many interesting cases, the coefficients $V_{\lambda,\mu}^\mathrm{coup}(r,\xi)$  factorize in a purely radial part $V^\mathrm{coup}_{\lambda}(r)$ and an internal part, described by a nuclear transition operator, ${\cal T}_{\lambda \mu}$
+\be
+V_{coup}(\vec{r},\xi)= \sum_{\lambda } 
+     V_{\lambda}^\mathrm{coup}(r) {\cal T}^{*}_{\lambda \mu}(\xi) Y_{\lambda \mu }(\hat r)
+\label{vcoup}
+\ee
+The explicit form for the ${\cal T}$ will depend on the specific structure model, and will be specified later.
+
+
+Diagonalization of the full valence-core Hamiltonian requires the evaluation of the matrix elements of this coupling potential between basis states (\ref{basis2}), denoted for short as $| c \rangle \equiv  | n' (l's')j' I' J' \rangle$. Explicitly \cite{Tam65},
+%
+%
+\begin{align}
+% \langle n (ls)j I J || V_{vc}(\vec{r},\vec{\xi}) || n' (l's')j' I' J' \rangle  
+ \langle c || V_{vc}(\vec{r},\vec{\xi}) || c' \rangle  
+   & =   
+  \delta_{JJ'}(-1)^{j'+I+J} \left\lbrace 
+  \begin{array}{ccc} j & j' & \lambda \\ I'& I & J  \end{array} \right\rbrace 
+\hat{I} \langle \gamma  I || {\cal T}^{*}_{\lambda}||  \gamma' I' \rangle
+ \nonumber \\
+ &\times  \langle n (\ell s)j || V_\lambda(r) Y_{\lambda } || n' (\ell' s')j'  \rangle   
+ \label{redpot}
+\end{align}
+%
+%
+%where the extra quantum number $K$ has been added to the core states in order to specify the bandhead to which  the states $I$ and $I'$ belong. Also, 
+with  $\hat{I}=(2I+1)^{1/2}$ and  $\gamma$ denotes any set of additional quantum numbers required to fully specify the core states. In the expression above, we have adopted the definition of Brink and Satchler \cite{BS} for reduced matrix elements, namely,
+\begin{equation}
+\langle J M | T_{kq}| J'  M' \rangle
+   = (-1)^{2k} \langle  J M | J' M' K q \rangle  \langle J || T_{k}|| J' \rangle
+\label{redmat}
+\end{equation}
+
+The second line in Eq.~(\ref{redpot}) can be further expanded as: 
+\begin{eqnarray}
+\langle n (ls)j || V_\lambda(r) Y_{\lambda } || n' (l's')j' \rangle  & =&  \hat{j'} \hat{\ell} \hat{\ell'} 
+(-1)^{\lambda + s +j'+2 \ell} \sqrt{\frac{2\lambda+1}{4 \pi}} 
+\left ( \begin{array}{ccc} \ell & \lambda & \ell' \\ 0 & 0  &  0   \end{array} \right )  \nonumber \\
+& \times & 
+\left\lbrace \begin{array}{ccc} j & j' & \lambda \\ I'& I & J  \end{array} \right\rbrace
+\langle n \ell | V_\lambda | n' \ell' \rangle
+\end{eqnarray}
+where $\langle n \ell | V_\lambda | n' \ell' \rangle$ are the radial integrals:
+\be
+\langle n \ell | V_\lambda | n' \ell' \rangle = \int R_{n \ell }(r) V_{\lambda}(r) R_{n' \ell' }(r) r^2 dr
+\ee
+%
+
+We see that the structure of the core is embodied in the matrix elements $\langle \gamma I || {\cal T}^{*}_{\lambda}|| \gamma' I' \rangle $. In the following subsection, we give explicit expressions for the vibrational and rotor models, used in the THOx code. 
+
+
+% ----------------------------------------------------------
+\subsection{Axially symmetric particle-rotor model (PRM)}
+%----------------------------------------------------------
+
+The particle-rotor model (PRM) \cite{BM} assumes that the core has a permanent deformation, and hence  
+its radius  will not be longer a constant. Instead, the distance from the center to an arbitrary  point in the surface characterized by a function of the  angles $\theta'$ and $\phi'$), defined with respect to  intrinsic (\textit{body-fixed} frame),
+\begin{equation}
+r(\theta', \phi')  =  R_0 [1  + \sum_{\lambda} {\beta}_{\lambda} Y_{\lambda 0}(\theta', \phi') ]
+                   =  R_0  + \sum_{\lambda} {\delta}_{\lambda} Y_{\lambda 0}(\theta', \phi') ] 
+                    \equiv  R_0 + \Delta(\hat{r}') 
+\end{equation}
+%\begin{equation}
+%\label{eq:shift}
+%{\hat \Delta}(\Omega')= {\hat \Delta}(\theta',0) =\sum_{\lambda}\delta_{\lambda}Y^{*}_{\lambda0}(\theta',0)
+%\end{equation}
+where $R_0$ is an average radius of the core and hence the remaining term (denoted  $\Delta(\theta',\phi')$) represents the deviation of the radius for a particular point on the surface from this average radius. The quantities $\delta_{\lambda} = \beta_\lambda R_0$ are the 
+\textit{deformation lengths}. The function $\hat{\Delta}(\hat{r}')$ is sometimes referred to as shift-function. 
+
+
+If one assumes that the valence-core potential is still a function of the distance between the valence particle and the surface of the core, the 
+interaction potential  will follow the same functional dependence as 
+$V(r-R_0)$, but replacing $R_0$ by $r(\theta', \phi')$. Choosing a reference frame with the $z$ axis along the symmetry axis:
+\begin{equation}
+V^\mathrm{rot}(\vec{r},\theta',\phi') = V(r-r(\theta',\phi')) .
+\label{vdef}
+\end{equation}
+This expression is expanded in multipoles as:
+\be
+V^\mathrm{rot}(r,\hat{r}')= \sum_{\lambda } V^\mathrm{rot}_{\lambda}(r)  Y_{\lambda 0 }(\hat{r}')
+\label{vrot_int}
+\ee
+with 
+\begin{equation}
+V^\mathrm{rot}_\lambda(r)= {2 \pi} \int_{-1}^{1} V(r-{\hat \Delta}(\hat{r}'))  Y_{\lambda,0}(\theta',0) d(\cos \theta')
+\label{VlambdaR}
+\end{equation}
+
+
+For small deformations, one can perform a Taylor series of the potential (\ref{vdef}) in powers of $\Delta$: 
+\be
+V^{\mathrm{rot}}(r,\hat{r}') \approx V^{\mathrm{rot}}(r-R_0) -
+    \frac{dV^{\mathrm{coup}}}{d r} \sum_{\lambda }\delta_{\lambda} Y_{\lambda 0}(\hat{r}')
+\ee
+Inserting this expansion into  Eq.~(\ref{VlambdaR}) gives for a multipole $\lambda >0$
+% \be
+% V_{0}(r)=  V(r-R_0) 
+%\ee
+% (that is, the original underformed potential) whereas for $\lambda >0$  one gets the following well-known %  formula for the radial formfactors:
+\be
+V^\mathrm{rot}_\lambda(r)= - \delta_{\lambda} \frac{dV^\mathrm{rot}}{d r} 
+\label{vderiv}
+\ee
+
+ 
+
+The angular variables in these expressions are referred to the reference frame aligned with the symmetry axis, but can be converted to the laboratory frame 
+(characterized by the variables $\theta,\phi$) by means of the transformation [see eg.~Ref.~\cite{BS}, Eq.~(2.24)]: 
+$$
+Y_{\lambda 0}(\theta',0) = \sum_{\mu} {\cal D}^{\lambda}_{\mu 0}(\alpha,\beta,\gamma) Y_{\lambda \mu }(\theta,\phi) 
+$$
+where ${\cal D}$ is the so called {\textit rotation matrix} (or $D$-matrix). Its arguments  $\alpha$, $\beta$ and $\gamma$ are 
+ the Euler angles describing the transformation from the body-fixed frame to the laboratory frame. 
+%The two former  define the direction of $\hat{S}$, whereas the third is arbitrary. 
+
+Replacing this expression  in (\ref{vrot_int}):
+%
+\be
+V^\mathrm{rot}(r,\hat{r}')=
+   \sum_{\lambda \mu } V^\mathrm{rot}_{\lambda}(r) 
+   {\cal D}^{\lambda}_{\mu 0}(\omega) 
+   Y_{\lambda \mu }(\hat r)
+\label{vcoup_rot}
+\ee
+with $\omega= \{ \alpha,\beta,\gamma\}$. 
+%
+Comparing this expression with (\ref{vcoup}) we can make the correspondence:
+\begin{align}
+ V_{\lambda}^\mathrm{coup}(r)  & \rightarrow  V^\mathrm{rot}_{\lambda}(r)   \\
+{\cal T}^{*}_{\lambda \mu }(\xi) & \rightarrow  {\cal D}^{\lambda}_{\mu 0}(\omega)
+\end{align}
+where we can identify the internal degrees of freedom $\xi$ with the Euler angles $\{\alpha, \beta, \gamma \}$.
+ 
+In the rotational model, the core states are also defined in the intrinsic frame and can be characterized by the total angular momentum $I$ and its projection on the symmetry axis, $K$. These states, denoted $|I K \rangle$, ca be transformed to the laboratory frame as%
+\footnote{This expression is valid for a symmetric rotor. For an asymmetric rigid rotor, there is in general a sum in $K$, [c.f.~Ref.~\cite{BS}, discussion following Eq.~(2.21)].}
+%
+\be
+| K; I M \rangle = \frac{\hat{I}}{\sqrt{8 \pi^2}} {\cal D}^{I}_{MK}(\omega) | I K \rangle
+\ee
+%
+Using the properties of the ${\cal D}$ matrix, the matrix elements of the transition operator result
+\be
+\langle K; I M | {\cal D}^{\lambda}_{\mu 0} | K; I' M' \rangle = 
+    \langle I M \lambda \mu | I' M' \rangle \langle I' K' \lambda 0 | I K \rangle  \hat{I}'/\hat{I},
+\ee
+so, making use of Eq.~(\ref{redmat}), the reduced matrix elements entering Eq.~(\ref{redmat}) are just
+\be
+\langle K; I  \| {\cal T}_{\lambda}^{*} \| K; I'\rangle =
+\langle K; I  \| {\cal D}^{\lambda} \| K; I'\rangle = 
+    \langle I' K' \lambda 0 | I K \rangle \hat{I}'/\hat{I} .
+\ee
+ 
+
+
+\begin{comment}
+
+ can be also transformed to the laboratory frame 
+
+the reduced matrix elements of the valence-core Hamiltonian result:
+
+\begin{eqnarray}
+% \langle n (ls)j I J || V_{vc}(\vec{r},\vec{\xi}) || n' (l's')j' I' J' \rangle  
+ \langle c || V_{vc}(\vec{r},\vec{\xi}) || c' \rangle  
+& = &  \delta_{JJ'}(-1)^{(j'+I+J)} 
+ \left\lbrace \begin{array}{ccc} j & j' & \lambda \\ I'& I & J  \end{array} \right\rbrace 
+\hat{I} \langle K I || {\cal D}^{\lambda}_{\mu 0 }|| K I' \rangle
+ \nonumber \\
+&\times & \langle n (\ell s)j || V_\lambda(r) Y_{\lambda } || n' (\ell' s')j'  \rangle   
+%\nonumber \\ 
+% &\times & 
+ \label{redpot}
+\end{eqnarray}
+where the extra quantum number $K$ has been added to the core states in order to specify the bandhead to which 
+the states $I$ and $I'$ belong. Also, we have used the abbreviated notation  $\hat{I}=(2I+1)^{1/2}$ and $|c \rangle \equiv  n' (l's')j' I' J' \rangle$ for the basis states. The second line of the 
+expression above can be further expanded as: 
+\begin{eqnarray}
+\langle n (ls)j || V_\lambda(r) Y_{\lambda } || n' (l's')j' \rangle  & =&  \hat{j'} \hat{\ell} \hat{\ell'} 
+(-1)^{\lambda + s +j'+2 \ell} \sqrt{\frac{2\lambda+1}{4 \pi}} 
+\left ( \begin{array}{ccc} \ell & \lambda & \ell' \\ 0 & 0  &  0   \end{array} \right )  \nonumber \\
+& \times & 
+\left\lbrace \begin{array}{ccc} j & j' & \lambda \\ I'& I & J  \end{array} \right\rbrace
+\langle n \ell | V_\lambda | n' \ell' \rangle
+\end{eqnarray}
+with $\hat{x} = \sqrt{2x+1}$ and where $\langle n \ell | V_\lambda | n' \ell' \rangle$ are the radial integrals:
+\be
+\langle n \ell | V_\lambda | n' \ell' \rangle = \int R_{n \ell }(r) V^{\lambda}(r) R_{n' \ell' }(r) r^2 dr
+\ee
+
+Finally, the reduced matrix elements of the D-matrix between rotational states are  \cite{Tho09} 
+\be
+\langle K I || {\cal D}^{\lambda}_{\mu 0 }|| K I' \rangle = \langle  I K \lambda 0 | I' K \rangle 
+\ee
+\end{comment}
+
+
+
+
+% -----------------------------------------
+\subsection {Particle-vibrator model (PVM):}
+%------------------------------------------
+In the PVM model \cite{Tam65}, the core is assumed to be spherical, but it can undergo vibrations around the spherical shape. The surface is parametrized as
+\be
+r=R_0 [ 1  + \sum_{\lambda, \mu} \alpha^{\dag}_{\alpha \mu} Y_{\lambda \mu}(\hat{r}) ] \equiv R_0 + \Delta(\hat{r})
+\ee 
+with $\Delta(\hat{r}) \equiv \sum_{\lambda \mu } \alpha^{\dag}_{\alpha \mu} Y_{\lambda \mu}(\hat{r})$ and where $\alpha_{\lambda \mu}$ are to be understood as dynamical variables, given in terms of phonon creation 
+($b^{\dag}_{\lambda \mu}$) and annihilation ($b_{\lambda \mu}$) operators   as:%
+\footnote{Different authors use slightly different definitions of these operators. In any case, for $r$ to be real $\alpha^{\dag}_{\alpha \mu}$ must have the same transformation properties as $Y_{\lambda \mu}$, namely, $\alpha^{\dag}_{\alpha \mu} = (-1)^\mu \alpha_{\alpha, -\mu}$.}
+%
+\be
+\alpha_{\lambda \mu} = \frac{\beta_\lambda}{\hat{\lambda}} [b_{\lambda \mu} +(-1)^{\mu} b^{\dag}_{\lambda,-\mu}]
+\ee
+where $\beta_{\lambda}$ is the so-called {\em zero-point amplitude}, defined as the root mean square of
+ $\alpha$ in the ground state (no phonons) of the system (denote $|0 \rangle$):
+\be
+\beta_\lambda^{2} = \langle 0 | \sum_{\mu }\alpha_{\lambda \mu } \alpha^{\dag}_{\lambda \mu } |0 \rangle 
+\ee
+
+As in the rotational case, one assumes that the valence-core potential is dependent on the distance of the valence partile to the surface of the core nucleus and hence
+\be
+V^\mathrm{coup}(r,\xi)  \rightarrow  V^\mathrm{vib}(r-(R_0 + \Delta(\hat{r}) )
+\ee
+We can expand this interaction in a Taylor series about the equilibrium position of the surface ($R=R_0$) 
+\be
+V^\mathrm{vib}(r-(R_0 + \Delta(\hat{r})) = V(r-R_0) - R_0 \frac{dV^\mathrm{vib}}{dr} \Delta(\hat{r})  + \ldots
+\label{pot_vib}
+\ee
+Comparing with the general expression (\ref{vcoup}), we  make the correspondence%
+\footnote{To maintain the paralelism with the rotational model, the parameter $\beta_\lambda$ is incorporated in the radial form factor, but it could have been equally kept in the transition operator.}
+%
+\begin{subequations}
+\begin{align}
+V^\mathrm{coup}_{\lambda}(r) & =  - R_0 \beta_\lambda \frac{dV^\mathrm{vib}}{dr}           \\
+{\cal T}_{\lambda \mu}       & =  \alpha_{\lambda \mu}  /\beta_{\lambda}
+%          \hat{\lambda}^{-1} (b_{\lambda \mu} +(-1)^{\mu} b^{*}_{\lambda,-\mu}) 
+\end{align}
+\end{subequations}
+
+The states of the core are expressed as $|N; I M \rangle$, where $N$ is the number of phonons of a given multipolarity%
+\footnote{A generic vibrational mode might contain phonons of different multipolarities. However, we will consider only states containing phonons of a given multipolarity.}.
+  The first term in (\ref{pot_vib}) cannot alter the number of phonons and hence it has only diagonal matrix elements between nuclear states. The second term, being linear in the 
+amplitude, can connect vibrational states differing by one unit in the number of phonons. For example, for the transition between the ground state of the system for an even nucleus ($N=I=M=0$) to a one-phonon state of angular momentum $I$ and projection $M$, we have to evaluate the matrix element
+\be
+\langle 1; I M | {\cal T}^{*}_{\lambda \mu}|0; 0 0 \rangle = 
+  \beta_{\lambda}^{-1 }\langle 1; I M  | \alpha^{\dag}_{\lambda \mu} | 0; 0 0 \rangle =
+%  \langle 1; I M  | \alpha_{\lambda,- \mu} | 0; 0 0 \rangle = 
+ \beta_{\lambda}^{-1 } \hat{I}^{-1}  \delta_{I,\lambda} \delta_{M,\mu} ,
+\label{amat}
+\ee 
+and hence
+\be
+\langle 1; I \| {\cal T}^{*}_{\lambda \mu} \|0; 0 \rangle = 
+  \beta_{\lambda}^{-1 }\langle 1; I \| \alpha^{\dag}_{\lambda \mu} \| 0; 0  \rangle =
+%  \langle 1; I M  | \alpha_{\lambda,- \mu} | 0; 0 0 \rangle = 
+ \hat{I}^{-1}  \delta_{I,\lambda} \delta_{M,\mu} 
+\ee 
+And, for the inverse transition
+%Since (\ref{amat}) is symmetric under interchange of the initial and matrix elements, we have for the inverse reduced matrix element
+\be
+\langle 0; 0 \| {\cal T}^{*}_{\lambda \mu} \|1; I \rangle = 
+  \beta_{\lambda}^{-1 }\langle 0; 0 \| \alpha^{\dag}_{\lambda \mu} \| 1; 1  \rangle =
+  (-1)^I  \delta_{I,\lambda} \delta_{M,\mu} .
+\ee 
+Of course, for the diagonal terms we have
+\be
+\langle 1; 1 \| {\cal T}^{*}_{\lambda \mu} \|1; I \rangle =
+\langle 0; 0 \| {\cal T}^{*}_{\lambda \mu} \|0; 0 \rangle =  0   .
+\ee
+
+
+
+
+
+\begin{comment}
+% Introducing density
+
+Generalizing the expression in \cite{Lay10}, the density of states is here defined as:
+\begin{equation}
+\rho (k)=\sum_{i=1}^{N}\sum_{\alpha}^{n_{\alpha}}\langle  k_{\alpha} J_f  | \Psi^{(N)}_{i,J M } \rangle,
+\label{densk}
+\end{equation}
+where $| k_{\alpha} J_f  \rangle $ denotes the exact scattering wave function for an incoming wave in the $\alpha$ channel. Note that the difference between $k$ and $k_{\alpha}$ relays on the threshold energy for each channel.
+
+With this definition the integral of the density with respect to the momentum is the number of THO functions selected (N) times the number of channels ($n_\alpha$):
+\begin{equation}
+\int_{0}^{\infty}\rho (k) \,dk=N  n_{\alpha},
+\end{equation}
+assuming that we have included N  THO functions for each channel $\alpha$. Note that this integrated density is independent of the LST parameters.
+\end{comment}
+
+THOx includes both the rotational and vibrational models. Note however that, the the calculation of the coupling potentials, the central, spin-independent part of the interaction ($V^{\ell}(r)$ in Eq.~(\ref{vsp}) is deformed. 
+
+% -------------- ----------------------------
+\subsection{Generic (model independent) matrix elements} 
+% -------------------------------------------
+In addition to the rotational and vibrational models, it is also possible to define general matrix elements....
+
+
+% -------------- BASIS ----------------------
+\subsection{Basis functions} 
+% -------------------------------------------
+To describe the relative motion between the valence and core, we use a PS basis. In particular,
+ we use the Transformed Harmonic Oscillator (THO) basis used in our previous works  
+\cite{Mor09,Lay12}. We start from the usual Harmonic Oscillator basis, whose radial form is written in spherical coordinates as:
+\be
+R^{HO}_{n \ell } = {\cal N}_{n, \ell} \exp\left[- \frac{r^2}{2b^2}  \right] {\cal L}^{\ell + 1/2}_{n}(r^2/b^2)
+\label{eq:ho}
+\ee
+where XXXXX. The THO basis is obtained by applying a local scale transformation $s(r)$ to the HO basis, i.e.,
+%--------------------------------------------------------
+\begin{equation}
+\label{eq:tho}
+R^{THO}_{n, \ell}(r)= \sqrt{\frac{ds}{dr}} R^{HO} _{n, \ell}[s(r)],
+\end{equation}
+%--------------------------------------------------------
+The idea of the transformation is to convert the Gaussian asymptotic behavior of the HO functions into an exponential
+ form \cite{SP88,PS91}. Among the many possible choices for $s(r)$, we use the parametric 
+form of Karataglidis \etal \cite{Amos}. 
+%---------------------------------------------------------------------
+\begin{equation}
+\label{lstamos}
+s(r)  = \frac{1}{\sqrt{2} b} \left[  \frac{1}{   \left(  \frac{1}{r}
+    \right)^m  +  \left( 
+\frac{1}{\gamma\sqrt{r}} \right)^m } \right]^{\frac{1}{m}}\ ,
+\end{equation}
+%----------------------------------------------------------------------
+that depends on the parameters $m$, $\gamma$ and the oscillator length
+$b$. Note that,  
+asymptotically, the function  $s(r)$ behaves as 
+$s(r)\sim \frac{\gamma}{b} \sqrt{\frac{r}{2}}$
+and hence the functions obtained by applying this LST to the HO basis
+behave at  
+large distances as $\exp(-\gamma^2 r / 2 b^2)$. Therefore, the ratio
+$\gamma/b$ can be regarded as  an effective linear momentum, 
+$k_\mathrm{eff}=\gamma^2 /2 b^2$, which  
+governs the asymptotic behavior of the THO functions. As the ratio
+$\gamma/b$ increases, the radial extension of the basis decreases and,  
+consequently, the eigenvalues obtained upon diagonalization of the
+Hamiltonian in the THO basis tend to concentrate at higher excitation
+energies. Therefore, $\gamma/b$ determines the density of eigenstates
+as a function of the excitation energy. For the parameter $m$, we recommend the use of 
+the value $m=4$, which is one of the choices done in  Ref.~\cite{Amos}. 
+
+
+Note that, by construction, the family of functions  
+\( R ^{THO}_{n, \ell}(r) \) are orthogonal
+and constitute a complete set with the following normalization: 
+%------------------------------------------------------------
+\begin{equation}
+ \int_{0}^{\infty} r^2 | R ^{THO}_{n, \ell}(r)|^{2} dr=1  \, .
+\end{equation} 
+%------------------------------------------------------------
+Moreover, they decay exponentially
+at large distances, thus ensuring the correct asymptotic behavior
+for the bound wave functions. In practical calculations a finite set
+of functions (\ref{eq:tho})  
+is retained, and the internal Hamiltonian of the composite system is
+diagonalized in this truncated basis with $N$ states,  
+giving rise to a set of  eigenvalues and their associated
+eigenfunctions, denoted respectively by $\left\{\varepsilon_p \right\}$ and 
+$\{\varphi^{(N)}_{p, \ell}(r)\}$ ($p=1,\ldots,N \times n_\alpha$). As the basis size
+is increased,  the eigenstates with negative energy
+will tend to the exact bound states of the system, while those
+with positive eigenvalues can be regarded as a finite representation
+of the unbound states. 
+
+After diagonalization one obtains $N \times n_\alpha$ eigenstates. 
+These eigenstates are distributed in the energy spectrum with a density of states which depends on the basis parameters, mainly  $N$ and $\gamma / b$, and to the continuum structure for the selected Hamiltonian, i.e.\ presence of resonances or different breakup thresholds. Moreover, this density reflects the momentum distribution of the eigenstates which becomes important to obtain 
+continuous energy or momentum distributions of different observables from their discrete representation in the PS basis \cite{Mat03,Tos01,Mor09,Lay10}. 
+
+
+
+%-------------------------- SCATTERING STATES -------------------
+\section{Projectile scattering states [AMM] }
+% --------------------------------------------------------------
+The radial functions $R_{\varepsilon,\alpha '}(r)$ appearing the expansion (\ref{wfx}) can be also be obtained solving the Schr\"odinger equation in differential form. This is done by inserting the (\ref{wfx})
+into the Schr\"odinger equation and projecting onto the channel basis given by $|(\ell s)j I J  \rangle$. This gives rise a set of coupled differential equations for the unknowns  $R_{\varepsilon,\alpha '}(r)$  \cite{BM}.   
+
+\begin{eqnarray}
+\nonumber \left[  -\frac{\hbar}{2 M}\left( \frac{d^2}{dr^2}-\frac{l(l+1)}{r^2} \right) + \varepsilon_{I} - \varepsilon \right] r R_{\varepsilon,\alpha}(r) & & \\
+ + \sum_{\alpha '} \langle (\ell ls)j I JM | V_{vc}(\vec{r},\vec{\xi}) |(\ell's')j' I' J'M' \rangle r R_{\varepsilon,\alpha '}(r) &= & 0 .
+\end{eqnarray}
+with the coupling potentials 
+\begin{eqnarray}
+& \langle (\ell s)j I J || V_{vc}(\vec{r},\vec{\xi}) || (\ell's')j' I' J' \rangle  =  \delta_{JJ'}(-1)^{(j'+I+J)} 
+\left\lbrace \begin{array}{ccc} j & j' & \lambda \\ I'& I & J  \end{array} \right\rbrace 
+\nonumber & \\
+& \langle (\ell s)j || Y_{\lambda } || (\ell' s')j' \rangle (2I+1)^{1/2}  \langle I || V_{\lambda}(r,\vec{\xi}) || I' \rangle . &
+\label{couppot}
+\end{eqnarray}
+%making use again of the Brink and Satchler convention for reduced matrix elements. 
+where, the specific form of the reduced matrix elements $\langle I || V_{\lambda}(r,\vec{\xi}) || I' \rangle$ will depend 
+on the structure model adopted for the core. 
+
+
+
+These equations need to be solved subject to the appropriate boundary conditions. For open channels, 
+these boundary conditions impose that, asymptotically, the solution should behave as:
+\begin{eqnarray}
+\label{wfasym}
+u_{\alpha'}({k_{\alpha'}}, {r}) & \xrightarrow{r\rightarrow\infty} &   
+ \frac{1}{2}i e^{2i\sigma_{\ell'}} \Big[ \delta_{\alpha' \alpha} H_{\ell}^{*}(k_{\alpha} r)
+%\nonumber   \\
+%& -& 
+- \left( \frac{v_{\alpha}}{v_{\alpha'}}\right)^{\frac{1}{2}}
+S^{(J)}_{\alpha',\alpha}H_{l'}(k_{\alpha'}r) \Big] ,  
+\end{eqnarray}
+where $u_\alpha(k_\alpha,r)= R_\alpha(k_\alpha,r) r$ (using an obvious
+notation where the continuum $\varepsilon$ label has been replaced by
+a dependence on the corresponding momentum $k$) and 
+where $S^{(J)}_{\alpha',\alpha}$ are the $S$-matrix elements for total angular momentum $J$. For closed channels, the boundary condition must be replaced by:
+\begin{eqnarray}
+\label{wfasym2}
+u_{\alpha'}({k_{\alpha'}}, {r}) & \xrightarrow{r\rightarrow\infty}
+ & C_{\alpha} W_{-\eta,\ell +1}( 2 \eta_{\alpha}r)
+\end{eqnarray}
+where $W$ is the Whittaker function with Sommerfeld parameter $\eta_{\alpha}$.
+
+
+\begin{comment}
+Se obtiene, por tanto, un conjunto de ecuaciones acopladas para los distintos canales de la función de onda total. Dentro del término de acoplamiento 
+$V_{vc}(\vec{r},\vec{\xi})$ se engloba por completitud el término central y el de acoplamiento, es decir, siguiendo la discusión en términos de los distintos hamiltonianos 
+el potencial sería: 
+
+
+\begin{eqnarray}
+\label{wfasym}
+%u_\ell(k,r) \to [\cos \delta_\ell(k) F_\ell(kr) + \sin \delta_\ell(k)  G_\ell(kr)]
+u_{\alpha'}({k_{\alpha'}}, {r}) & \xrightarrow{r\rightarrow\infty} &   
+% \nonumber   \\ 
+ \frac{1}{2}i e^{2i\sigma_{l'}} \Big[ \delta_{\alpha' \alpha} H_{l}^{*}(k_{\alpha} r)
+\nonumber   \\
+& -&  \left( \frac{v_{\alpha}}{v_{\alpha'}}\right)^{\frac{1}{2}}
+S^{(J)}_{\alpha',\alpha}H_{l'}(k_{\alpha'}r) \Big] ,  
+\end{eqnarray}
+where $u_\alpha(k_\alpha,r)= R_\alpha(k_\alpha,r) r$ (using an obvious
+notation where the continuum $\varepsilon$ label has been replaced by
+a dependence on the corresponding momentum $k$).
+
+
+
+
+\begin{equation}
+ V_{vc}(\vec{r},\vec{\xi})= V_{vc}(r)+ h_{coup}(\vec{r},\vec{\xi}).
+\end{equation}
+El hecho de agruparlos es conveniente para recordar que dentro de $h_{coup}(\vec{r},\vec{\xi})$ pueden considerarse también términos centrales 
+o de reorientación que alteren y desplacen las energías de partícula independiente $\varepsilon_{(ls)j}$, por lo que se ha preferido no 
+extraer esta energía como sí se ha hecho con la parte del \textit{core} $\varepsilon_{I}$.
+
+Todavía es posible desarrollar más la expresión del potencial sin tener en cuenta la naturaleza del acoplamiento separando la dependencia angular 
+con $\hat{r}$: 
+
+\begin{equation}
+ V_{vc}(\vec{r},\vec{\xi})= \sum_{\lambda \mu} V_{\lambda \mu}(r,\vec{\xi})Y_{\lambda \mu}(\hat{r}).
+\label{vtrans}
+\end{equation}
+
+El elemento reducido de este tensor, de acuerdo con la definición de Brink y Satchler \cite{BS}:
+\begin{equation}
+\langle J || T_{k}|| J' \rangle=(-1)^{2k} \sum_{M'q} \langle  J M | J' M' K q  \rangle \langle J M | T_{kq}| J'  M' \rangle ,
+\label{redmat}
+\end{equation}
+puede expresarse de la forma \cite{BS}:
+
+
+\begin{eqnarray}
+& \langle (ls)j I J || V_{vc}(\vec{r},\vec{\xi}) || (l's')j' I' J' \rangle  =  \delta_{JJ'}(-1)^{(j'+I+J)} 
+\left\lbrace \begin{array}{ccc} j & j' & \lambda \\ I'& I & J  \end{array} \right\rbrace 
+\nonumber & \\
+& \langle (ls)j || Y_{\lambda } || (l's')j' \rangle (2I+1)^{1/2}  \langle I || V_{\lambda}(r,\vec{\xi}) || I' \rangle . &
+\label{redpot}
+\end{eqnarray}
+
+Ya sólo quedaría estudiar la naturaleza de la excitación del \textit{core} para dar forma a los distintos potenciales 
+$\langle I || V_{\lambda}(r,\vec{\xi}) || I' \rangle$ como se muestra en las subsecciones siguientes.
+ Nótese que en la prescripción de \cite{BS} estos elementos de matriz no son simétricos con respecto a $I$ e $I'$ como 
+ocurre en otras definiciones para los elementos reducidos como la usada en \cite{BM}.
+\end{comment}
+
+
+%----------------------------------------------------------------------------
+\section{Electric transition probabilities \label{sec:bel} [JAL] } 
+%----------------------------------------------------------------------------
+The accuracy of the PS basis to represent the continuum can be studied
+by comparing the ground-state to continuum transition probability due
+to a given operator. Here we consider the important case of the
+electric dissociation of the initial nucleus into the fragments  
+$c+v$.  This involves a matrix element between a bound state
+(typically the ground state) and the continuum states.  
+
+The electric transition probability between two bound states $| J_i
+\rangle$ and $| J_f \rangle$ (assumed here to be unit normalized) 
+ is given by the reduced matrix element (according to Brink and Satchler convention \cite{BS}) 
+%------------------
+\begin{equation}
+ \label{bediscgen}
+{\cal B}(E\lambda; i \to f)=\frac{2 J_f+1}{2 J_i+1}\left | 
+\langle J_f || \mathcal{M}(E\lambda) || J_i \rangle      \right |^2    ,
+\end{equation}
+%-----------------
+where $\mathcal{M}$ is the multipole operator. In a core+valence
+model, the electric transition operator can be written  
+as a sum of three terms \cite{lay10a}: one for the excitation of the valence
+particle outside the core, one for the excitation of the core as a
+whole and one for mixed excitations involving simultaneous excitations
+of core and valence particle, 
+%---------------
+\begin{eqnarray}
+\label{mel}
+\mathcal{M}(E\lambda \mu) & = &   \sum_{k=1}^{\lambda-1}\sum_{m=-k}^{k}f_{\lambda}(k,m,\mu) 
+\nonumber \\
+&\times & \mathcal{M}_{sp}(E k m)  \mathcal{M}_{core}(E(\lambda-k) (\mu-m) )  \nonumber \\    
+  &+ &  \mathcal{M}_{sp}(E\lambda \mu)  + \mathcal{M}_{core}(E\lambda\mu)  ,    
+\end{eqnarray}
+%--------------
+where $f_{\lambda}(k,m,\mu)$ is a well-defined function of its indices and the single particle contribution has the usual form,
+%--------------
+\begin{equation}
+\mathcal{M}_{sp}(E\lambda \mu)= Z_\mathrm{eff}^{(\lambda)} e r^\lambda
+Y_{\lambda \mu}(\hat{r}), 
+\end{equation}
+%--------------
+with the effective charge:
+\begin{equation}
+Z_\mathrm{eff}^{(\lambda)}=Z_v
+\left(\frac{m_c}{m_v+m_c}\right)^\lambda + Z_c
+\left(-\frac{m_v}{m_v+m_c}\right)^\lambda . 
+\end{equation}
+\begin{comment}
+In the test case presented in this work, $^{11}$Be, the core states
+will be restricted to the ground state ($0^+$) and the first excited  
+state ($2^+$). Consequently, dipole transitions will consist of pure
+single particle excitations. On the other hand, quadrupole transitions
+will contain both single particle and core excitations, but not
+simultaneous  transitions. These  simultaneous transitions will only
+affect octupole and higher order transitions, which will not be
+considered here. The same argument applies to many other  
+nuclei of interest, consisting of a even-even core plus one extra
+particle.  
+\end{comment}
+
+
+In the case of a transition to a continuum of states,  
+$|k J_f \rangle$, the  definition (\ref{bediscgen}) is  replaced by
+(see for example \cite{Typ05}): 
+%The electric transition probability from an initial (bound) state
+%$|(\ell_i s) j_i \rangle$ to a final (bound) continuum state  $|k
+%(\ell_f s) j_f \rangle$ due to the electric operator is given by (see
+%e.g.~\cite{Typ05}) 
+%ground state $\phi_0(\mathrm{r}$ to the continuum states
+%$\phi_k(\mathrm{r}$ is given by the expression: 
+%---------------------------------------------------------
+\begin{equation}
+\label{becontgen}
+\frac{d{\cal B}(E\lambda)}{d \varepsilon}   =  \frac{2 J_f +1 }{2
+  J_i+1} \frac{\mu_{vc} k }{(2 \pi)^3 \hbar^2}    
+  \left | \langle k J_f || \mathcal{M}(E\lambda) || J_i \rangle \right |^2  , 
+\end{equation}
+%---------------------------------------------------------
+with $k=\sqrt{2 \mu_{vc}\varepsilon}/\hbar$. Note that the extra 
+factor appearing in Eq.~(\ref{becontgen}) with respect to
+Eq.~(\ref{bediscgen}) is consistent with the convention $\langle k J
+| k' J \rangle = \delta(k-k')$ and the asymptotic behavior (\ref{wfasym}).
+
+Using a finite basis, one may calculate only discrete values for the
+transition probability.  According  
+to Eq.~(\ref{bediscgen}), the $B(E\lambda)$ between the ground state (with angular momentum $J_i$) 
+and the  $n$-th PS is given by
+%%------------------
+\begin{equation}
+\label{beps}
+{\cal B}^{(N)}(E\lambda; \mathrm{g.s.} \to n)=\frac{2 J_f+1}{2 J_i+1}
+\left |
+ \langle \Psi^{(N)}_{n,J_f} || \mathcal{M}(E\lambda) || \Psi_\mathrm{g.s.} \rangle  
+\right |^2  . 
+\end{equation}
+%-----------------
+In order to relate this 
+discrete representation to the continuous distribution
+(\ref{becontgen}) one may derive a continuous approximation to
+(\ref{becontgen}) by introducing the identity in the truncated PS
+basis, i.e. 
+%------------------------------------
+\begin{equation}
+\label{closure}
+I^{(N)}_{JM} = \sum_{n=1}^{N} | \Psi^{(N)}_{n,JM} \rangle  \langle  \Psi^{(N)}_{n,JM} |  .
+\end{equation}
+%-----------------------------------
+For $N \to \infty$ this expression tends to the \textit{exact}
+identity operator for the Hilbert space spanned by the eigenfunctions
+of the considered  
+Hamiltonian. By inserting (\ref{closure}) into the exact expression
+(\ref{becontgen}) we obtain the approximate continuous distribution, 
+%---------------------------------------------------------
+\begin{eqnarray}
+\label{befold}
+\frac{d{\cal B}(E\lambda)}{d\varepsilon} & \simeq  & \frac{2 J_f +1
+}{2 J_i+1}  \frac{\mu_{vc} k }{(2 \pi)^3 \hbar^2} \nonumber \\  
+& \times &  \left | \sum_{n=1}^{N}\langle  k J_f  | \Psi^{(N)}_{n,J_f} \rangle  
+\langle  \Psi^{(N)}_{n,J_f} || \mathcal{M}(E\lambda) ||
+\Psi_\mathrm{g.s.} \rangle   \right |^2 . \nonumber \\ 
+\end{eqnarray}
+
+This approach provides a {\it smoothing} procedure  to extract
+continuous distributions, as a function of the asymptotic energy
+$\varepsilon$ (or, equivalently,  
+the linear momentum $k$), from the discrete distributions obtained
+with the PS basis \cite{Mor06,Mor09}.  This is particularly convenient  
+in situations in which the calculation with the scattering states
+themselves is not possible, such as in the CDCC method.   
+
+%-------------------------------------
+\section{CDCC calculations [AMM]}
+%-------------------------------------
+For a 3-body scattering problem of the form $a(c+v) +T$, whe total WF can be expressed in terms of states with definite total angular momentum 
+\begin{equation}
+\label{eq:cdccwf}
+\Psi^{3b}_{\vec{K}_0}(\xi,\vecr,\vecR)= \sum_{\beta,JM} C_{\beta,J_T M_T}(\vec{K}_0) \Psi_{\beta,J_T, M_T}(\vec{R},\vec{r},\xi)
+\end{equation}
+where  $\vec{R}$ is  the relative coordinate between the projectile
+center of mass and the target (assumed so far to be structureless). The label $\beta={L, J_p, n_0}$ denotes the incident channels compatible with the total angular momentum $J_T$, where $\vec{L}$ (projectile-target orbital angular momentum) and 
+$\vec{J}_p$ both couple to the total spin of the three-body system $\vec{J}_T$.
+The functions  $\Psi_{\beta,J_T, M_T}$ are expressed in terms of the  basis $\{\Phi^{(N)}_{n,J_p}\}$ as:
+\begin{equation}
+\Psi_{\beta,J_T, M_T}(\vec{R},\vec{r},\xi)=\sum_{\beta'}
+\frac{\chi_{\beta,\beta'}^{J_T}(R)}{R}  \left[Y_{L'}({\hat{R}})\otimes\Phi^{(N)}_{n,J_p}(\vec{r},\xi)\right]_{J_T,M_T},   
+\label{f3b}
+\end{equation}
+where the expression between brackets is the so-called channel basis. 
+The different quantum numbers are labeled by $\beta'=\{L', J_p, n\}$,
+where  the spin of the
+target is ignored by now.  
+
+
+The radial coefficients,  $\chi_{\beta,\beta'}^{J_T}(R)$, from which the
+scattering observables are extracted, are calculated  
+by inserting (\ref{f3b}) in the Schr\"odinger equation, giving rise to
+a system of coupled differential equations. 
+\begin{equation}
+\left(-{\hbar^2 \over 2 \mu}{d^2 \over dR^2}+ {\hbar^2 L(L+1)\over 2 \mu R^2} +
+ \epsilon_n -E\right)  \chi^{J}_{\beta}(R) 
++ \sum_{\beta'} V_{\beta,\beta'}^J(R) \chi^{J}_{\beta'}(R)  =  0 
+\end{equation}
+%
+where $ \epsilon_n$ denotes the energy of the projectile state $n$. 
+These equations are to be solved under the condition that the radial functions $\chi_{\beta,\beta'}^{J_T}(R)$ are regular at the origin and behave asymptotically as:
+\begin{equation}
+\chi_{\beta,\beta'}^{J_T}(R) \rightarrow e^{i \sigma_L }\frac{i}{2} \left[H^{(-)}_L (K_\beta R)  \delta_{\beta, \beta'} - S^J_{\beta' \beta} H^{(+)}_{L'}(K_{\beta'} R)  \right]
+\end{equation}
+where $\sigma_L$ is the Coulomb phase, evaluated at the Sommerfeld parameter of the incident channel, and $S^J_{\beta',\beta}$ are the S-matrix elements, from which the scattering observables are to be constructed.
+
+The coefficients $C_{\beta,J_T M_T}$ in Eq.~(\ref{eq:cdccwf}) are obtained imposing that, in absence of projectile-target interactions, it reduces to a plane wave times the projectile internal state (c.f.~ Eq.~(4.70a) of \cite{Sat83}): 
+\begin{equation}
+C_{\beta,J_T M_T}(\vec{K}_0) = \sum_{M} \frac{4 \pi}{K_0} i^L \langle L M  J_p M_p | J_T M_T \rangle Y^{*}_{L M}(\hat{K}_0)
+\end{equation}
+
+
+
+
+%-------------------------------------
+\subsection{Couplings potentials with core excitations [RDD \& AMM]}
+%-------------------------------------
+ The main physical ingredients of these coupled equations are the coupling potentials: 
+%
+\begin{equation}
+V_{\beta,\beta^\prime}^{J_T}(R)=\langle \beta;
+J_T|V_{ct}(\vec{R},\vec{r},\xi)+V_{vt}(\vec{R},\vec{r})|\beta^\prime;
+J_T\rangle , 
+\label{cpot}
+\end{equation}
+where we follow the notation used in Ref.~\cite{Summers06},
+\begin{equation}
+\langle \hat{R}, \vec{r}, \xi |\beta; J_T\rangle =
+\left[Y_L({\hat{R}})\otimes\Phi^{(N)}_{n,J_p}(\vec{r},\xi)\right]_{J_T}. 
+\label{coupledbasis}
+\end{equation}
+
+
+%-------------------------------------
+\subsection{Couplings potentials with target excitations [MGR \& AMM] }
+%-------------------------------------
+
+
+%-------------------------------------
+\subsection{Solving the coupled equations [AMM]}
+%-------------------------------------
+
+%-------------------------------------
+\subsection{Stabilization procedure [AMM]}
+%-------------------------------------
+
+
+%-------------------------------------
+\section{Three-body observables [RDD \& AMM]}
+%-------------------------------------
+
+
+
+
+
+
+%-------------------------------------
+\section{Input description}
+%-------------------------------------
+
+\begin{itemize}
+\item \textbf{SYSTEM namelist}:  $Zv$, $Zc$, $Av$, $Ac$, $Jtot$, $parity$ 
+\begin{itemize}
+\item  {\it Zv},{\it Zc}= valence and core  charges
+\item {\it Av},{\it Ac}=valence and core masses in atomic units
+\item {\it Jtot}, {\it parity}=total core+valence angular momentum and parity
+\end{itemize}
+
+
+
+\item \textbf{CORESTATES namelist:} $spin$, $parity$, $ex$. \\ Intrinsic spin, parity and excitation energy of the core.
+            A namelist is read for each core state, until an empty namelist is found \\
+%\begin{itemize}
+%\item spin/pa: intrinsic spin of the core
+%\item parity
+%\end{itemize}
+
+\item \textbf{NAMELIST valence:} sn, lmax
+\bi
+\item {\it sn}: intrinsic spin of the valence particle.
+\item {\it lmax}: maximum valence-core relative orbital angular momentum. 
+\ei
+   
+   The code will consider the values $\ell$=0, 1, $\ldots$, $\ell_\mathrm{max}$ compatible with the angular momentum coupling 
+              $ | (\ell s) j I ; J \rangle $ 
+
+
+\item \textbf{NAMELIST output:} several variables to control the amount of information written in fort.* files
+\bi
+\item {\em wfout(:)}: index of eigenstate(s) to be printed
+\item {\em checkorth}: select T or F to check orthogonality between final states
+\item {\em verb:} select 0,1,2 to progresively increase the output of the program
+\item {\em solapout(:)}: index of eigenstate(s) whose momentum/energy distribution we select to be printed
+\ei
+
+
+
+
+\item \textbf{NAMELIST pauli:} {\it n}, {\it l}, {\it j}. Quantum numbers for s.p. configuration to be removed  by Pauli from the diagonalization making use of the Orthogonality Condition Model (OCM). 
+
+\item \textbf{NAMELIST grid:} radial grid: ng, rmin,rmax,dr
+\bi
+\item {\em rmin}, {\em rmax}, {\em dr}: mininum, maximum and step radius for uniform grid
+\item {\em ng}: number of quadrature points (for quadrature integration) {\bf not implemented yet!}
+\ei
+
+
+
+\item \textbf{NAMELIST basis:} bastype, mlst, gamma, bosc, nho, nsp,exmin, exmax 
+\bi
+\item {\it bastype}: Basis type use to describe the relative motion between the valence and core, represented by  $|n (ls)j\rangle$  \\
+            bastype=0 for HO basis \\
+            bastype=1 for THO basis
+
+\item {\it nho}: number of HO functions (for either HO or THO bases)
+\item  {\it nsp}: number of single-particle eigenvalues to be retained for the diagonalization of full H
+                  (if nsp=0, use nsp=nho)
+\item  {\it bosc}: oscillator parameter
+\item {\it gamma},{\it mlst}: $\gamma$ and $m$ parameters for the analytic LST transformation
+\item {\it bas2}: Indicates the program how the diagonalization the full Hamiltonian should be performed: 
+\bi
+\item              bas2=0: Diagonalizes first the single-particle part, using the THO basis, and then uses the resulting eigenstates to diagonalize the full Hamiltonian. If the variable $nsp$ is not zero ($nsp$ < $nho$) then this second diagonalization is done using $nsp$ eigenstates. 
+\item              bas2=1: Use THO basis for diagonalization of full H
+\ei
+\ei
+
+
+                   
+\item \textbf{NAMELIST potential:} read as many as possible until an empty namelist is found
+\bi
+\item {\it ptype}: potential type: 
+\bi
+\item         ptype=1: Woods-Saxon 
+\item        ptype=2: Potch-Teller 
+\item        ptype=3: Gaussian 
+\ei
+\item {\it ap}, {\it at}: projectile/target masses for radius conversion, ie, $R=r0{ap^{1/3}+at^{1/3}}$ 
+\item  {\it vl0}, {\it r0}, {\it a0}: depth, radius and diffuseness parameters of central potential. For parity-dependent potentials, define the depth as a vector, por example, Vl0(0:2)=-54 -45 -54     
+\item {\it Vso},{\it rso}, {\it aso}: parameters of spin-orbit potential
+             ({\bf Only derivative WS potential is implemented!})
+\item {\it pcmodel}: specifies the particle-core model used. \\
+          - pcmodel=0: PRM model
+          - pcmodel=1: PVM model
+
+\item {\it lambda}: multipolarity for this coupling
+
+\item {\it kband}: projection of core spin in intrinsic axis (only used in the PRM model). 
+ 
+\item {\it cptype}: coupling potential type:
+             -cptype=0: No coupling \\
+	     -cptype=1: Derivative WS or WS with new parametres Vcp0,rcp0,acp\\
+             -cptype=2: Numerical projection on multipoles ($Y_{20}$) \\
+             -cptype=3: Idem as 2 with central potential also recalculated ($Y_{00}$) 
+\item {\it Vcp0(:)}, {\it rcp0}, {\it acp}: parameters of coupling potential (cptype=1)
+\item {\it delta}: deformation length
+\ei
+
+
+
+\item \textbf{NAMELIST scatwf:} calculates scattering states for the same Hamiltonian by direct integration of the Schr\"odinger quation. These states are used to calculated momentum distributions of PS and  smoothing $B(E\lambda)$ discrete distributions
+\bi
+\item {\it ifcont}: select T to start the plane waves calculations
+\item {\it emin,emax}: minimum and maximum energy for the scattering states
+\item {\it nk:} number of plane waves to be calculated uniformly spaced in linear momentum between {\it emin} and {\it emax}
+\item {\it il:} number of incoming channels for the plane waves. \textbf{Channels up to il will be calculated. For il$<$0, only the -il$^{th}$ channel is calculated}
+\item {\it ilout,eout:} incoming channel and energy for a plane wave to be printed. Energy is as closed to eout as nk,emin,emax allows
+\ei
+
+\item \textbf{NAMELIST belambda:} calculates the energy distribution of the electric transition between the continuum and the ground state  $B(E\lambda;gs \rightarrow n)$
+\bi
+\item {\it ifbel}: select T to start the calculation
+\item uwfgsfile: file including the wave function of the ground state. Format should be equal to wfout(:) output files: fort.10?
+\item {\it lambda:} multipolarity $\lambda$ of the electric transition $B(E\lambda)$ 
+\item {\it rms:} mean squared radii of the core in order to incorporate its Elambda contribution (most of cases E2) to the calculation
+\item {\it BElcore:} same as rms, but explicitely giving $B_c(E\lambda(gs \rightarrow I)$
+\ei
+\end{itemize}
+
+%-------------------------------------------------------------
+\section{Compilation}
+%-------------------------------------------------------------
+To Install the THOX program
+\begin{itemize}
+\item
+Enter the src subdirectory
+\item
+Set the BINDIR variable to the directory where the executable file
+will be installed
+\item
+Uncomment the {\em include XXX.def} line according to your fortran compiler
+\end{itemize}
+
+To clean old files and libraries type:
+
+\begin{verbatim}prompt> make clean \end{verbatim} 
+
+To compile the libraries and executables type:
+
+\begin{verbatim}prompt> make  \end{verbatim}
+
+To copy the executable polpot to the directory specified by the BIN variable
+type:
+
+ \begin{verbatim}prompt> make  install \end{verbatim}
+
+
+%-----------------------------------------
+\section{Test examples}
+%-----------------------------------------
+\subsection{Calculation of projectile states: $^{11}$Be case}
+As an example, we consider the $^{11}$Be nucleus, described as  $^{10}$Be+$n$. The $^{10}$Be core 
+is treated using the rotor model of Ref.~\cite{Nun96} (model Be12-b), which assumes a quadrole deformation 
+parameter $\beta_2$=0.67. The $n$+$^{10}$Be interaction consists of a
+Woods-Saxon central part, with a fixed geometry ($R=2.483$~fm,
+$a=0.65$~fm) and a  parity-dependent strength ($V_{c}=-54.24$~MeV for positive parity states and $V_{c}=-49.67$~MeV for negative ones). The potential contains
+also a spin-orbit part, whose radial dependence is given by the
+derivative of the same Woods-Saxon shape, and strength
+$V_{so}=8.5$~MeV. Only the ground state ($0^+$) and the first excited
+state  ($2^{+}$, $E_x= 3.368$ MeV) are included in the model
+space. For the valence-core orbital angular momentum, we consider
+the values $\ell \leq 2$.  
+
+To generate  the THO basis we use the LST of Eq.~(\ref{lstamos}) with
+$m=4$, $b=1.6$~fm and $\gamma=1.84$~fm$^{1/2}$. The value of  
+$b$ was determined in order to minimize the ground state energy of
+$^{11}$Be in a small THO basis.
+
+The input example for this case reads:
+
+\begin{verbatim}
+
+# 11Be=10Be + n using WS potential
+
+ &SYSTEM Zv=0. Av=1.0087
+          Zc=4. Ac=10.013
+          jtot=0.5 parity=1   /
+
+ &corestates spin=0.0 parity=+1 ex=0.0 /
+ &corestates spin=2.0 parity=+1 ex=3.368 /
+ &corestates /
+
+ &valence sn=0.5 lmax=2 /
+
+ &output wfout(:)=1 2  3 xcdcc=F verb=2 solapout(:)=0  /
+
+ &GRID  rmin=0.0 rmax=60.0 dr=0.05 rlast=60 /
+
+ &pauli n=0 /
+  
+ &BASIS bastype=1 mlst=4 gamma=1.84 bosc=1.6
+        nho=20 exmin=-10 exmax=10.0 bas2=0 /
+ 
+ &POTENTIAL ptype=1 ap=1 at=0 
+           vl0(0:2)=-54.4 -49.672 -54.4
+           r0=2.483   a0=0.65  
+           Vso=8.5    rso=2.483  aso=0.65 
+           pcmodel=0 lambda=2 kband=0
+           cptype=3  Vcp0(0:2)=-54.4 -49.672 -54.4 
+           rcp0=2.483 acp=0.65 delta=1.664 /
+  &potental ptype=0 /
+
+ &SCATWF  ifcont=T  emin=0.01 emax=10.01  nk=100 il=1 ilout=1  pcon=0 /
+
+ &belambda ifbel=F  /
+
+\end{verbatim}
+
+%--------------------------------------------------------------------------
+\subsection{CDCC calculation without core excitations: $d$+$^{58}$Ni case}
+%--------------------------------------------------------------------------
+
+
+
+%--------------------------------------------------------------------------
+\subsection{CDCC calculation with core excitations: $^{11}$Be+p case}
+%--------------------------------------------------------------------------
+
+
+%--------------------------------------------------------------------------
+\subsection{CDCC calculation with target excitations: $^{11}$Be+p case}
+%--------------------------------------------------------------------------
+
+
+
+%--------------------------------------------------------------------------
+\subsection{CDCC calculation with target excitations: d+$^{24}$Mg }
+%--------------------------------------------------------------------------
+
+%--------------------------------------------------------------------------
+\subsection{Calculation of three-body observables: $^{11}$Be+p case}
+%--------------------------------------------------------------------------
+
+
+
+%-----------------------------------------
+\section{References}
+%---------------------------------------
+%\bibliographystyle{apsrev}
+\bibliographystyle{elsarticle-num}
+\bibliography{thox}
+\end{document}
+
+References:
+1. ?Nuclear Science: a Long Range Plan\B5, DoE /NSF, USA, 1996.
+2. ?Nuclear Physics in Europe: Highlights and Opportunities\B5, NuPECC
+Report, 1997.
+3. ?Perspectives of Nuclear Physics in Europe: Highlights and Opportunities\B5,
+NuPECC Long Range Plan, 2010.
+4. ?Overview of Research Opportunities with Radioactive Nuclear Beam\B5, ISL
+Steering Committee, USA, 1995.
