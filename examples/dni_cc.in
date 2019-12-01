@@ -1,0 +1,109 @@
+# d+58Ni CDCC (no spins)
+# ---------------------------------------------------------------------------------------------
+ &SYSTEM  Zv=0. Av=1.0087   sn=0.0
+          Zc=1. Ac=1.0078  /
+
+ &corestates spin=0.0 parity=+1 ex=0.0 /
+ &corestates /
+
+ &output wfout(:)=1 5   xcdcc=F verb=0 solapout(:)=0  cdccwf=F  /
+
+ &GRID  rmin=0.0 rmax=60.0 dr=0.05 rlast=60 /
+
+# p-n potential
+ &POTENTIAL ptype=3 ap=1 at=0 
+   vl0(0:2)=-72.150 -38.150 -72.150
+   r0=0   a0=1.484  /
+
+  &potential ptype=0 /
+
+ &pauli n=0 /
+
+
+  &JPSET bastype=1 mlst=4 gamma=1.5 bosc=1.6 nho=20 nsp=0 exmin=-5 exmax=10 bas2=0 JTOT=0.0 PARITY=1 lmax=0 /  l=0   /
+! &JPSET bastype=1 mlst=4 gamma=1.5 bosc=1.6 nho=20 nsp=0 exmin=0 exmax=25 bas2=0 JTOT=1.0 PARITY=-1 lmax=1 /  l=1 /
+  &JPSET bastype=1 mlst=4 gamma=1.5 bosc=1.6 nho=20 nsp=0 exmin=0 exmax=25 bas2=0 JTOT=2.0 PARITY=1  lmax=2 /l=2 /
+! &JPSET bastype=2 exmin=0.1  exmax=40.1 nk=50 nbins=20 lmax=2  JTOT=2.0 PARITY=1  /
+! &JPSET bastype=2 bastype=2 exmin=0.01 exmax=1.0 JTOT=0.0 PARITY=1  nk=50 nbins=1 lmax=0  /
+ &JPSET /
+
+
+ &SCATWF ifcont=T  emin=0.01 emax=10.01  nk=100 inc=1 jset=2  /
+
+ &belambda  ifbel=f uwfgsfile="" lambda=1 nk=100 emin=0.1 emax=20 jset=2 /
+
+
+############################    REACTION       ####################################
+&reaction elab=80   namep='d' mp=2.014 mt=58 namet='58Ni' zt=28 jt=0.0 / 
+   
+
+######################### COUPLING POTENTIALS FOR (X)CDCC ####################################
+# (if no basis sets have been defined, this section will be skipped)
+# ############################################################################################
+
+&TRANS skip=f  rcc=5.032  writeff=T   /
+
+&coupling qcmax=0  ncoul=0  lamax=2 /
+
+&grid nquad=60  radmax=100.d0 rstep=0.2 rmax=60 rextrap=0 rvecin=0.1d0 drvec=0.025d0 hin=0.1 /
+
+# Core-target (p+58Ni): KD
+&corepotential ptype=1 ap=0 at=58  rc0=1.
+                  V0=-44.70 r0=1.192  a0=0.663  V0i=-3.95 r0i=1.192 a0i=0.663 / ! WS volume
+&corepotential ptype=2 ap=0 at=58
+                  V0i=-5.32 r0i=1.282 a0i=0.550 / ! WS deriv
+&corepotential ptype=0 /
+
+
+## Valence-target (n-58Ni):KD
+&valencepotential ptype=1  ap=0 at=58  rc0=1.
+              V0=-39.50 r0=1.192  a0=0.663  V0i=-3.95 r0i=1.192 a0i=0.663 / ! WS volume.
+&valencepotential ptype=2  ap=0 at=58  
+             V0i=-4.90 r0i=1.278 a0i=0.536 / ! WS deriv
+&valencepotential ptype=0 /
+
+
+
+######################### SOLVE CC EQUATIONS ##############################
+# method=0 PC-numerov, 
+         1=ENA with 5 terms in Cosh[Sqrt[T]]
+         2=ENA with 5 terms in Cosh[Sqrt[T]], only diagonal 
+         3=Raynal
+         4=Modified Numerov used in Fresco
+
+&numerov hcm=0.05 rmaxcc=60  hort=0 method=4 jtmin=20 jtmax=30 skip=f /   
+
+
+######################### TRIPLE DIFFERENTIAL CROSS SECTINS ##############################
+&xsections fileamp="fort.137" thmin=0.1 thmax=179.1 dth=0.5  
+           doublexs=f triplexs=F phixs=F icore=1 ner=200 
+           ermin=0.1 ermax=60 jsets(1:2)=T T  /
+
+&framework sys='lab' idet=1 / 
+&gridener Enlow=1 Enup=80 dEn=2 /      
+&gridthetac tcl=0.0 tcu=60.0  dtc=1 /      
+&gridthetav tvl=0.0 tvu=60.0  dtv=1  /
+&gridphi phil=0.0 phiu=360.0 dphi=5.0 /
+
+
+# ---------------------------------------  END OF INPUT ---------------------------------------------------
+
+
+
+&reaction elab=80 jtmin=0 jtmax=40.0   mp=2.014 mt=58 zt=28 /     jbord(1:2)=0 50  jump(1:2)=2 5 / 
+
+
+
+
+
+
+
+
+ 
+
+ &POTENTIAL part='Valence' a1=58  rc=1.
+      V=44.70 vr0=1.192 a=0.663 w=3.95 wr0=1.192 aw=0.663 
+      wd=5.32  wdr0=1.282 awd=0.550 /
+ &POTENTIAL part='Core' a1=58 rc=1.25 
+      V=39.50 vr0=1.192 a=0.663 w=3.97 wr0=1.192 aw=0.663
+      wd=4.90  wdr0=1.278 awd=0.536 /

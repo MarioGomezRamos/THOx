@@ -1,0 +1,53 @@
+echo Running on `hostname`
+cat > Cdc.$$ << EOF
+d+ 58Ni E=80 MeV CDCC (s+d); 
+ &CDCC 
+   hcm=0.05  rsp=100 rmatch=100 rintp=0.25  absend=0.001  
+   elab=80  pel=1 lab=1 jtmin=0 jbord=40
+   cutr=-15. 
+   thmax=180 thinc=1 chans=1 smats=4 xstabl=1  
+   nk=50 ncoul=0 reor=0 q=2 hat=F cdccc=1  /
+#  iter=1 trans=-1 postprior=1 remnant=-1 /
+
+ &NUCLEUS part='Proj' name='d' charge=1 mass=2.014  
+    spin=0. parity=1 be=2.225 n=1 l=0 j=0. /
+ &NUCLEUS part='Valence' name='n' charge=0 mass=1.0087 spin=0 parity=+1 /
+ &NUCLEUS part='Core' name='p' charge=1 mass=1.0078 spin=0.0 /
+ &NUCLEUS part='Target' name='58Ni' charge=28 mass=58.0 spin=0. parity=1 /
+  
+   &BIN spin=0.0 parity=+1 start=0.01 step=3 end=6.01 energy=F l=0 j=0.0 /
+   &BIN spin=2.0 parity=+1 start=0.01   step=3 end=6.01 energy=F l=2 j=0.0 isc=2 /
+  &BIN /
+
+  &BIN spin=2.0 parity=+1 start=0.01 step=3 end=6.01 energy=F l=2 j=2.0 /
+!  &BIN spin=4.0 parity=+1 start=0.01 step=3 end=60.01 energy=F l=4 j=4.0 /
+
+ &POTENTIAL part='Proj' a1=58. rc=1.25 /
+
+ &POTENTIAL part='Core' a1=58  rc=1.25
+      V=44.70 vr0=1.192 a=0.663 w=3.95 wr0=1.192 aw=0.663 
+      wd=5.32  wdr0=1.282 awd=0.550 /
+
+ &POTENTIAL part='Valence' a1=58 rc=1.25 
+      V=39.50 vr0=1.192 a=0.663 w=3.97 wr0=1.192 aw=0.663
+      wd=4.90  wdr0=1.278 awd=0.536 /
+
+
+#Gaussian potential for gs
+ &POTENTIAL part='Gs' shape= 2 a1=0 a2=1 rc=1.0 V=72.150  a=1.484  /
+
+EOF
+cdc4k < Cdc.$$ > dni.frin
+\rm Cdc.$$
+exit
+head -999 data.$$
+#ln -s b8c13-t2.xsec fort.16
+#ln -s b8c13-t2.xst fort.13
+#ln -s b8c13-t2.xsl fort.56
+#ln -s b8c13-t2.cdcc fort.57
+timer fresco < data.$$
+sumbins < b8c13-t2.xsec >! b8c13-t2.xsum
+awk '{print $1 , $2/1000}' b8c13-t2.xsum >! b8c13-t2.xso
+xslr b8c13-t2.xsl
+\rm data.$$ Cdc.$$
+\rm fort.*
