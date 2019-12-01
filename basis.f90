@@ -114,7 +114,7 @@ c determine allowed single-particle configurations
         jpiset(nset)%parc(nchan)   =parc(ic)
         jpiset(nset)%bas2          =bas2
         jpiset(nset)%lsp(nchan)   =l  
-         write(0,*)'jpiset',nset,l
+!         write(0,*)'jpiset',nset,l
         jpiset(nset)%jsp(nchan)   =jn
         jpiset(nset)%jc(nchan)    =jcore
         jpiset(nset)%wcut(1:nchan)=wcut(1:nchan)

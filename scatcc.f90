@@ -133,8 +133,8 @@ c     ------------------------------------------------------------
       excore  =jpiset(nset)%exc(inc)
       lmax    =maxval(jpiset(nset)%lsp(1:nchan))
       allocate(cph(0:lmax))
-      write(0,*)'lsp()',jpiset(nset)%lsp(1:5)
-      write(0,*)'wfrange: lmax=',lmax
+!      write(0,*)'lsp()',jpiset(nset)%lsp(1:5)
+!      write(0,*)'wfrange: lmax=',lmax
       
      
       if (nchan.ne.jpiset(nset)%nchan) then
