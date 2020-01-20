@@ -9,12 +9,12 @@ The code assumes a reaction of the form
 where "c" and "v" are the fragment constituents (denoted, for convenience, core and valence particles, respectively). 
 
 ## Short input description 
-##   SYSTEM  namelist: Zv, Av,  Zc, Ac, sn
+#  SYSTEM  namelist: Zv, Av,  Zc, Ac, sn
 - Zv, Zc: charge of valence and core particles
 - Av, Ac: mass number of valence and core particles
 - sn    : intrinsic spin of valence particle
 
-## CORESTATES namelist: spin, parity, ex
+# CORESTATES namelist: spin, parity, ex
  - spin, parity, ex: intrinsic spin, parity and excitation energy of this core state
  
    This namelist can be repeated if more than one core state is present. After the last core state is included, an empty CORESTATE namelist must be included
