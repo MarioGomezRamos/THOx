@@ -1,6 +1,6 @@
 # THOx
- v1.0
-** THOx **  is a CDCC code for two-body projectiles, with the possibility of including core excitations. The code has been developed by the Nuclear Theory Group based at the University of Seville.
+ 
+** THOx **  is a CDCC code for two-body projectiles, with the possibility of including core excitations. The code has been developed by the Nuclear Theory Group based at the University of Seville. It works with standard fortran compilers (ifort, gfortran,etc)
 
 The code assumes a reaction of the form
 
