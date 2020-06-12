@@ -20,7 +20,7 @@ c     nchan={Ic,lsj} configurations
 
 
 
-      namelist/jpset/ jtot,parity,l,j,lmax,
+      namelist/jpset/ jtot,parity,l,j,lmin,lmax,
      &                bastype,nfmax,exmin,exmax,
      &                nho,bosc,     ! HO
      &                gamma,mlst,   !THO Amos 

@@ -365,6 +365,8 @@ c *** ---------------------------------------------------
 C ***      Matrix elements of tensor operators           ****
 c Spin-orbit for valence ------------------------------
       als=0.5*(ji*(ji+1.d0)-xl*(xl+1.d0)-sn*(sn+1d0))
+!      if (abs(als).gt.0) write(0,*)'als=',als
+
 
 c spin-orbit for core (added to v2.0.2 version by AMoro)
       alsc=corels(li,sn,ji,qjc(nchani),lf,sn,jf,qjc(nchanf),jtot)

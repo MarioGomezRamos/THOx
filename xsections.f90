@@ -697,7 +697,7 @@ c     ..........................................................................
       complex*16,allocatable:: fin(:,:,:)
       complex*16:: bindk(maxsets,maxeset)
       real*8:: xtab(6),ytab(6),kcmf_cont
-      complex*16:: fxytab(6,6),fint2d,fint2dd
+      complex*16:: fxytab(6,6),fint2d,fint2dd,fint2db_jin
 
 !MGR---------------------------------------------------------------------
       real*8,allocatable :: xs3body(:,:,:), energ3(:)
@@ -1759,6 +1759,11 @@ c v26
        tmat(iset,inc,iii)=f2c(xb,eks,xyt,fxyc,6,6,nord,10,maxne)
 !      tmat(iset,inc,iii)=fint2dd(xtab,ytab,fxytab,xb,eks,6,6,6)
 !      tmat(iset,inc,iii)=fint2d(xtab,ytab,fxytab,xb,eks,6,6,nord,6)
+
+!             ijcmsec=fint2db2(ecmb,thcm,xsecmb,iecm,jthcm,necm+1,
+!     +       nthcm+1,1.0d0)
+!       tmat(iset,inc,iii)=fint2db_jin(xtab,ytab,fxytab,xb,eks,6,6,1.0d0)
+     
 
       if (wrt) then
           write(99,*)'iii=',iii,'xb,yb=',xb,eks
@@ -2851,6 +2856,92 @@ c *** Angle-integrated cross section for each projectile state
 
 
       end subroutine
+
+
+
+
+
+! two dimension interpolation function
+! based on the method of fival function
+! f(xbar,ybar) from f(x,y)
+      function fint2db_jin(xtab,ytab,fxytab,xbar,ybar,nnx,nny,alpha)
+        implicit none
+        integer :: nnx,nny ! dimesnion of x and y
+        real*8 ::  xtab(nnx),ytab(nny)  ! vector of x and y
+!        real*8 :: fxytab(nnx,nny) ! original function
+        complex*16 :: fxytab(nnx,nny) ! original function
+        real*8 :: xbar,ybar,f
+        complex*16:: fint2db_jin ! interpolted points and value
+        real*8 :: alpha
+!        real*8 :: fival2d(nny)
+        complex*16 :: fival2d(nny)
+        complex*16 :: cfival
+
+        fint2db_jin=0d0
+
+
+        if(xbar>xtab(nnx) .or. xbar<xtab(1) .or. ybar>ytab(nny)
+     +                  .or. ybar<ytab(1) ) return
+
+
+        call fival2c(xbar,xtab,fxytab,nnx,nny,alpha,fival2d)
+
+        fint2db_jin = cfival(ybar,ytab,fival2d,nny,alpha)
+
+
+      end function
+
+
+
+************************************************************************
+*     subroutine modified for the two dimension interpolation
+*     REAL 4-point lagrange interpolation routine.
+*     interpolates thr FUNCTION value fival at point r from an
+*     array of points stored in fdis(ndm). this array is assumed
+*     to be defined such that the first element fdis(1) CONTAINS
+*     the FUNCTION value at r=xv(1) and xv(2 .. ndm) are monotonically
+*     increasing.
+************************************************************************
+      subroutine fival2c(r,xv,fdis,ndm,ndm2,alpha,fival2d)
+      IMPLICIT REAL*8(A-H,O-Z)
+!      REAL*8 fdis(ndm,ndm2),y1(ndm2),y2(ndm2),y3(ndm2),y4(ndm2)
+      complex*16 fdis(ndm,ndm2),y1(ndm2),y2(ndm2),y3(ndm2),y4(ndm2)
+      DIMENSION xv(ndm)
+!     real*8 fival2d(ndm2)  !ndm2 stands for the other dimension of 2-dimension interpolation
+      complex*16 fival2d(ndm2)  !ndm2 stands for the other dimension of 2-dimension interpolation
+      IF(r.GT.xv(ndm)) go to 9
+      DO 5 k=1,ndm-2
+ 5    IF(r.LT.xv(k)) go to 6
+      k=ndm-2
+ 6    nst=MAX(k-1,1)
+      x1=xv(nst)
+      x2=xv(nst+1)
+      x3=xv(nst+2)
+      x4=xv(nst+3)
+      y1=fdis(nst+0,:)
+      y2=fdis(nst+1,:)
+      y3=fdis(nst+2,:)
+      y4=fdis(nst+3,:)
+      pii1=(x1-x2)*(x1-x3)*(x1-x4)
+      pii2=(x2-x1)*(x2-x3)*(x2-x4)
+      pii3=(x3-x1)*(x3-x2)*(x3-x4)
+      pii4=(x4-x1)*(x4-x2)*(x4-x3)
+      xd1=r-x1
+      xd2=r-x2
+      xd3=r-x3
+      xd4=r-x4
+      pi1=xd2*xd3*xd4
+      pi2=xd1*xd3*xd4
+      pi3=xd1*xd2*xd4
+      pi4=xd1*xd2*xd3
+      fival2d=y1*pi1/pii1+y2*pi2/pii2+y3*pi3/pii3+y4*pi4/pii4
+      RETURN
+ 9    fival2d=fdis(ndm,:) * EXP(alpha*(xv(ndm)-r))
+      RETURN
+      END subroutine
+
+
+
 
 
 c **** -------------------------------------------------------------------

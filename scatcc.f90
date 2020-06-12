@@ -109,6 +109,7 @@ c *** Initialize some variables
       z12=zc*zv
       wftype=1  !(1=scat. states; 2=real CC states)
       debug=.false.
+     
 c *** -------------------------
 
 c     ------------------------------------------------------------
@@ -119,6 +120,9 @@ c     ------------------------------------------------------------
         ifrmat=.false. ! use Numerov
       endif 
 c     ------------------------------------------------------------
+
+
+
 
       if (info) then
         write(*,100)ne,jpi(jtot,partot),inc,ecmi,ecmf
@@ -134,7 +138,7 @@ c     ------------------------------------------------------------
       lmax    =maxval(jpiset(nset)%lsp(1:nchan))
       allocate(cph(0:lmax))
 !      write(0,*)'lsp()',jpiset(nset)%lsp(1:5)
-!      write(0,*)'wfrange: lmax=',lmax
+      write(0,*)'wfrange: lmax=',lmax
       
      
       if (nchan.ne.jpiset(nset)%nchan) then
@@ -182,8 +186,6 @@ c Initialize variables for Numerov integration
         rmatch=rvec(nr)
         nrint=nr
       endif
-
-      
 c ------------------------------------------------------
 
 
@@ -304,6 +306,7 @@ c ... Real multichannel states from Numerov solutions ...........
          case (1)  ! CC Bins
 c *** Scattering states with numerov solution ................
          if (.not.ifrmat) then
+!                  if (.not.ifrmat.and.(ecm>0.2)) then
 !          call schcc_erwin(nch,ecm,zc*zv,inc,ql,factor,dr,r0,
 !     &                    nr,wf,phase,smat,method,info)
 

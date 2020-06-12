@@ -450,7 +450,7 @@ c
 
       namelist /grid/ ng, rmin,rmax,dr,rlast,rint
             
-      namelist/jpset/ jtot,parity,l,j,lmax,
+      namelist/jpset/ jtot,parity,l,j,lmin,lmax,
      &                bastype,nfmax,exmin,exmax,
      &                nho,bosc,     ! HO
      &                gamma,mlst,   !THO Amos 
@@ -472,7 +472,7 @@ c
 300   bastype=-1    
       tres=.false.
       inc=1
-      l=-1 ; j=-1; lmax=-1;
+      l=-1 ; j=-1; lmin=-1; lmax=-1;
       read(kin,nml=jpset) 
       if (bastype.lt.0) goto 350
       if (l.lt.0) l=0;
