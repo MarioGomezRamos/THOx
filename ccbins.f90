@@ -41,7 +41,7 @@ c *** ----------------------------------------------
 
 c *** Initialize some variables ***********
       energy=.false.
-      debug=.false.
+      debug=.true.
       bincc=.false.
       if (bastype.eq.4) then
         realwf=.true.

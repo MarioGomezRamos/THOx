@@ -407,9 +407,10 @@ c    (could be done within ERWIN, but I do it here in order not to affect other 
       kch(inc)=sqrt(factor*abs(ecm))
       eta(inc)=factor*z12*e2/kch(inc)/2.    
       call coulph(eta(inc),cph,linc)
-      phc=exp(ci*cph(linc))
+      phc=exp(ci*cph(linc))    
+!      write(*,*)'phic=',phc
 ! AMM: should we restrit this to open channels???
-      wfc(ie,:,:)= phc*wfc(ie,:,:)
+!      wfc(ie,:,:)= phc*wfc(ie,:,:)
       endif ! wftype
 
 c ... If wfs are to be 'normalized' as <k|k'> = delta(k-k'), require additional factor sqrt(2/pi)
