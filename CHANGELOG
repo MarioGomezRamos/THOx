@@ -1,0 +1,2 @@
+1/7/20: xsections.f90
+        fixed computation of reaction cross section when more than one incoming channel is present
