@@ -501,10 +501,13 @@ c *** Angle-integrated cross sections from S-matrices
        lf   = jptset(icc)%l(nf)
        jpf  = jptset(icc)%jp(nf) 
        
-
-       if (iex.eq.iexgs) then ! elastic channel 
+! Fixed July 1st 2020.        
+!       if (iex.eq.iexgs) then ! elastic channel 
+       if ((iex.eq.iexgs).and.(ni.eq.nf)) then ! elastic channel 
          written(ksmat)=.true.
          smat=smats(icc,ni,nf)
+!         write(0,*)'jtot, ni, nf, smat=',jtot,partot,ni,nf,smat,
+!     &  (pi/kcmi**2)*(2.*jtot+1)/nmi*(1-abs(smat)**2)
          xr=xr+10*(pi/kcmi**2)*(2.*jtot+1)/nmi*(1-abs(smat)**2)
          write(ksmat,'(1f6.1,2x,2i3,1f6.1," ->",2i3,1f6.1,2x,3f14.8)')
      &   jtot,iexgs,li,jpi,iex,lf,jpf,smat,abs(smat)
