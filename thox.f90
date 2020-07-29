@@ -211,7 +211,7 @@ c these variables could be used to replace qspl, qspj, qjc(nsp)
 
 
       select case(bastype)
-      case(0,1) ! HO, THO -----------------------------------------
+      case(0,1,7) ! HO, THO cTHO -----------------------------------------
 c *** Build and diagonalize s.p. Hamiltonian for each j/pi set
         if (bas2.eq.0) call hsp(nset,nchsp,nho)
 

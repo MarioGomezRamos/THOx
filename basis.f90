@@ -10,6 +10,7 @@ c     nchan={Ic,lsj} configurations
       integer l,lmin,lmax,bastype,mlst
       real*8:: xl,j,jn,jcore,ex
       real*8:: bosc,gamma
+      real*8:: eta
       integer:: ichsp,ic,iset,nset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
       integer,save:: prevset
@@ -24,6 +25,7 @@ c     nchan={Ic,lsj} configurations
      &                bastype,nfmax,exmin,exmax,
      &                nho,bosc,     ! HO
      &                gamma,mlst,   !THO Amos 
+     &                eta,          !cTHO Lay
      &                nsp,  ! sp eigenvalues to keep for full diag
      &                bas2,
      &                nk,    ! nb of continuum wfs to construct each bin
@@ -41,7 +43,8 @@ c Initialize variables and assign default values
       ehat=.false. ; filewf=""
       wcut(1:maxchan) = 0.0
       lmin=-1; lmax=-1; l=-1; j=-1;
-      
+      gamma=0d0
+      eta=0d0
 
       read(kin,nml=jpset) 
       nset=indjset(iset)
@@ -213,9 +216,11 @@ c -----------------------------------------------
      & gamma,mlst,nsp,bas2,lmax)
        use wfs,only : wftho,nr
        use globals
+       use sistema
+       use constants   
        implicit none
        integer l,mlst,nfmax,bastype,nho,bas2,lmax,nsp
-       real*8 ::bosc,gamma
+       real*8 ::bosc,gamma,eta !the last one for ctho
 
  
 c *** THO basis
@@ -268,7 +273,45 @@ c -------------------------------------------------------------
        write(*,*)' bas2=',bas2,' not implemented!'
        endif
 
+c      -----------------------------------------------------
+       case(7)  ! cTHO
+c      -----------------------------------------------------
 
+
+        if (gamma<1e-6) then
+!          write(*,*)'Im here'
+         gamma=bosc*(8*mu12*abs(egs)/hc/hc)**(1d0/4d0)       !8???
+         write(*,*)'( gamma=0 => will use Amos formula )'
+         write(*,*)'gamma=',gamma
+         endif
+        if (abs(egs)<1e-6) then
+!        gamma=bosc*(8*mu12*abs(egs)/hc/hc)**(1d0/4d0)
+          write(*,*)'( egs=0 ! => aborting )';stop
+        endif
+        if (abs(eta)<1e-6) then
+         eta=zv*zc*e2/dsqrt(2.*mu12*abs(egs)/hc/hc)*mu12/hc/hc
+        endif
+         write(*,*)'eta=',eta
+       allocate(wftho(nho,0:lmax,nr))
+       do l=0,lmax
+         call cthobasis(l,mlst,bosc,gamma,eta,nho)	
+       enddo
+
+          write(0,52) mlst,bosc,gamma,eta,nho
+52        format(" - Charged THO basis with m=",i2,2x,
+     &           "b=",1f5.2,2x,"fm, gamma=",1f6.3,2x,
+     &           " somm=",1f6.3," and N=",i3," states")
+
+       if (bas2.eq.0) then
+	  write(*,*)' bas2=0 => Use Hsp eigenstates to diagonalize full H'
+       else if  (bas2.eq.1) then
+	  write(*,*)' bas2=1 => Use THO basis to diagonalizd full H'
+        else
+       write(*,*)' bas2=',bas2,' not implemented!'
+       endif
+
+
+c -------------------------------------------------------------
 c -------------------------------------------------------------
        case(2) ! CC bins
        write(*,*)' ** BIN wfs ** '
