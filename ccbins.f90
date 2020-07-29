@@ -13,18 +13,22 @@ c     Construct continuum single or multi-channel bins
 c     ----------------------------------------------
       logical :: energy,tres,debug,ifhat
       integer, parameter:: kfr=20
-      integer :: iset,inc,nbins,nchan,ib,ibp,ich,ik,ir,nk
+      integer :: iset,inc,nbins,nchan,ib,ibp,ich,ik,ir,nk,li
       integer :: bastype,wftype
 c     .....................................................
       real*8  :: emin,emax,ei,ef,ebin,excore,ehat,khatsq,wbin
       real*8  :: r,bnorm,raux,r2aux,bcoef,chnorm(maxchan),rms
-      real*8  :: ddk,ki,kf,kmin,kmax,kstep,kmid,k,li
+      real*8  :: ddk,ki,kf,kmin,kmax,kstep,kmid,k
       real*8  :: psh_el(nk),deltap, deladd,deltai
-      real*8  :: fconv,yint,faux(nk)
+      real*8  :: fconv,yint,faux(nk),eta,factor,rm
+      real*8 ,   allocatable  :: cph(:)
+
       complex*16, parameter::iu=(0.,1.)
       complex*16,allocatable,target:: wfcont(:,:,:)
       complex*16,pointer       :: wfbin(:)
       complex*16 :: smate(nk,maxchan),tfac,yfac,caux
+      complex*16 :: phc
+      
       CHARACTER(LEN=80) formato
 c  bincc variables (Fresco)
       logical tdel,tkmat,tknrm,bincc
@@ -59,6 +63,10 @@ c *** ------------------------------------
       nchan   =jpiset(iset)%nchan
       excore  =jpiset(iset)%exc(inc)
       bastype =jpiset(iset)%bastype
+      li      =jpiset(iset)%lsp(inc)
+
+      allocate(cph(0:li))
+
 
 c *** Multichannel (complex) bins
       if ((bastype.eq.2).and.(nchan.gt.1)) then 
@@ -191,12 +199,23 @@ c k-average
       yint=0.
       do ik=1,nk
       k=ki+(ik-1)*ddk
+      
+! July 29th 2020
+!      rm=av*ac/(av+ac)
+!      factor=(2*amu/hc**2)*rm
+      factor=1/fconv
+      eta=factor*zc*zv*e2/k/2.    
+      call coulph(eta,cph,li)
+      phc=exp(iu*cph(li)) 
+      write(*,*)' li,eta,phc',li,eta,phc         
+      
+      
 c1      yfac=exp(-iu*psh_el(ik)*pi/180.) ! NEW
 c1     tfac=(smate(ik,inc)-1.)/(0.,2.) ! two-body elastic t-matrix 
 c1      if (tres) yfac=conjg(tfac)              ! Fresco choice
 !      if (tres) yfac=yfac*sin(psh_el(ik)*pi/180.) ! Alt. choice by AMM Sept 16
 
-      yfac=exp(iu*psh_el(ik)*pi/180.)  ! NEW
+      yfac=exp(iu*psh_el(ik)*pi/180.)*phc  ! NEW
       tfac=(smate(ik,inc)-1.)/(0.,2.)  ! two-body elastic t-matrix 
       if (tres)   yfac=tfac            ! Fresco choice
       if (bastype.eq.4) yfac=1.0             ! Real multichan wfs
