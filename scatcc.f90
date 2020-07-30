@@ -400,7 +400,8 @@ c ... Extrapolate wfs from rint to rmax
 c ...............................................
 
 
-!!! (Un)commented in July 29th
+!!! Commented in June 2020
+!!! Re-added in July 2020 
 c ... Add Coulomb phase 
 c    (could be done within ERWIN, but I do it here in order not to affect other parts of the code using ERWIN
       if (wftype.ne.4) then
@@ -409,7 +410,7 @@ c    (could be done within ERWIN, but I do it here in order not to affect other 
       eta(inc)=factor*z12*e2/kch(inc)/2.    
       call coulph(eta(inc),cph,linc)
       phc=exp(ci*cph(linc))    
-      write(*,*)'phic=',phc
+!      write(*,*)'phic=',phc
 ! AMM: should we restrit this to open channels???
       wfc(ie,:,:)= phc*wfc(ie,:,:)
       endif ! wftype
