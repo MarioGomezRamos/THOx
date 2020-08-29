@@ -207,7 +207,7 @@ c k-average
       eta=factor*zc*zv*e2/k/2.    
       call coulph(eta,cph,li)
       phc=exp(iu*cph(li)) 
-      write(*,*)' li,eta,phc',li,eta,phc         
+!      write(*,*)' li,eta,phc',li,eta,phc         
       
       
 c1      yfac=exp(-iu*psh_el(ik)*pi/180.) ! NEW
