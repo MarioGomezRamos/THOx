@@ -138,6 +138,7 @@ c
           integer  nex             ! number of energies retained 
           integer  inc             ! incoming channel (bins only)
           logical  complex         ! real/complex wfs?
+          real*8   vscale          ! scaling factor for v-c central potential
 !          type(spchannel) qnsp(maxchan)
       END TYPE
       TYPE(PCHANNEL),allocatable:: jpiset(:)

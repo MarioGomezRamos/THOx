@@ -443,7 +443,7 @@ c
       integer::l,lmin,lmax,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
       real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
-      real*8:: bosc,gamma,kband,wcut(1:maxchan)
+      real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
       character*40 filewf
@@ -456,7 +456,8 @@ c
      &                gamma,mlst,   !THO Amos 
      &                nsp,  ! sp eigenvalues to keep for full diag
      &                bas2,
-     &                nk, nbins,inc,tres,ehat,filewf,wcut,merge
+     &                nk, nbins,inc,tres,ehat,filewf,wcut,merge,
+     &                vscale
 
       
       jpsets=0; inpsets=0
@@ -473,6 +474,7 @@ c
       tres=.false.
       inc=1
       l=-1 ; j=-1; lmin=-1; lmax=-1;
+      vscale=1;
       read(kin,nml=jpset) 
       if (bastype.lt.0) goto 350
       if (l.lt.0) l=0;

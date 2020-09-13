@@ -26,7 +26,7 @@ c     for each channel {l,s,j}
       real*8,allocatable:: gnm(:),faux(:),gaux(:)
       integer i,l,ich,nch,n,m,n1,m1,nprint,ifile,nset,nho
       parameter(nprint=11)
-      real*8:: norm,r,rms,jn
+      real*8:: norm,r,rms,jn,vscale
       CHARACTER LNAME(0:14)
       DATA LNAME / 's','p','d','f','g','h','i','j','k','l','m',
      &                'n','o','p','q' /
@@ -36,6 +36,10 @@ c     for each channel {l,s,j}
         write(*,*)'hsp: nho=0 ! Skipping this basis set'
         return
       endif
+      
+      jtot   =jpiset(nset)%jtot
+      vscale= jpiset(nset)%vscale
+!      write(0,*)'jtot=',jtot, ' vscale=',vscale
 
       write(*,'(//,5x,"SINGLE-PARTICLE eigenstates:",/)')
       if (allocated(hmat))   deallocate(hmat)
@@ -69,7 +73,7 @@ c l, jn, etc could be also retrieved with the spchan() variable:
 
         do n=1,nho
         do m=1,nho
-        call hspnm(n,m,ich)  
+        call hspnm(n,m,ich,vscale)  
         enddo !m
         if (written(76)) write(76,'(100f12.5)')(hmat(n,m),m=1,nho)
         enddo !n
@@ -136,7 +140,7 @@ c *** ----------------------------------------------------
 c     Calculates matrix elements for s.p. Hamiltonian:
 c     hnm(n,m)=<m,nchanf|h|n,nchani>
 c *** ---------------------------------------------------
-      subroutine hspnm(n,m,ichan)
+      subroutine hspnm(n,m,ichan,vscale)
       use globals
       use sistema
       use potentials, only: vls,vss,vcl,vcou,vll,cptype,vtran
@@ -146,7 +150,7 @@ c *** ---------------------------------------------------
       use hmatrix
       implicit none
       real*8::h,fact,d2wf,xl,r,d1wfm,d1wfn
-      real*8::deriv1,als,aspsp,all
+      real*8::deriv1,als,aspsp,all,vscale
       integer::l,i,n,m,ichan
       real*8::j,res
       real*8:: un,um,um1,um2,um3,um4,um5,aux,knm,vnm
@@ -159,9 +163,10 @@ c        real*8:: all,als,as0,j,vcou,vpot,deriv1,deriv2
 
       l=qspl(ichan)
 
-      j=qspj(ichan)
+      j    =qspj(ichan)
       jcore=qjc(ichan)
-      ic=cindex(ichan)
+      ic   =cindex(ichan)
+      
 
 !      l =spchan(nset,ich)%l
 !      jn=spchan(nset,ich)%j
@@ -186,6 +191,8 @@ c        real*8:: all,als,as0,j,vcou,vpot,deriv1,deriv2
       enddo
               
       rmax=rvec(nr)
+  
+!      write(*,*)'hspnm: vscale',vscale
 	 
       do i=1,nr
            r=rvec(i)
@@ -199,7 +206,7 @@ c        real*8:: all,als,as0,j,vcou,vpot,deriv1,deriv2
            knm=fact*d1wfn*d1wfm                !kinetic energy term
      &           + fact*xl*(xl+1d0)/r/r*un*um  !centrifugal term
 
-	   vnm=  (vcou(i)+vcl(l,i)+als*vls(l,i)+all*vll(l,i))*un*um !coulomb+nucl(only s-o)  MGR l-dependence
+	   vnm=  (vcou(i)+vscale*vcl(l,i)+als*vls(l,i)+all*vll(l,i))*un*um !coulomb+nucl(only s-o)  MGR l-dependence
 
            if (cptype.eq.5) then
              if (partot.eq.1) then

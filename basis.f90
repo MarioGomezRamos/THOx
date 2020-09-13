@@ -16,7 +16,7 @@ c     nchan={Ic,lsj} configurations
       integer,save:: prevset
       CHARACTER*1 BLANK,PSIGN(3)      
       character*40 filewf
-      real*8 :: wcut(maxchan)
+      real*8 :: wcut(maxchan),vscale
       DATA PSIGN / '-','?','+' /, BLANK / ' ' /
 
 
@@ -34,7 +34,8 @@ c     nchan={Ic,lsj} configurations
      &                tres,  ! weight by T-matrix 
      &                ehat,  ! (logical, default T) to use mean bin energies (otherwise midpoint), 
      &                filewf, ! external file for wfs
-     &                wcut   ! mininum weight per channel to be retained (default 1) 
+     &                wcut,   ! mininum weight per channel to be retained (default 1) 
+     &                vscale  ! scaling factor for v-core potential 
 !     &                realcc ! if TRUE, calculate real multichannel states instead of scat. states
 
 
@@ -45,6 +46,7 @@ c Initialize variables and assign default values
       lmin=-1; lmax=-1; l=-1; j=-1;
       gamma=0d0
       eta=0d0
+      vscale=1.
 
       read(kin,nml=jpset) 
       nset=indjset(iset)
@@ -70,6 +72,7 @@ c      endif
       jpiset(nset)%exmax   = exmax
       jpiset(nset)%inc     = inc
       jpiset(nset)%bastype = bastype
+      jpiset(nset)%vscale  = vscale
  
 
       write(*,'(/)') 
