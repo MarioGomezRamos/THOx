@@ -59,7 +59,7 @@ c ...
       integer :: nset,inc,ifail,wftype
       real*8  :: ecm,ecmi,ecmf,de,excore,econt
       real*8  :: dk,kf,ki,kcm,kcont,krm,tkch
-      real*8  :: z12,rm,factor,r0
+      real*8  :: z12,rm,factor,r0,vscale
       real*8  :: deladd,deltap,deltai,delta(ne) !,cph(0:500)
       real*8 ,   allocatable  :: cph(:)
       complex*16 :: phase(nchan),smat(nchan),smate(ne,maxchan)
@@ -136,6 +136,8 @@ c     ------------------------------------------------------------
       partot  =jpiset(nset)%partot
       excore  =jpiset(nset)%exc(inc)
       lmax    =maxval(jpiset(nset)%lsp(1:nchan))
+      vscale  =jpiset(nset)%vscale
+      
       allocate(cph(0:lmax))
 !      write(0,*)'lsp()',jpiset(nset)%lsp(1:5)
 !      write(0,*)'wfrange: lmax=',lmax
@@ -160,7 +162,7 @@ c     ------------------------------------------------------------
       cindex(1:nch)=jpiset(nset)%cindex(1:nch)
 
 
-      call coefmat(nch)
+      call coefmat(nset,nch)
       vcoup(:,:,1:nr)=ccmat(:,:,1:nr)/factor
 
  
@@ -500,7 +502,7 @@ c     ------------------------------------------------------------
       logical :: info
       integer ir,n,nchan,method
       integer nset,inc,partot
-      real*8  ecm,z12,jtot,rm,factor,r0
+      real*8  ecm,z12,jtot,rm,factor,r0,vscale
       complex*16 :: phase(nchan),smat(nchan)
       complex*16 :: wf(nchan,nr)
 c     ------------------------------------------------------------
@@ -511,6 +513,9 @@ c     ------------------------------------------------------------
 
       jtot    =jpiset(nset)%jtot
       partot  =jpiset(nset)%partot
+      vscale  =jpiset(nset)%vscale
+      
+      
       if (nchan.ne.jpiset(nset)%nchan) then
          write(*,*)'Wrong number of channels passed to test_cont!'
       endif
@@ -528,7 +533,7 @@ c     ------------------------------------------------------------
       qjc(1:nchan)   =jpiset(nset)%jc(1:nch)
       cindex(1:nchan)=jpiset(nset)%cindex(1:nch)
 
-      call coefmat(nch)
+      call coefmat(nset,nch)
       vcoup(:,:,1:nr)=ccmat(:,:,1:nr)/factor
 
       r0=rvec(1)

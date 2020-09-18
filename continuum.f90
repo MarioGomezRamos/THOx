@@ -9,10 +9,10 @@ c     phase=(-1)**NINT((JCI-JCF - ABS(JCI-JCF))/2.)
 C           The above phase factors with JCORE etc
 C           are there only because of definition of M(Ek) matrix element
 c -------------------------------------------------------------------------
-      subroutine coefmat(nchan)
+      subroutine coefmat(nset,nchan)
       use wfs, only: nr,wfsp,rvec
       use channels,only:jtot,qj,spindex,ql,qj,qjc,cindex,nphon,
-     &                  sn,partot,qnc
+     &                  sn,partot,qnc,jpiset
       use sistema
       use globals
       use potentials
@@ -22,7 +22,7 @@ c -------------------------------------------------------------------------
       logical, save:: first=.true.
       integer:: ir      
       integer  ici,icf,il
-      integer  nchani,nchanf,nchan,li,lf,nphi,nphf
+      integer  nchani,nchanf,nchan,li,lf,nphi,nphf,nset
 c     -----------------------------------------------------------------------
       real*8:: fact,ji,jf,xl,jci,jcf,coefss,corels,vaux
       real*8:: all,ass,als,alsc,allp,ccoef,vcp,rm,conv,faux(nr),zero
@@ -33,7 +33,7 @@ c     -----------------------------------------------------------------------
 c     Pauli blocking 
       integer ispi,ip
       integer:: lp,np
-      real*8:: jp
+      real*8:: jp,vscale
       real*8,allocatable:: wfpau(:)       
 c     -----------------------------------------------------------------------
 !      big=huge(big)   
@@ -53,9 +53,12 @@ c     -----------------------------------------------------------------------
       fact=hc*hc/2d0/mu12
       rm=av*ac/(av+ac)
       conv=2*amu*rm/hc**2
-
-!      if (first) then
+      vscale= jpiset(nset)%vscale
+             
+      
+!       if (first) then
 !        write(*,*)'coefmat: ql=',ql(1:nchan)
+!        write(*,*)'coefmat: nset,vscale=',nset,vscale
 !        write(*,*)'coefmat: qj=',qj(1:nchan)
 !       write(*,*)'coefmat: qjc=',qjc(1:nchan)
 !       write(*,*)'coefmat: laminc=',laminc(:)
@@ -94,10 +97,10 @@ c     -----------------------------------------------------------------------
           all=xl*(xl+1.)                           ! l.l
 
           faux(1:nr)=
-     &       vcou(1:nr)        ! coulomb
-     &     + vcl(li,1:nr)      ! nuclear central
-     &     + vls(li,1:nr)*als     ! spin-orbit MGR l-dependence
-     &     + vll(li,1:nr)*all     ! l.l MGR l-dependence
+     &       vcou(1:nr)            ! coulomb
+     &     + vcl(li,1:nr)*vscale   ! nuclear central
+     &     + vls(li,1:nr)*als      ! spin-orbit MGR l-dependence
+     &     + vll(li,1:nr)*all      ! l.l MGR l-dependence
  
 !          do ir=1,nr
 !            write(225,*)rvec(ir),faux(ir) ,vcl(li,ir)
@@ -286,7 +289,7 @@ c ------------------------------------------------------------
 c     ........................................................
       logical :: energy,writewf,writesol
       character*5::jpi
-      integer:: il, pcon ! backward compatibility
+      integer:: il, pcon ! deprecated, backward compatibility only
       integer inc,ilout,ili,jset,partot,nchan,nk,n,ir,ik
       real*8 :: emin,emax,eout,jtot,ecv
       real*8 :: kmin,dk,de,kmax,kcv
@@ -335,7 +338,8 @@ c     ........................................................
       nchan =jpiset(jset)%nchan
       ql (1:nchan)   =jpiset(jset)%lsp(1:nchan)
       r0=rvec(1)
-!      write(50,400) jpi(jtot,partot), nchan,inc
+      write(*,400) jpi(jtot,partot), nchan,inc,energy
+      write(*,*) 
 
       rm=av*ac/(av+ac)
       conv=(2*amu/hc**2)*rm
@@ -528,13 +532,13 @@ c ------------------------------------------------------------
 c  bincc variables
       logical tres,tdel,tkmat,tknrm
       integer:: nf   ! number of formfactors?
-      integer:: isc,iil,ik
+      integer:: isc,iil,ik,jset
       integer:: maxn,nnk(nchan)
       real*8:: anc,k2(nchan),conv,rm,bphase(nk)
       complex*16:: y(nr,nchan),etap(nchan),wf(nchan,nr),smat(nchan)
       real*8:: fmscal
 c  end bincc 
-      namelist/scatwf/ emin, emax,ifcont,nk,il,ilout,writewf
+      namelist/scatwf/ emin, emax,ifcont,nk,il,ilout,writewf,jset
       il=0
       ili=1
       klog=99
@@ -569,7 +573,7 @@ c  end bincc
 
       call factorialgen(100)
 
-      call coefmat(nchan)
+      call coefmat(jset,nchan)
 
       allocate(wfcont(nk,nchan,nchan,nr))
       wfcont(:,:,:,:)=0d0
