@@ -577,13 +577,13 @@ c   -----------------------------------------------------------------
       implicit none
       logical :: iftr,twf,info
 c     -------------------------------------------------------------
-      integer :: ir,nma,nch,inc,nr,nmax
+      integer :: ir,nma,nch,inc,nr,nmax,ql(nch)
       integer*4, parameter:: ninc=1,nr2=0
       integer*4 :: nlag,ns,ich,ichp,nopen,nvc(ninc)
 c     -----------------------------------------------------------
       real*8 :: ecm,tkch,z12,conv
       real*8  :: r,rmax,dr,r0
-      real*8  :: zrma(nlag*ns),eta(nch),kch(nch),ql(nch)
+      real*8  :: zrma(nlag*ns),eta(nch),kch(nch)
       real*8  :: aux,jci,jcf
       real*8,parameter :: alpha=0.
 !      real*8 fc(500),dfc(500),gc(500),dgc(500),xfac(nchan,nchan)
@@ -5912,14 +5912,14 @@ c   -----------------------------------------------------------------
       implicit none
       logical :: iftr,twf,info
 c     -------------------------------------------------------------
-      integer :: ir,nma,nch,inc,nr,nmax,icc,ninc,i
+      integer :: ir,nma,nch,inc,nr,nmax,icc,ninc,i,ql(nch)
       integer*4, parameter:: nr2=0
       integer*4 :: nlag,ns,ich,ichp,nopen
       integer*4,allocatable:: nvc(:)
 c     -----------------------------------------------------------
       real*8 :: ecm,tkch,z12,conv
       real*8  :: r,rmax,dr,r0,einc,kinc
-      real*8  :: zrma(nlag*ns),eta(nch),kch(nch),ql(nch)
+      real*8  :: zrma(nlag*ns),eta(nch),kch(nch)
       real*8  :: aux,jci,jcf
       real*8,parameter :: alpha=0.
 !      real*8 fc(500),dfc(500),gc(500),dgc(500),xfac(nchan,nchan)
