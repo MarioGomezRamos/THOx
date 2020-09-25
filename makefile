@@ -8,7 +8,11 @@
 #include ifort.def
 
 #If compiled with gfortran
-include gfortran.def
+	include gfortran.def
+
+#If compiled with gfortran-10
+#include gfortran-10.def
+
 
 # If compiled with gfortran
 #FC=gfortran
