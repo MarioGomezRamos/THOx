@@ -1123,12 +1123,12 @@ c Integrate in ENERGY, to get dsigma/dOmega for core state ICORE
       write(90,*) th, raux
       enddo !ith
       call flush(90)
-      close(90); close(91)
+      close(90); close(91); close(92)
 
 
 
 c Integrate in ANGLE, to get dsigma/dE  for core state ICORE
-      open(92,file='dsde_conv.xs',status='unknown')
+      open(93,file='dsde_conv.xs',status='unknown')
       xstot=0
       do iecv=1,ncont
       ecv=emin+(iecv-1)*dec
@@ -1139,12 +1139,12 @@ c Integrate in ANGLE, to get dsigma/dE  for core state ICORE
       raux=raux + 2*pi*dsdew(iecv,ith)*
      &     sin(th*pi/180.)*dth*pi/180.   
       enddo !iecv
-      write(92,*) ecv +excore, raux
+      write(93,*) ecv +excore, raux
       xstot=xstot + raux*dec
       enddo !ith
       write(*,*)' Integrated dsigma/dEx=',xstot
-      call flush(92)
-      close(92)
+      call flush(93)
+      close(93)
       
       
 
