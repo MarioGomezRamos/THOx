@@ -1273,12 +1273,14 @@ c this is included in basis.f90, so it should be redundant here
         write(100+i,*)'& '
 !        write(200+i,*)'& '
 
+        if (verb.ge.4) then
         do ir=1,np
         r=rmin+dr*dble(ir-1)
         if (r> rlast) cycle
         write(100+i,'(1f8.3,2x,10g14.6)') r,(vertex(m,ir),m=1,nchan)
         enddo !ir
         write(100+i,*)'& '
+        end
 !        write(200+i,*)'& '
 	endif 
 
