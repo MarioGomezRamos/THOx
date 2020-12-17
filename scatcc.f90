@@ -48,7 +48,7 @@ c***Auxiliary routine for calculation of scat. wf. for arbitrary jpi set and a
       use sistema
       use potentials, only: ccmat
       use wfs, only: nr,dr,rvec,wfsp,rint,rmin
-      use globals, only: written
+      use globals, only: written,verb
       use forbidden ! added in v2.2g (TESTING)
       implicit none
 c     ------------------------------------------------------------
@@ -449,7 +449,7 @@ c ... Avoid pi jumps in phase-shifts
 
         
 !!!! Diagnostic TEST WF
-        if ((ie.eq.1).and.(inc.eq.1)) then
+        if ((verb.ge.4).and.(inc.eq.1)) then
 !        write(*,*)'Ecm=',Ecm,' Elastic S-matrix=',smat(1)
 !        write(*,*)'kch=',kch(1:nch)
 !        do ich=1,nch
