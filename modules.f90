@@ -36,7 +36,7 @@ c	real*8:: sn
 
 
       module trace
-        logical:: wfprint(1:200)
+        logical:: wfprint(1:500)
         integer:: wfout(1:10)
         integer:: solapout(1:10)
         logical:: cdccwf

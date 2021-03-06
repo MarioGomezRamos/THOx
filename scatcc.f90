@@ -47,6 +47,7 @@ c***Auxiliary routine for calculation of scat. wf. for arbitrary jpi set and a
       use parameters, only:  maxchan
       use sistema
       use potentials, only: ccmat
+      use scattering, only: ifcont
       use wfs, only: nr,dr,rvec,wfsp,rint,rmin
       use globals, only: written,verb
       use forbidden ! added in v2.2g (TESTING)
@@ -95,6 +96,17 @@ c *** Eigenphases
       integer:: iwrite=90
       real*8 :: eph(nchan),ener(ne),phz(nchan,ne)
       real*8 QUAD(NCHAN),QUAD1(NCHAN)
+      
+c     For S-matrix diagonalization
+      integer sort
+      parameter (sort = 1)
+      complex*16:: umat(nchan,nchan),evec(nchan)
+      real*8 :: WORK(NCHAN,NCHAN),
+     &          WORK1(NCHAN),WORK2(3*NCHAN)
+
+      real*8 :: big,small
+      big=huge(big)
+      small=epsilon(small)      
 c     ------------------------------------------------------------------
       
       if (ne.lt.2) stop 'wfconts: NE must be >1'
@@ -194,7 +206,7 @@ c ------------------------------------------------------
 c *** Initialize R-matrix ----------------------------------
       if (ifrmat) then
       nvc(1) =inc       ! incoming channel
-      nbas   =100       ! Lagrange functions per radial interval
+      nbas   =50       ! Lagrange functions per radial interval
       rmatch =rvec(nr)  ! rvec(nr)
       twf    =.true.    ! generate also WFS
       ncp2   =0         ! non-local couplings
@@ -248,6 +260,7 @@ c *** Pauli blocking operator (used only with R-matrix solutions!) --------
         jci=qjc(ich)
         ncorei=cindex(ich)
         ispi=spindex(ich)
+!        write(0,*)'ich,spindex=',ich,spindex(ich)
         if (li.ne.lp) cycle
         if (ji.ne.jp) cycle
         write(*,*)' -> remove pauli ip',ip,'chan=',ich,
@@ -470,7 +483,34 @@ c ... Avoid pi jumps in phase-shifts
       endif
 !        write(45,'(1f10.3,3x,10g14.6)') ecm,(phase(n),n=1,nch) 
 !!!! TEST
-      enddo ! energy loop (ie)
+
+      
+      
+      
+      
+c
+c Diagonalize S-matrix to get eigenphases.
+c
+!      write(0,*)'ie,diagonalize S-matrix=¡, ifcont',ie,ifcont
+
+      if (ifcont) then
+!      write(0,*)'diagonalize S-matrix'
+!      do ich=1,nopen
+!      write(*,*)ich,'smat=',smat(ich,1:nopen)
+!      enddo
+
+      eph(:)=0
+      call SEigensystem(nopen,smat,nopen,evec, Umat,nopen, sort)
+
+      do ich=1,nopen
+         if(abs(evec(ich)).gt.small) eph(ich)=(0.,-0.5)*LOG(evec(ich))
+!         print*,ich,' -> eigenphase=',eph(ich)
+      enddo
+!      print 101, "Eigen:",(n,evec(n),abs(evec(n)),eph(n),n = 1, nopen)
+101   format(/A, 10(/"d(", I1, ") = ", F10.6, SP, F10.6, SS, " I", 
+     & "|d|=",f10.6, " Phas=",f10.6))
+      write(46,'(1f8.4,50f12.6)') ecm,(eph(n)*180./pi,n = 1, nchan)
+      endif
 
 c Sort eigenphases
 !      write(*,*)'Try making ephases continuous'
@@ -480,6 +520,8 @@ c Sort eigenphases
 !      write(94,'(1f8.4,20f12.6)') ener(ie),
 !     &   (phz(n,ie),n = 1, nch)
 !      enddo ! ie 
+
+      enddo ! energy loop (ie)
 
       write(450,*)'&'
       deallocate(ccmat,vcoup)
@@ -2335,6 +2377,7 @@ c zm <- z0, wm <-w0
 
 
 c Re-orthogonalize solution vectors ....................................
+      if (norto.gt.0) then
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin).and.(hort.gt.0)
      & .and.(mod(ir-irmin,norto).eq.0).and.(ir.lt.nr-10)) then 
         if (verb.ge.2) 
@@ -2383,6 +2426,7 @@ c check orthogonality
        torto=torto+tf-ti
 
       endif !orto
+      endif ! norto>0
 !........................................................................
 
 
@@ -4122,9 +4166,9 @@ c
 
       do ich=1,nopen
          if(abs(evec(ich)).gt.small) eph(ich)=(0.,-0.5)*LOG(evec(ich))
-         print*,ich,' -> eigenphase=',eph(ich)
+!         print*,ich,' -> eigenphase=',eph(ich)
       enddo
-      print 101, "Eigen:",(n,evec(n),abs(evec(n)),eph(n),n = 1, nopen)
+!      print 101, "Eigen:",(n,evec(n),abs(evec(n)),eph(n),n = 1, nopen)
 101   format(/A, 10(/"d(", I1, ") = ", F10.6, SP, F10.6, SS, " I", 
      & "|d|=",f10.6, " Phas=",f10.6))
       write(95,'(1f8.4,20f10.6)') ecm,(eph(n),n = 1, nopen)
@@ -5907,7 +5951,8 @@ c   -----------------------------------------------------------------
      & r0,nr,wf,phase,smat,info,nlag,ns,einc,icc)
       use nmrv,only: vcoup,ech
       use xcdcc, only: rvcc,smats
-      use constants , only: e2
+      use constants , only: e2,pi
+      use scattering, only: ifcont
       use memory
       implicit none
       logical :: iftr,twf,info
@@ -5932,6 +5977,17 @@ c     -----------------------------------------------------------
       complex*16 :: phase(nch),smat(nch) !,svel(nch)
       complex*16,allocatable :: cf(:,:,:)
       logical :: incvec(nch)
+c     ----------------
+c     For S-matrix diagonalization
+      integer sort,n
+      parameter (sort = 1)
+      complex*16:: umat(nch,nch),evec(nch)
+      real*8 :: eph(nch)
+      real*8 :: WORK(NCH,NCH),
+     &          WORK1(NCH),WORK2(3*NCH)
+      real*8 :: big,small
+      big=huge(big)
+      small=epsilon(small)
 c     ----------------------------------------------------------
 !      call cpu_time(start)
 c *** Initialize some variables & R-matrix
@@ -5953,6 +6009,7 @@ c *** Initialize some variables & R-matrix
       enddo
       allocate(cf(nlag*ns,nch,ninc))
       
+      write(0,*)'entering rmat'
       
       call rmat_ini(nlag,ns,rmax,zrma)
 c *** -----------------------------------
@@ -6015,6 +6072,32 @@ c *** Interpolation of coupling matrix in Lagrange mesh
        enddo
        write(501,*)'&'
        endif
+       
+       
+
+c
+c Diagonalize S-matrix to get eigenphases.
+c
+      write(0,*)'diagonalize S-matrix ifcont=',ifcont
+
+      if (ifcont) then
+      write(0,*)'diagonalize S-matrix'
+!      do ich=1,nopen
+!      write(*,*)ich,'smat=',smat(ich,1:nopen)
+!      enddo
+
+      eph(:)=0
+      call SEigensystem(nopen,smat,nopen,evec, Umat,nopen, sort)
+
+      do ich=1,nopen
+         if(abs(evec(ich)).gt.small) eph(ich)=(0.,-0.5)*LOG(evec(ich))
+         print*,ich,' -> eigenphase=',eph(ich)
+      enddo
+      print 101, "Eigen:",(n,evec(n),abs(evec(n)),eph(n),n = 1, nopen)
+101   format(/A, 10(/"d(", I1, ") = ", F10.6, SP, F10.6, SS, " I", 
+     & "|d|=",f10.6, " Phas=",f10.6))
+      write(46,'(1f8.4,50f12.6)') ecm,(eph(n)*180./pi,n = 1, nch)
+      endif
           
      
       return

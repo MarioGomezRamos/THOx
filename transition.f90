@@ -127,6 +127,9 @@ c *** Quantum number limits for transition potentials
       case (2)
        write(*,*) ' [ coups=2=> Diag nucl. + ALL Coulomb]'
        if (ncoul.ne.0) write(*,*) ' ( ncoul will be ignored )'
+      case (3)
+       write(*,*) ' [ coups=3=> V00 + gs->cont]'
+   
       end select
       
       select case(ncoul)
@@ -523,10 +526,14 @@ c    -----------------------------------------------------------
 
       select case(coups)
       case (0) ! all couplings (do nothing)
-      case (1) ! gs->cont + diagonal
+      case (1,3) ! gs->cont + diagonal
         if ((if1.ne.1).or.(ie1.ne.1)) then
           if ((if2.ne.if1).or.(ie2.ne.ie1)) cycle
         endif
+        
+!      case (3) ! V00 + gs->cont
+!         if ((if1.ne.1).or.(ie1.ne.1)) cycle
+!         if ((if2.ne.if1).or.(ie2.eq.ie1)) cycle
       end select
 
       if ((m1.gt.m2).and.realwf) cycle !!!! AMORO
@@ -559,7 +566,10 @@ c \hat{Jp}*hat{Jp'}*(2*Lambda+1)*(-1)^Lambda
       if (verb.ge.4) write(120,'("# <",i3,"|",i2,"|",i3,">")') m1,lc,m2
       do irad=1,nrad2
       r2=xrad2(irad)
-      fauxc=Ff(m1,m2,lc,irad)   
+      fauxc=Ff(m1,m2,lc,irad)
+      
+      if ((coups.eq.3).and.(m1.eq.m2)) fauxc=Ff(1,1,lc,irad)
+         
 !      fauxn=0d0
 !      if ((ncoul.eq.0).or.(ncoul.eq.1)) then
 !       fauxn=Fn(m1,m2,lc,irad)
@@ -634,7 +644,7 @@ c ---------- nuclear + coulomb
       if (verb.ge.4) then
       do irad=1,nrad3
 !      r2=xrad2(irad)
-      r2=rstep+rstep*dble(irad-1)
+      r2=rstep+rstep*dble(irad-1) 
       write(12,900) r2, (Ff(m1,m2,i,irad),i=i1,i2)
 !      write(10,900) r2, (Fn(m1,m2,i,irad),i=i1,i2)
 !      write(11,900) r2, (Fc(m1,m2,i,irad),i=i1,i2)

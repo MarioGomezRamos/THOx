@@ -123,7 +123,12 @@ c  cf(nwf1,nwf2,nc)=complex array with the wave function
       use rmat_mod
       implicit real*8(a,b,d-h,o-z)
       implicit complex*16(c)
-      dimension lval(nch),qk(nch),eta(nch),cpot(ncp1,ndim,ndim),
+! AMoro: lval changed from default to integer
+      integer lval(nch)
+      integer nr,ns,ncp1,ndim,nopen,nwf1,nwf2,nc,nvc,ncp2
+!      dimension lval(nch),qk(nch),eta(nch),cpot(ncp1,ndim,ndim),
+      dimension qk(nch),eta(nch),cpot(ncp1,ndim,ndim),
+
      1 cu(ndim,ndim),cf(nwf1,nwf2,nc),nvc(nc),cx(3)
       dimension cpnl(ncp2,ndim,ndim)
       logical twf,tnl
@@ -147,7 +152,7 @@ c  cf(nwf1,nwf2,nc)=complex array with the wave function
       cu=0
       cfp=0
 !!!
-!      write(*,*)'lmax,twf,q=',lmax,twf,qk(1:ch
+!      write(*,*)'lmax,twf,q=',lmax,twf,qk(1:nch)
 !!!
 c Stores Coulomb and Whittaker functions
       do 2 i1=1,nch
