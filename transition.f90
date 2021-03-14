@@ -457,6 +457,9 @@ c subtract projectile-target monopole Coulomb
       
 ! April 2019: only diagonal nuclear couplings for coups=2
       if (coups.eq.2.and.(ie1.ne.ie2.or.m.ne.n)) fauxn=0 
+
+! March 2021      
+      if (coups.eq.3.and.(ie1.ne.ie2.or.m.ne.n)) fauxn=0 
       
 ! Scale formfactors by qfactor()
 !       write(*,*) lc,qfactorc(lc), qfactorn(lc),fauxc,fauxn
