@@ -130,6 +130,9 @@ c *** Quantum number limits for transition potentials
       case (3)
        write(*,*) ' [ coups=3=> V00 + gs->cont]'
    
+      case (4)
+       write(*,*) ' [ coups=4=> gs->cont (no diag) ]'
+   
       end select
       
       select case(ncoul)
@@ -530,6 +533,11 @@ c    -----------------------------------------------------------
         if ((if1.ne.1).or.(ie1.ne.1)) then
           if ((if2.ne.if1).or.(ie2.ne.ie1)) cycle
         endif
+        
+      case(4) ! only gs-> cont NO DIAG
+         if ((if1.ne.1).or.(ie1.ne.1)) cycle
+         if ((if1.eq.if2).and.(ie2.eq.ie1)) cycle
+     
         
 !      case (3) ! V00 + gs->cont
 !         if ((if1.ne.1).or.(ie1.ne.1)) cycle
