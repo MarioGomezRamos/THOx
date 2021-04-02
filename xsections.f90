@@ -808,10 +808,10 @@ c     -------------------------------------------------------------------------
       Ethr=Ecmi+ebind
       Kthr=sqrt(2.d0*mupt*Ethr)/hc
 
-      write(99,*) 'Ethr=',Ethr, ' Kthr=',Kthr
-      write(99,'(a,1f8.3,a,3f10.5)')'Elab=',elab,
+!      write(99,*) 'Ethr=',Ethr, ' Kthr=',Kthr
+!      write(99,'(a,1f8.3,a,3f10.5)')'Elab=',elab,
      & ' mp,mc,mv=',mp/amu,mc/amu,mv/amu
-      write(99,*)'Ecmi=',Ecmi, "Kcm=",kcmi, 'Ethr=',Ethr
+!      write(99,*)'Ecmi=',Ecmi, "Kcm=",kcmi, 'Ethr=',Ethr
 
 
 c *** Assign global index to states of all j/pi sets iPS=iPS(iset,n)
@@ -1155,7 +1155,7 @@ c-------------------------------------------------------------------------------
       if (.not.triplexs) return
       write(*,'(//,3x, "** TRIPLE DIFFERENTIAL CROSS SECTIONS **",/ )')
 
-      open(99,file='thox.log')
+!      open(99,file='thox.log')
       
       read(kin,nml=framework)
       write(77,'(a)') sys
@@ -1261,7 +1261,7 @@ c-------------------------------------------------------------------------------
       ptot(3)=totp
       ktot(3)=totp/hc
       erelmax=0.d0
-      write(99,*)'mp,elab,ptot(3)=',mp/amu,elab,totp
+!      write(99,*)'mp,elab,ptot(3)=',mp/amu,elab,totp
 *     -------------------------------------------------------------- 
 *     compute and store CG coefficients
 *     -------------------------------------------------------------- 
@@ -1303,8 +1303,8 @@ c-------------------------------------------------------------------------------
 *     compute largest orbital angular momentum (lmax), maximum relative 
 *     momentum (kmax), and maximum nb of states per set (maxne)
 *     ---------------------------------------------------------------
-      write(99,'(/,4(a,1f9.5,4x),/)')'Ecmi=',Ecmi," Kcmi=",Kcmi, 
-     &"Kthr=",Kthr, 'Ethr=',Ethr
+!      write(99,'(/,4(a,1f9.5,4x),/)')'Ecmi=',Ecmi," Kcmi=",Kcmi, 
+!     &"Kthr=",Kthr, 'Ethr=',Ethr
 
       lmax=0
       kmax=0
@@ -1464,9 +1464,9 @@ c-------------------------------------------------------------------------------
       pvL(j)=p2L*pvL(j)
       endif
       enddo
-      if (wrt)write(99,'("tcd=",20g12.5)') tcd,tvd,en,phid
-      if (wrt)write(99,'(/,"iv,ii,ien=",4i3," pcL=",3g14.6,/)') 
-     & iv,ii,ien,ip,pcL(1:3)! , pvL(1:3)
+!      if (wrt)write(99,'("tcd=",20g12.5)') tcd,tvd,en,phid
+!      if (wrt)write(99,'(/,"iv,ii,ien=",4i3," pcL=",3g14.6,/)') 
+!     & iv,ii,ien,ip,pcL(1:3)! , pvL(1:3)
 *     -----------------------------------------------------------------
 *     calculate second particle energy and momentum depending on idet
       do j=1,3
@@ -1476,7 +1476,7 @@ c-------------------------------------------------------------------------------
       tem(j)=ptot(j)-pvL(j)        
       endif
       enddo
-      if (wrt)write(99,'(/,"tem=",3g16.6)') tem(1:3)
+!      if (wrt)write(99,'(/,"tem=",3g16.6)') tem(1:3)
 *     coefficients in quadratic for second particle momentum
       if(idet.eq.1) then
       aq=(1.d0/mv+1.d0/mt)/2.d0
@@ -1487,7 +1487,7 @@ c-------------------------------------------------------------------------------
       bq=-dot(tem,pcL)/mt
       cq=(dot(tem,tem)/mt+dot(pvL,pvL)/mv)/2.d0
       endif
-      if (wrt)write(99,*)'a,b,c=',aq,bq,cq
+!      if (wrt)write(99,*)'a,b,c=',aq,bq,cq
       if(sys.eq.'lab') cq=cq-(elab+ebind-excore) !!! CHECK CHANGE WITH JAT CODE!!!!!!!!!!!!!!!!!!!!
       if(sys.eq.'com') cq=cq-(ecmi+ebind-excore)  !!! CHECK CHANGE WITH JAT CODE!!!!!!!!!!!!!!!!!!!!
 *     -----------------------------------------------------------------
@@ -1550,8 +1550,8 @@ c-------------------------------------------------------------------------------
       enddo
       endif
 
-      if (wrt)write(99,'(a,i2,a,i2,a,i2,a,i2,a,2g14.5)') 
-     & ' iv=',iv,' ic=',ii,' ien=',ien,' ip=',ip,' ec,ev=',ec,ev
+!      if (wrt)write(99,'(a,i2,a,i2,a,i2,a,i2,a,2g14.5)') 
+!     & ' iv=',iv,' ic=',ii,' ien=',ien,' ip=',ip,' ec,ev=',ec,ev
 *     -----------------------------------------------------------------
 *     construct remaining vectors
 *     -----------------------------------------------------------------
@@ -1570,8 +1570,8 @@ c-------------------------------------------------------------------------------
 *     -----------------------------------------------------------------
       if(eks.gt.erelmax) erelmax=eks
 
-      if (wrt)
-     & write(99,'(5i3,20g12.5)') iv,ic,ien,ip,iroot,ekb,eks,bkp(1:3)
+!      if (wrt)
+!     & write(99,'(5i3,20g12.5)') iv,ic,ien,ip,iroot,ekb,eks,bkp(1:3)
       tmatsq=0; tmatsq2=0
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if ((eks.gt.emax).or.(eks.lt.emin)) goto 500  ! NEEDS CHECKING (AMM)
