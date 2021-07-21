@@ -810,7 +810,7 @@ c     -------------------------------------------------------------------------
 
 !      write(99,*) 'Ethr=',Ethr, ' Kthr=',Kthr
 !      write(99,'(a,1f8.3,a,3f10.5)')'Elab=',elab,
-     & ' mp,mc,mv=',mp/amu,mc/amu,mv/amu
+!     & ' mp,mc,mv=',mp/amu,mc/amu,mv/amu
 !      write(99,*)'Ecmi=',Ecmi, "Kcm=",kcmi, 'Ethr=',Ethr
 
 

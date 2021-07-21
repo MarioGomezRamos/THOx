@@ -53,6 +53,7 @@ c
        real*8:: th(40),wth(40)       
        real*8::fvol
        real*8:: vg1,rg1
+       real*8:: npow
 
 
        
@@ -64,7 +65,8 @@ c
      & Vll0, rll,all,          !l.l
      & cptype,lpot,beta,delta,Vcp0,rcp0,acp,
      & np,nv,pfact,pgfact,
-     & kband, lambda,pcmodel,normr
+     & kband, lambda,pcmodel,normr,
+     & npow
 
        pcmodel=0
        delta=0d0
@@ -96,6 +98,7 @@ c
        Vss0(:)=0d0; rss=0d0; ass=0d0!MGR
        Vll0(:)=0d0; rll=0d0; all=0d0!MGR
        vcp(:,:)=0d0
+       npow=1
        ap=0
        at=1
        if (cptype.ne.5) cptype=0
@@ -240,7 +243,7 @@ c ------------------------------------------------------
 c -----------------------------------------------------
 
 c ------------------------------------------------------
-        case(11) !  Linear
+        case(11) !  a*r^n + b potential
 c -----------------------------------------------------
 
 c ------------------------------------------------------
@@ -460,8 +463,8 @@ c .. Square well
  	      if (abs(v0).gt.1e-6) vaux=sqwell(r,v0,r0*a13)
               if (abs(v02).gt.1e-6)vaux2=sqwell(r,v02,rcp*a13)
 c ... Linear              
-           case(11) ! linear potential
-              vaux=v0*r+ a0   
+           case(11) ! a*r^npow + a0 potential
+              vaux=v0*r**npow+ a0   
 
 
 	   end select

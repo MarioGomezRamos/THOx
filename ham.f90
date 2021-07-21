@@ -115,7 +115,7 @@ c ** Calculate  & print  NORM and RMS
      &        write(*,100) n,esp(ich,n),norm,rms
           if ((n.eq.nprint).and.(verb.gt.2))
      &        write(*,'(7x,"(further eigenstates not printed)",/)')
-100   format(5x,"#",i2,2x,"ex=",1f8.4,2x,"Norm=",1f8.4," rms=",1f8.4)
+100   format(5x,"#",i2,2x,"ex=",1f10.4,2x,"Norm=",1f8.4," rms=",1f8.4)
         enddo !n=1,nho
       enddo !ich={lsj}
 
