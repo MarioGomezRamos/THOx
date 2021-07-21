@@ -465,6 +465,8 @@ c
       realwf=.true.
       merge=.false.
 
+      write(*,*)'Pre-reading input to set dimensions'
+
       read(kin,nml=grid)
       if (dr>0) then
            nr=ceiling((rmax-rmin)/dr)+1
@@ -531,8 +533,14 @@ c
         allocate(energ(jpsets,maxeset))
       endif
 
+      write(*,*)' Pre-read finished'
+!      close(kin)
+      rewind(kin, err=360)
+      return
 
-      rewind(kin)
+360   write(*,*)'error rewindind std input file'
+      return
+
       end subroutine
 
 
