@@ -703,7 +703,7 @@ c     ..........................................................................
       complex*16:: fxytab(6,6),fint2d,fint2dd,fint2db_jin
 
 !MGR---------------------------------------------------------------------
-      real*8,allocatable :: xs3body(:,:,:), energ3(:)
+      real*8,allocatable :: xs3body(:,:,:), energ3(:),energ4(:)
 ! AMM July 19
       real*8,allocatable :: xs3body_phi(:,:,:,:)
 !------------------------------------------------------------------------
@@ -741,7 +741,7 @@ c     from an external file, specified by the user
       read(line,*) jpi,jtarg,jpf,jtarg,mth,nearfa,elab     
 !      read(kfam,*,err=900) jpi,jtarg,jpf,jtarg,mth,nearfa,elab
 !     & ,a,b
-        write(*,*) 'ie,jpf,mth,elab,a=',iex,jpf,mth,elab,a
+!        write(*,*) 'ie,jpf,mth,elab,a=',iex,jpf,mth,elab,a
       rewind(kfam)
 
       allocate(famps0(maxstat,mth,nmi*nmfmax))
@@ -1372,7 +1372,7 @@ c-------------------------------------------------------------------------------
       
       write(0,*) '- Triple diff xsections need ',
      &           itc*itv*iten*lr8/1e6,'MB' !MGR  
-      allocate(xs3body(iten,itv,itc),energ3(iten))
+      allocate(xs3body(iten,itv,itc),energ3(iten),energ4(iten))
       xs3body=0d0
 !AMM 
       if (phixs) then
@@ -1982,6 +1982,8 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
 *     -----------------------------------------------------------------
 *     close the angle (core and valence thetas) and energy loops
 *     -----------------------------------------------------------------
+      energ4(ien)=ev
+!      write(0,*)ec,energ3(ien),ev
 30    continue      
 20    continue
 10    continue
@@ -2000,12 +2002,12 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
             do ip=1,itphim
             icount=icount+1
             if (phixs) write(777,318) ien,iv,ii,ip,
-     &           xs3body_phi(ien,iv,ii,ip),energ3(ien)
+     &           xs3body_phi(ien,iv,ii,ip),energ3(ien),energ4(ien)
             enddo !ip
           enddo
         enddo
       enddo    
-      deallocate(xs3body,energ3)
+      deallocate(xs3body,energ3,energ4)
       
       if (phixs) deallocate(xs3body_phi)
 !      write(*,*)'xs3body_phi has',icount, 'elements'
@@ -2016,7 +2018,7 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
 307   format(i5,f15.8,3f10.3)
 315   format(3i5,d19.8,1x,f12.6,i5)
 316   format(3f10.3)
-318   format(4i5,d19.8,1x,f12.6,i5)
+318   format(4i5,d19.8,1x,2f12.6,i5)
 510   format('  ------------------------------------------------------',
      +'-----')
 900   write(*,*)'Error reading f-amps file!'; stop
