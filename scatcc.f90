@@ -486,8 +486,7 @@ c ... Avoid pi jumps in phase-shifts
 
       
       
-      
-      
+          
 c
 c Diagonalize S-matrix to get eigenphases.
 c
@@ -496,8 +495,9 @@ c
       if (ifcont) then
 !      write(0,*)'diagonalize S-matrix'
 !      do ich=1,nopen
-!      write(*,*)ich,'smat=',smat(ich,1:nopen)
+!      write(*,*)ich,'smat=',smat(ich)
 !      enddo
+!      write(0,*) 'nopen,sort=',nopen,sort
 
       eph(:)=0
       call SEigensystem(nopen,smat,nopen,evec, Umat,nopen, sort)
@@ -1166,7 +1166,7 @@ c ------------------------------------------------------
       use memory
       implicit none
       integer:: method
-      logical:: copen(nch),orto,raynal,info
+      logical:: copen(nch),orto,raynal,info,nopen
       integer:: nch,klog,npt,ql(nch)
       integer:: ir,irmin,is,isp,ich,inc,l,lmax
       integer:: i,j,k,im,ip,i0,norto
@@ -1230,6 +1230,7 @@ c     -------------------------------------------------------
       endif
 
       rmorto=rmort
+      nopen=0
       do ich=1,nch
       aux=ecm+ech(inc)-ech(ich)
       kch2(ich)=conv*aux
@@ -1241,6 +1242,7 @@ c     -------------------------------------------------------
      &              ql(ich)*(ql(ich)+1d0)))/kch(ich) 
         if(rturnv(ich).gt.rmorto) rmorto=rturnv(ich) 
         copen(ich)=.true.
+        nopen=nopen + 1
       else
         if (debug) write(99,300) ich,aux,"closed"
         kch(ich)=sqrt(-conv*aux)
@@ -1832,7 +1834,7 @@ c     (simplified version for real couplings, e.g. projectile wfs)
 c ... 
       subroutine schcc_erwinrc(nch,ecm,z12,inc,ql,factor,dr,r0,
      & npt,wf,method,info)
-      use nmrv,only: nr,h,vcoup,conv,ech,debug,rmin,hort,rvec,cutr,nopen
+      use nmrv,only: nr,h,vcoup,conv,ech,debug,rmin,hort,rvec,cutr
       use globals, only: verb
       use factorials
       use constants , only: e2
@@ -1840,7 +1842,7 @@ c ...
       implicit none
       integer:: method
       logical:: copen(nch),orto,raynal,info
-      integer:: nch,klog,npt,ql(nch)
+      integer:: nch,klog,npt,ql(nch),nopen
       integer:: ir,irmin,is,isp,ich,inc,l,lmax
       integer:: i,j,k,im,ip,i0,norto
 c     .........................................................
@@ -1882,6 +1884,7 @@ c     ---------------------------------------------------------
       h2=h*h
       conv=factor
       copen(:)=.true.
+      nopen =0
       nr=npt
       klog=99
       rmin=0
@@ -2090,6 +2093,7 @@ c Re-orthogonalize solution vectors ....................................
 c 
 c Match y with asymptotic solution 
 c            
+      write(0,*)'schccrc: calling matching4'
       call matching4(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,
      &               info,eph) ! gauss5 + 2 points
 ! Under development!
@@ -2109,7 +2113,7 @@ c ... Enhanced Numerov (version of IJ Thompson used in Fresco)
 c ... 
       subroutine schcc_erwin(nch,ecm,z12,inc,ql,factor,dr,r0,
      & npt,wf,phase,smat,method,info,eph)
-      use nmrv,only: nr,h,vcoup,conv,ech,debug,rmin,hort,rvec,cutr
+      use nmrv,only: nr,h,vcoup,conv,ech,debug,rmin,hort,rvec,cutr,nopen
       use globals, only: verb
       use factorials
       use constants , only: e2
@@ -2158,6 +2162,7 @@ c     ---------------------------------------------------------
       h2=h*h
       conv=factor
       copen(:)=.true.
+      nopen=0
       nr=npt
       klog=99
       rmin=0
@@ -2218,6 +2223,7 @@ c ..............................................................................
 
       if (aux.gt.0) then
         copen(ich)=.true.
+        nopen=nopen+1
         if (debug) write(99,300) ich,aux,"open"
         kch(ich)=sqrt(conv*aux)
         etav(ich)=conv*z12*e2/kch(ich)/2.
@@ -3434,7 +3440,7 @@ c USE 2  POINTS FOR MATCHING INSTEAD OF DERIVATIVE
 c ----------------------------------------------- --------------
       subroutine matching3(ecm,z12,nch,ql,lmax,inc,
      & n1,y,wf,phase,smat,show)
-      use nmrv, only: nr,mu,ech,h,conv,rvec
+      use nmrv, only: nr,mu,ech,h,conv,rvec,nopen
       use constants, only : e2,pi
       use globals, only: verb,debug
       use trace , only: cdccwf
@@ -3922,7 +3928,7 @@ c
 !      print 101, "Eigen:",(n,evec(n),abs(evec(n)),eph(n),n = 1, nopen)
 101   format(/A, 10(/"d(", I1, ") = ", F10.6, SP, F10.6, SS, " I", 
      & "|d|=",f10.6, " Phas=",f10.6))
-      write(46,'(1f8.4,50f12.6)') ecm,(eph(n)*180./pi,n = 1, nch)
+      write(47,'(1f8.4,50f12.6)') ecm,(eph(n)*180./pi,n = 1, nch)
       endif
 
 
@@ -3996,6 +4002,8 @@ c .............................
        write(*,*)'Matching: nch=0! Abort'; stop     
       endif
       
+      write(0,*)' Entering matching4:'
+      
 ! NEW: calculated S-matrix for all open channels
       iop=0
       do inc=1,nch
@@ -4016,7 +4024,7 @@ c .............................
       enddo
       enddo
 
-      print*,'inc=',inc,'ech=',ech(inc),'iref=',iref,' Ecm=',tkch
+      write(0,*)'inc=',inc,'ech=',ech(inc),'iref=',iref,' Ecm=',tkch
 
       do ich=1,nch
       l=ql(ich) 
@@ -4032,6 +4040,7 @@ c .............................
       krm2=kch(ich)*r2
 
       IF (tkch.gt.0d0) THEN   ! open channel
+        nopen=nopen+1
 !       call coulph(eta,cph,linc)
 !       phc=exp(ci*cph(linc))
 !       write(190,'(6f10.4)') tkch,kch(ich),eta,krm1,cph(linc)
@@ -4146,11 +4155,13 @@ c
 c
 c Diagonalize S-matrix to get eigenphases.
 c
-!      nopen=iop
+      nopen=iop
+      write(0,*)'matching4: There are', nopen,' channels'
+
       if (nopen>0) then
-      do iop=1,nopen
-      write(*,*)iop,smat(iop,:)
-      enddo
+!      do iop=1,nopen
+!      write(*,*)iop,smat(iop,:)
+!      enddo
 
       eph(:)=0
       call SEigensystem(nopen,smat,nch,evec, Umat,nch, sort)

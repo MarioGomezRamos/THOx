@@ -16,7 +16,7 @@
  &POTENTIAL ptype=1 ap=1 at=0 
            vl0(0:8)=-54.4 -49.672 -54.4 -49.672 -54.4 -49.672 -54.4 -49.672 -54.4
            r0=2.483   a0=0.65  
-           Vso=8.5    rso=2.483  aso=0.65 
+           Vso(0:2)=8.5  8.5 8.5   rso=2.483  aso=0.65 
            pcmodel=0 lambda=2 kband=0 lpot=1
            cptype=3  Vcp0=0 rcp0=2.483 acp=0.65 delta=1.664 /
   &potential ptype=0 /
@@ -26,18 +26,19 @@
 
 
 #Bound
-  &JPSET bastype=1  mlst=4 gamma=1.7 bosc=1.6 nho=40 nsp=0 exmin=-1 exmax=0 bas2=0 JTOT=0.5 PARITY=1  lmax=2 /
+!  &JPSET bastype=1  mlst=4 gamma=2.4 bosc=1.6 nho=30 nsp=0 exmin=-1 exmax=0 bas2=0 JTOT=0.5 PARITY=1  lmax=2 /
 !  &JPSET bastype=1  mlst=4 gamma=1.7 bosc=1.6 nho=20 nsp=0 exmin=-1 exmax=20 bas2=0 JTOT=0.5 PARITY=-1  lmax=3 /
 
 !  &JPSET bastype=1 mlst=4 gamma=1.6 bosc=1.6 nho=5 nsp=0 exmin=0 exmax=20.51 bas2=0 JTOT=1.5 PARITY=-1  lmax=2 /wcut(1)=0.0 /
 
 !  &JPSET bastype=1 mlst=4 gamma=1.6 bosc=1.6 nho=5 nsp=0 exmin=0 exmax=30.51 bas2=0 JTOT=2.5 PARITY=+1  lmax=2 /wcut(1)=0.0 /
+   &JPSET bastype=1 mlst=4 gamma=1.6 bosc=1.6 nho=5 nsp=0 exmin=0 exmax=30.51 bas2=0 JTOT=1.5 PARITY=+1  lmax=2 /wcut(1)=0.0 /
 
 
   &JPSET /
 
 
- &SCATWF ifcont=T  emin=0.02 emax=50.01  nk=300 ilout=1  pcon=0  inc=1 jset=2 /
+ &SCATWF ifcont=T  emin=0.02 emax=15.01  nk=200 ilout=1  pcon=0  inc=1 jset=1 /
 !  &SCATWF ifcont=t  emin=0.2 emax=5  nk=2 inc=1   jset=2 pcon=0 / 
 
 

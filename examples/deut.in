@@ -11,14 +11,10 @@
  &GRID  rmin=0.0 rmax=40.0 dr=0.05 rlast=60 /
 
 
-c     aR=0.9407d0
-C      v0R=-102.85d0
-c  vl0(0:2)=-102.85 -102.85 -102.85 
-c  vl0(0:2)=-102.85 -102.85 -102.85 
-# p-n potential
- &POTENTIAL ptype=2 ap=1 at=0 
-   vl0(0:2)=-514.25  -514.25 -514.25
-   r0=0   a0=0.9407  /
+# Gaussian p-n potential
+ &POTENTIAL ptype=3 ap=1 at=0 
+   vl0(0:2)=-72.150 -38.150 -72.150
+   r0=0   a0=1.484  /
 
   &potential ptype=0 /
 
@@ -33,7 +29,7 @@ c  vl0(0:2)=-102.85 -102.85 -102.85
  &JPSET /
 
 
- &SCATWF ifcont=F  emin=0.01 emax=10.01  nk=50 il=5 ilout=1  pcon=0 /
+ &SCATWF ifcont=t  emin=0.01 emax=10.01  nk=50 inc=1 jset=1   /
 
  &belambda  ifbel=F uwfgsfile="" lambda=1 nk=100 emin=0.1 emax=20 jset=2 /
 
