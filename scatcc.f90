@@ -1166,8 +1166,8 @@ c ------------------------------------------------------
       use memory
       implicit none
       integer:: method
-      logical:: copen(nch),orto,raynal,info,nopen
-      integer:: nch,klog,npt,ql(nch)
+      logical:: copen(nch),orto,raynal,info
+      integer:: nch,klog,npt,ql(nch),nopen
       integer:: ir,irmin,is,isp,ich,inc,l,lmax
       integer:: i,j,k,im,ip,i0,norto
 
