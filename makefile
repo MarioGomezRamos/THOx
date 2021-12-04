@@ -5,10 +5,10 @@
 #include pgf90.def
 
 ##If compiled with ifort
-#include ifort.def
+include ifort.def
 
 #If compiled with gfortran
-	include gfortran.def
+#	include gfortran.def
 
 #If compiled with gfortran-10
 #include gfortran-10.def
@@ -42,7 +42,7 @@ OBJ=modules.o coul90.o scatcc.o  thox.o basis.o hdiag.o ho.o lst-amos.o utils.o 
      continuum.o belam.o ham.o  transition_targdef.o\
         transition.o   clebsg.o  projpot.o fragpot.o \
         rmatel.o solvecc.o lapack.o  rmatrix.o ccbins.o xsections.o \
-	bincc2.o ceigen.o readwf.o
+	bincc2.o ceigen.o readwf.o channels.o writecdccwf.o
 #coulfg4.f 
 all: $(OBJ)
 	$(FC) -o thox $(OBJ) $(LFLAGS) $(PARALLEL)  
@@ -114,6 +114,10 @@ ceigen.o:ceigen.F
 	$(FC) $(FFLAGS2) -c ceigen.F
 readwf.o:readwf.f90
 	$(FC) $(FFLAGS) -c readwf.f90
+channels.o:channels.f
+	$(FC) $(FFLAGS) -c channels.f
+writecdccwf.o:writecdccwf.f
+	$(FC) $(FFLAGS) -c writecdccwf.f
 
 install: all
 #%if BINDIR

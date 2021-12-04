@@ -13,6 +13,7 @@ c *** ---------------------------------------------------
       use constants, only: hc,amu,pi,e2
       use memory   , only: tcc
       use trace   , only: cdccwf
+      use writecdccwf ! JLei for IAV-CDCC calculations
 !#ifdef _OPENMP
 !      use omp_lib
 !#endif
@@ -133,6 +134,9 @@ c     ------------------------------------------------------------
       do ir=1,nrcc
         rvcc(ir)=dble(ir-1)*hcm
       enddo
+
+! Added by JLei for IAV input
+      call initial_cdcc_wf_smoothie()
 
       if (cdccwf) then
        write(85,'(a,i5,2f8.3)') '# Radial grid:',nrcc,hcm,rvcc(1)
@@ -676,6 +680,7 @@ c c *** -----------------------------------------------------
       use sistema
       use globals  , only: verb,debug
       use trace    , only: cdccwf
+      use writecdccwf ! added by JLei for IAV input
 !      use memory   , only: tcc
       implicit none
       integer    :: ir,n,nr,icc,nch,inc,nlag,ns
@@ -762,7 +767,9 @@ c -----------------------------------------------------
 
       
 c NEW in v2.5 (mar/17): write CDCC wf
-!      if (cdccwf) call write_cdcc_wf(icc,wf,nch,nr)
+!       if (cdccwf) call write_cdcc_wf(icc,wf,nch,nr)
+! JLei for IAV input
+      call cdcc_wf_thoxin(icc,wf,nch,nr)
 
 c ...................................
 

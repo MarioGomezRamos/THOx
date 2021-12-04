@@ -80,7 +80,7 @@ c initialize -------------------------------------------------
 c     -----------------------------------------------------------
       rewind(kin); 
       read(kin,nml=xsections)
- 
+       write(0,*)'reading xsections namelist'
 ! Commented nov/19     
 !      if ((.not.doublexs).and.(.not.triplexs)) return
 
@@ -599,9 +599,11 @@ c Simple ds/de for bins
 
       
 c Double x-sections 
-1000  if ((doublexs).or.(triplexs))
-     &     call d2sigma(nth,dth,thmin,thcut,ermin,ermax,ner,
+1000  if ((doublexs).or.(triplexs)) then
+       write(0,*)'calling d2sigma:'
+        call d2sigma(nth,dth,thmin,thcut,ermin,ermax,ner,
      &                 icore,jsets,fileamp,doublexs,triplexs,phixs)
+      endif
       if (allocated(famps0)) deallocate(famps0)
       end subroutine
 
@@ -2291,6 +2293,7 @@ c     -----------------------------------------------------------
       rewind(kin)
       itarg=1
       read(kin,nml=xsections)
+      write(0,*)'reading xsections namelist for target def'
 
       if (thmax.gt.thmin) then
         nth=nint((thmax-thmin)/dth)+1

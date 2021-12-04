@@ -36,6 +36,9 @@ c v2.6 AMM: calculation of core+valence eigenphases
       use channels
       use belambdamod, only: ifbel
       use memory
+! added by JLei 
+      use cdccchannels
+      use writecdccwf
       implicit none
       logical ehat
       integer :: parity,l,lmax,ic,iic,i,ir,ichsp,ncc,bastype,nk
@@ -115,17 +118,9 @@ c     ------------------------------------------------------------
 
       debug=.false.
 
-!      do i=0,10
-!      c=0.25
-!      c2=c**2
-!      s=sqrt(1.-c**2)
-!      s2=s**2
-!      write(0,*) i, plm_nr(10,i,c,c2,s,s2)   
-!      enddo
-!      stop
-
 c *** Defined global constants
-      call initialize() 
+      call initialize()
+      call alpha_cdcc_in()
       write(*,'(50("*"))')
       write(*,'(" ***",8x,"THOx+DCE+CC code: version 2.6",8x, "***")')
       write(*,'(50("*"),/)')
@@ -275,8 +270,13 @@ c *** Coupling potentials (includes DCE routines)
 
 c *** Build & solve CDCC equations
       iexgs=1 !assume that the incident channel is the first state!!!!
-      ncc  =0 
+      ncc  =0
+      call recoupling()
+      
+
       call cdcc(iexgs,ncc)
+      if(cdccwf) call cdcc_wf_smoothie_out()
+
 
 c *** Scattering amplitudes and cross sections
       if (.not. targdef) then
