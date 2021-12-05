@@ -120,7 +120,7 @@ c     ------------------------------------------------------------
 
 c *** Defined global constants
       call initialize()
-      call alpha_cdcc_in()
+      if (cdccwf) call alpha_cdcc_in()
       write(*,'(50("*"))')
       write(*,'(" ***",8x,"THOx+DCE+CC code: version 2.6",8x, "***")')
       write(*,'(50("*"),/)')
