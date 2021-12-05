@@ -37,12 +37,12 @@ SRC=$(TOPDIR)
 
 .SUFFIXES: .c .o
 
-OBJ=modules.o coul90.o scatcc.o  thox.o basis.o hdiag.o ho.o lst-amos.o utils.o \
+OBJ=modules.o coul90.o scatcc.o  channels.o writecdccwf.o  basis.o hdiag.o ho.o lst-amos.o utils.o \
     pauli.o sort.o nag2.o whittaker.o  \
      continuum.o belam.o ham.o  transition_targdef.o\
         transition.o   clebsg.o  projpot.o fragpot.o \
         rmatel.o solvecc.o lapack.o  rmatrix.o ccbins.o xsections.o \
-	bincc2.o ceigen.o readwf.o channels.o writecdccwf.o
+	bincc2.o ceigen.o readwf.o  thox.o
 #coulfg4.f 
 all: $(OBJ)
 	$(FC) -o thox $(OBJ) $(LFLAGS) $(PARALLEL)  
