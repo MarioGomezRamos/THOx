@@ -600,7 +600,7 @@ c Simple ds/de for bins
       
 c Double x-sections 
 1000  if ((doublexs).or.(triplexs)) then
-       write(0,*)'calling d2sigma:'
+!       write(0,*)'calling d2sigma:'
         call d2sigma(nth,dth,thmin,thcut,ermin,ermax,ner,
      &                 icore,jsets,fileamp,doublexs,triplexs,phixs)
       endif

@@ -7,8 +7,8 @@ FC=ifort
 
 # Normal compilation (no debugging)
 #FFLAGS=   -cm -w  -zero -FI -checkall 
-#FFLAGS1=   -FI -cm -w -fpp  -c -O2 -checkall 
-#PARALELL= -openmp
+3FFLAGS1=   -FI -cm -w -fpp  -c -O2 -checkall 
+PARALELL= -openmp
 
 
 # For debugging:
