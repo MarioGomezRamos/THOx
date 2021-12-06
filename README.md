@@ -98,16 +98,62 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
   - emin, emax, nk: Energy grid for continuum dB/dE 
 
 
-### REACTION namelist: elab, namep, mp, mt, namet, zt, jt 
+### REACTION namelist: elab, namep, mp, mt, namet, zt, jt, ntex, notgdef/
+&targstates et=1.171 It=2.0 part=1 /
  - elab: incident energy (in LAB) of reaction
  - namep, namet: projectile and target names 
  - mp, mt: projectile and target masses (in atomic units)
  - zt, jt: target charge and spin. 
+ - ntex: number of excited target states to be read (default=0)
+ - notgdef: 
 
 ### TRANS namelist: skip, rcc, writeff 
 - skip  (T/F): if true, skip calculation of transition potentials
 - rcc: radius for Coulom potential
 - writeff: if true, print coupling potential in ff.fr file (Fresco format) and states information in states.fr (to be read with FRESCO using readstates variable)
+
+
+### COUPLING namelist:qcmin,qcmax,kcmax,lamin,lamax,coups,ncoul, qfactorn,qfactorc
+- qcmin,qcmax: core or target excitation maximum multipolarity
+- kcmax: 
+- lamin, lamax: maximum multipolarity for porjectile-target formfactor
+- coups=0: all couplings will be considered
+       =1: only gs to continuum couplings
+       =2: diagonal nuclear couplings plus all coulomb couplings
+       =3: use gs-gs diagonal couplinng for all states, plus groun state -> continuum couplings
+       =4: gs -> continuum (no diagonal couplings)
+- ncoul=0: coulomb + nuclear (default)
+       =1: only nuclear couplings
+       =2: only Coulomb couplings
+- qfactorn(1:q): array of scaling factors for nuclear couplings of multipolarity 1:q
+- qfactorc(1:q): idem for Coulomb couplings
+
+### COREPOTENTIAL/VALENCEPOTENTIAL namelists: ptype,ap,at,V0,r0,a0,rc0,cptype,Vcp0,rcp0,acp,delta,deltat,beta,betat,V0i,r0i,a0i,Vcp0i,rcp0i,acpi,deltai,betai,mel,deltait,betait,melt,     & potfile,np,nv,normr,normi
+- ptype type of central potential
+  0: Coulomb
+  1: WS
+  2: WS derivative
+  3: Gaussian
+  4: Posch-Teller
+  7: External potential
+  
+- potfile: external potential filename 
+-- normr, normi= scaling factors for external potential  
+- ap,at: projectile and target mass for radius conversion
+- Vcp0,rcp0,acp, ,Vcp0i,rcp0i,acpi,: parameters of coupling potential for core or target excitation for real and imaginary parts
+- delta, deltai: deformation length for core excitation
+- deltat, deltait: deformation length for target excitation
+- mel:  Coulomb reduced matrix element for core excitation
+- melt: Coulomb reduced matrix element for target excitation
+- np, nv: ?
+
+
+### GRID namelist: 
+- nquad: number of quadrature pooints for r variable in the computation of the coupling potentials V(r,R)
+- radmax: valence-core maximum radius for coupling potentials V(r,R)
+- rstep, rmax: radial step and maximum projectile-target distance for coupling potentials
+- rextrap: if rextrap>rmax, coupling potentials will be extrapolated for rmax < R < rextrap assuming a Coulomb formfactor
+- rvecin, drvec, hin
 
 ### NUMEROV namelist: hcm, rmaxcc, hort, method, jtmin, jtmax, skip
   - skip (T/F): if true, skips this section
