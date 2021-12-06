@@ -1,0 +1,38 @@
+p+ 11Be @ 63.4                                                                  
+NAMELIST
+ &Fresco  hcm= 0.05 rmatch=  100.000 rintp=  0.02 rsp= 0.0      
+     jtmin= 0.5 jtmax=  30.5 absend=   -1.0000 
+     thmin=  0.1 thmax= 179.1 thinc=  0.5  cutl=  0.00 cutr= -12 cutc=  0.00
+     ips= 0.0000  it0=0 iter=  0 iblock= 100 pade=0 nnu= 24 
+     chans= 1 listcc= 0 treneg= 0 cdetr= 0 smats= 2 xstabl= 1
+     waves= 0 lampl= 1 veff= 0  wdisk= 0  melfil= 0 cdcc= 0
+     elab=   702.0760    pel=1 exl=1 lab=1 lin=1 lex=1 /
+
+
+ &Partition namep='11Be    ' massp= 11.0217 zp=  4  pwf=F                
+            namet='p       ' masst=  1.0073 zt=  1 qval=  0.0  readstates=23 /               
+                                                      
+ &Partition /   ! END OF DEFINING PARTITIONS                                    
+                                                                                
+ &Pot kp= 1 type= 0 shape= 0 nosub=F itt=F                                      
+      p(1:3)=   1.0000   0.0000   2.353 /                                     
+                                                                                
+     
+                                                                                
+ &Pot /   ! END OF DEFINING POTENTIALS                                          
+                                                                                      
+ &Overlap /   ! END OF DEFINING OVERLAPS   
+
+# ip1=1 > Local f.f. 
+# ip2=2 => Read complex
+# ip3=3 => projectile couplings                                     
+&COUPLING icto=1 icfrom=1 kind=1 ip1=0 ip2=2 ip3=3  p1=1. p2=1.  /
+&CFP /
+
+                                                                             
+ &Coupling &                                                                 
+ ! *******  END OF CDCC INPUTS *******                                          
+
+ Please check that your input numbers have sufficient
+ range and accuracy in the formats chosen for the namelists.
+

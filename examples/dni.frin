@@ -2,7 +2,7 @@ d+ 58Ni E=80 MeV CDCC (s+d);
 NAMELIST
  &Fresco  hcm= 0.050 rmatch= 100.000 rintp=  0.25 rsp= 100.0
      jtmin=   0.0 jtmax=     40.0 absend=    0.0010 pset= 0
-     thmin=  0.00 thmax= 180.00 thinc=  1.00  cutl=  0.00 cutr=-15.00 cutc=  0.00
+     thmin=  0.00 thmax= -180.00 thinc=  1.00  cutl=  0.00 cutr=-15.00 cutc=  0.00
      ips= 0.0000  it0= 0 iter=  0 iblock=  6 pade=0 nnu= 24
      smallchan= 1.00E-12  smallcoup= 1.00E-12
      chans= 1 listcc= 0 treneg= 0 cdetr= 0 smats= 4 xstabl= 1
