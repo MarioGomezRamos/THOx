@@ -90,9 +90,19 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
  - jset: index of JPSET to specify the angular momentum and spin of the scattering states to be computed
 
 
-### BELAMBDA namelist: ifbel, uwfgsfile, lambda, jset, emin, emax, nk
+### BELAMBDA namelist: ifbel, uwfgsfile, lambda, jset, emin, emax, nk. 
+  - ifbel (T/F): If true, computes B(Elambda) values to discrete and continuum states
+  - uwfgsfile: if defined, filename to read ground state wavefunction. Otherwise, use first eigenvalue of first J/Pi set
+  - lambda: multipolarity
+  - jset:  index of JPSET to specify the angular momentum and spin of the final states
+  - emin, emax, nk: Energy grid for continuum dB/dE 
+
 
 ### REACTION namelist: elab, namep, mp, mt, namet, zt, jt 
+ - elab: incident energy (in LAB) of reaction
+ - namep, namet: projectile and target names 
+ - mp, mt: projectile and target masses (in atomic units)
+ - zt, jt: target charge and spin. 
 
 ### TRANS namelist: skip, rcc, writeff 
 - skip  (T/F): if true, skip calculation of transition potentials
@@ -100,6 +110,7 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 - writeff: if true, print coupling potential in ff.fr file (Fresco format) and states information in states.fr (to be read with FRESCO using readstates variable)
 
 ### NUMEROV namelist: hcm, rmaxcc, hort, method, jtmin, jtmax, skip
+  - skip (T/F): if true, skips this section
   - method: method of solution of the CC equations. Available options are:
   
          0=PC-numerov, 
@@ -111,7 +122,7 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
    - hcm: radial step for projectile-target coordinate for solving the CC equations
    - jtmin, jtmax: min, max total angular momentum for solving the CC equations
    - hort: if nonzero, uses a stabilization procedure of the CC equations (see long text description)
-   - skip (T/F): if true, skips this section
+   
    
 ### XSECTIONS namelist:  fileamp, thmin, thmax, dth, thcut, doublexs, triplexs, phixs, icore, ner, ermin, ermax, jsets(:) 
 - fileamp: if defined, filename of file containing scattering amplitudes for the computation of double and triple differential cross sections. If no defined, these cross sections are calculated with the amplitudes previously calculated. 
