@@ -145,7 +145,6 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 - deltat, deltait: deformation length for target excitation
 - mel:  Coulomb reduced matrix element for core excitation
 - melt: Coulomb reduced matrix element for target excitation
-- np, nv: ?
 
 
 ### GRID namelist: 
