@@ -42,8 +42,30 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 ### PAULI namelist: 
           
 ### JPSET namelist: bastype, mlst, gamma, bosc, nho, nsp, exmin, exmax, bas2, JTOT, PARITY, lmax, 
+- bastype= index to specify the basis type: 
+  0 = HO
+  1 = THO
+  2 = bins
+- bosc: oscillator parameters used in the HO and THO bases.
+- mlst, gamma: parameters for the local scale transformation (LST) in the THO basis  
+- eta: 
+- nsp: number of single-particle eigenvalues to keep in the diagonalization of the full core+valence Hamiltonian
+- nbins: number of bins (bastype=2)
+- nk : number or scattering states within each bin interval used to construct the bin wavefunction
+- tres: included T-matrix in the weight function of the bin wfs
+- inc : incoming channel for bins
+- ehat (T/F): to use mean bin energies (otherwise midpoint), 
+- filewf: external file for wfs
+- wcut: mininum weight per channel to be retained (default 1) 
+- vscale: scaling factor for central potential for this particular J/Pi set 
+
        
-### SCATWF namelist: ifcont, emin, emax, nk, inc, jset       
+### SCATWF namelist: ifcont, emin, emax, nk, inc, jset
+ - ifcont (T/F): true, compute scattering states for the core+valence system
+ - emin, emax, nk: minimum energy, maximum energy and number of scattering functions to be computed
+ - inc: for multichannel states, index of incoming channel
+ - jset: index of JPSET to specify the angular momentum and spin of the scattering states to be computed
+
 
 ### BELAMBDA namelist: ifbel, uwfgsfile, lambda, jset, emin, emax, nk
 
@@ -57,7 +79,7 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 ### NUMEROV namelist: hcm, rmaxcc, hort, method, jtmin, jtmax, skip
   - method: method of solution of the CC equations. Available options are:
   
-         0 PC-numerov, 
+         0=PC-numerov, 
          1=ENA with 5 terms in Cosh[Sqrt[T]]
          2=ENA with 5 terms in Cosh[Sqrt[T]], only diagonal 
          3=Raynal
@@ -69,7 +91,7 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
    - skip (T/F): if true, skips this section
    
 ### XSECTIONS namelist:  fileamp, thmin, thmax, dth, thcut, doublexs, triplexs, phixs, icore, ner, ermin, ermax, jsets(:) 
-- fileamp
+- fileamp: if defined, filename of file containing scattering amplitudes for the computation of double and triple differential cross sections. If no defined, these cross sections are calculated with the amplitudes previously calculated. 
 - thmin, thmax, dth: angular grid for printing scattering amplitudes and cross sections
 - thcut: angular cutoff for computation of relative energy distribution
 - doublexs (T/F): if true, evaluates and prints double differential cross sections as a function of core-valence relative energy
@@ -81,13 +103,18 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
    
    
 ### FRAMEWORK namelist: sys, idet 
+- sys=lab/com
+- idet: specifies if the energy of triple differential cross section correspods to the core (idet=1) or valence (idet=2) particles
 
-### GRIDENER namelist: Enlow, Enup, dEn      
+### GRIDENER namelist: Enlow, Enup, dEn     
+- Energy grid of detected particle
 
 ### GRIDTHETAC namelist tcl, tcu, dtc      
-
-### GRIDTHETAV namelist: tvl=0.0, tvu, dtv
-
+ - Theta angle grid of core particle
+ 
+### GRIDTHETAV namelist: tvl, tvu, dtv
+ - Theta angle grid of valence particle
+ 
 ### GRIDPHI namelist: phil, phiu, dphi  
-   
-[TO BE COMPLETED] 
+ - Phi angle grid. Computed cross sections assume that phi=0 for the core. 
+ 
