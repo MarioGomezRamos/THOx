@@ -22,18 +22,26 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 ### OUTPUT namelist: wfout, cdcc, verb, solapout. 
     Controls the information printed out in stdout and auxiliary files
 
-  - wfout(:): array containing the index of the projectile eigenstates whose wavefunctions will be printed out 
+  - wfout(:): array containing the indeces of the projectile eigenstates whose wavefunctions will be printed out.
+  - solapout(:): array containing the indexes of the projectile eigenstates whose overlap with the scattering states will be printed. 
   - cdcc: 
-  - verb: 
-  - solapout: 
+  - verb: controls the amount of output information
+  
    
 ### GRID namlist: ng, rmin, rint, rmax, dr, rlast
+ - rmin, rmax, dr: radial grid for core+valence relative motion
+ - rint: when calculating the c+v scattering states, maximum radius up to which the equation will be integrated numerically. For r>rint, the asymptotic form will be assumed
 
 ### &POTENTIAL namelist: ptype, ap, at, Vl0(:), r0, a0, Vso, rso, aso, pcmodel, lambda, kband, lpot, cptype, Vcp0, rcp0, acp, delta 
+- ptype: potential type
+- ap, at: core and valence masses used in the radii conversion from reduced to physical radii
+- Vl0(:): array for potential depths for each partial wave of central potential
+- r0, a0: reduced radius and diffuseness of central potential
+- a0, diffuseness paramter Vso, rso, aso, pcmodel, lambda, kband, lpot, cptype, Vcp0, rcp0, acp, delta 
 
 ### PAULI namelist: 
           
-###  JPSET namelist: bastype, mlst, gamma, bosc, nho, nsp, exmin, exmax, bas2, JTOT, PARITY, lmax, 
+### JPSET namelist: bastype, mlst, gamma, bosc, nho, nsp, exmin, exmax, bas2, JTOT, PARITY, lmax, 
        
 ### SCATWF namelist: ifcont, emin, emax, nk, inc, jset       
 
@@ -42,6 +50,9 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 ### REACTION namelist: elab, namep, mp, mt, namet, zt, jt 
 
 ### TRANS namelist: skip, rcc, writeff 
+- skip  (T/F): if true, skip calculation of transition potentials
+- rcc: radius for Coulom potential
+- writeff: if true, print coupling potential in ff.fr file (Fresco format) and states information in states.fr (to be read with FRESCO using readstates variable)
 
 ### NUMEROV namelist: hcm, rmaxcc, hort, method, jtmin, jtmax, skip
   - method: method of solution of the CC equations. Available options are:
@@ -57,7 +68,16 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
    - hort: if nonzero, uses a stabilization procedure of the CC equations (see long text description)
    - skip (T/F): if true, skips this section
    
-### XSECTIONS namelist:  fileamp, thmin, thmax, dth, thcut, doublexs, triplexs, phixs, icore, ner, ermin, ermax, jsets(:)  
+### XSECTIONS namelist:  fileamp, thmin, thmax, dth, thcut, doublexs, triplexs, phixs, icore, ner, ermin, ermax, jsets(:) 
+- fileamp
+- thmin, thmax, dth: angular grid for printing scattering amplitudes and cross sections
+- thcut: angular cutoff for computation of relative energy distribution
+- doublexs (T/F): if true, evaluates and prints double differential cross sections as a function of core-valence relative energy
+- triplexs (T/F): if true, evaluates and prints triple differential cross sections. The energy and angular grids for the fragments are later read using the framework, gridnener, gridthetac, gridthetav, gridphi namelists. 
+- phixs (T/F): if true, prints five-fold differential cross sections without phi angle integration
+- icore: index of core state for the calculation of double and triple differential cross sections
+- ner, ermin, ermax
+- jsets(:): array of jpsets indexes to be included in the computation of double and triple differential cross sections 
    
    
 ### FRAMEWORK namelist: sys, idet 
