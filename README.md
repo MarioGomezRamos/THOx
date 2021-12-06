@@ -32,12 +32,35 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
  - rmin, rmax, dr: radial grid for core+valence relative motion
  - rint: when calculating the c+v scattering states, maximum radius up to which the equation will be integrated numerically. For r>rint, the asymptotic form will be assumed
 
-### &POTENTIAL namelist: ptype, ap, at, Vl0(:), r0, a0, Vso, rso, aso, pcmodel, lambda, kband, lpot, cptype, Vcp0, rcp0, acp, delta 
+### &POTENTIAL namelist: ptype, ap, at, Vl0(:), r0, a0, Vso, rso, aso, Vss,rss,ass,pcmodel, lambda, kband, lpot, cptype, Vcp0, rcp0, acp, delta, lsderiv 
 - ptype: potential type
+  * ptype=0: Coulomb
+  * ptype=1: Woods-Saxon
+  * ptype=2: Posch-Teller
+  * ptype=3: Gaussian
+  * ptype=5: read coupling potentials from external file 
+  * ptype=10: Square-well
+  
 - ap, at: core and valence masses used in the radii conversion from reduced to physical radii
 - Vl0(:): array for potential depths for each partial wave of central potential
 - r0, a0: reduced radius and diffuseness of central potential
-- a0, diffuseness paramter Vso, rso, aso, pcmodel, lambda, kband, lpot, cptype, Vcp0, rcp0, acp, delta 
+- Vso(:), rso, aso: depth, reduced radius and diffuseness of spin-orbit potential
+- lsderiv: if true, use derivative formfactor
+- Vss(:), rss, ass: parameters for spin-spin potential
+- pcmodel: core+valence coupling model
+  * pcmodel=0: particle-rotor model
+  * pcmodel=1: particle-vibrator model
+
+ - lambda: multipolarity
+ - kband: rotational band 
+ - lpot 
+ - cptype: type of valence-core coupling potential
+   * cptype=0: no coupling
+   * cptype=1: derivative 
+   * cptype=2: exact projection on spherical harmonics
+   * cptype=3: as for cptype=2, but monopole potential recalculated by quadratures
+ - Vcp0, rcp0, acp
+ - delta: deformation length  
 
 ### PAULI namelist: 
           
@@ -48,7 +71,7 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
   2 = bins
 - bosc: oscillator parameters used in the HO and THO bases.
 - mlst, gamma: parameters for the local scale transformation (LST) in the THO basis  
-- eta: 
+- eta: Sommerfeld parameter for Coulomb LST by J.A. Lay.
 - nsp: number of single-particle eigenvalues to keep in the diagonalization of the full core+valence Hamiltonian
 - nbins: number of bins (bastype=2)
 - nk : number or scattering states within each bin interval used to construct the bin wavefunction
