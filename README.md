@@ -1,6 +1,6 @@
 # THOx
  
-** THOx **  is a CDCC code for two-body projectiles, with the possibility of including core excitations. The code has been developed by the Nuclear Theory Group based at the University of Seville. It works with standard fortran compilers (ifort, gfortran,etc)
+### THOx ###  is a CDCC code for two-body projectiles, with the possibility of including core excitations. The code has been developed by the Nuclear Theory Group based at the University of Seville. It works with standard fortran compilers (ifort, gfortran,etc)
 
 The code assumes a reaction of the form
 
@@ -17,7 +17,7 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 ### CORESTATES namelist: spin, parity, ex
  - spin, parity, ex: intrinsic spin, parity and excitation energy of this core state
  
-   This namelist can be repeated if more than one core state is present. After the last core state is included, an empty CORESTATE namelist must be included
+   This namelist can be repeated if more than one core state is present. After the last core state is included, an empty CORESTATE namelist must be included.
  
 ### OUTPUT namelist: wfout, cdcc, verb, solapout. 
     Controls the information printed out in stdout and auxiliary files
@@ -34,13 +34,12 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 
 ### &POTENTIAL namelist: ptype, ap, at, Vl0(:), r0, a0, Vso, rso, aso, Vss,rss,ass,pcmodel, lambda, kband, lpot, cptype, Vcp0, rcp0, acp, delta, lsderiv 
 - ptype: potential type
-  * ptype=0: Coulomb
-  * ptype=1: Woods-Saxon
-  * ptype=2: Posch-Teller
-  * ptype=3: Gaussian
-  * ptype=5: read coupling potentials from external file 
-  * ptype=10: Square-well
-  
+   * ptype=0: Coulomb
+   * ptype=1: Woods-Saxon
+   * ptype=2: Posch-Teller
+   * ptype=3: Gaussian
+   * ptype=5: read coupling potentials from external file 
+   * ptype=10: Square-well
 - ap, at: core and valence masses used in the radii conversion from reduced to physical radii
 - Vl0(:): array for potential depths for each partial wave of central potential
 - r0, a0: reduced radius and diffuseness of central potential
@@ -62,13 +61,20 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
  - Vcp0, rcp0, acp
  - delta: deformation length  
 
-### PAULI namelist: 
-          
-### JPSET namelist: bastype, mlst, gamma, bosc, nho, nsp, exmin, exmax, bas2, JTOT, PARITY, lmax, 
-- bastype= index to specify the basis type: 
-  0 = HO
-  1 = THO
-  2 = bins
+### PAULI namelist: n,l,j,wfname,wblock,hindrance,pfactor
+ - n,l,j: quantum numbers of single-particle configuration to be removed by Pauli blocking 
+ - wfname: filename for external file containing radial part of wf to be removed by Pauli blocking operator.
+ - wblock(:): array with lambda parameter multiplying the Pauli blocking operator for each core state
+ - hindrance: disabled in current version
+ - pfactor: disabled in current version
+ 
+  This namelist can be repeated if more than one Pauli forbidden state is present. After the last state is included, an empty PAULI namelist must be included.
+
+### JPSET namelist: bastype, mlst, gamma, bosc, nho, nsp, exmin, exmax, bas2, JTOT, PARITY, lmax
+- bastype: index to specify the basis type: 
+    0 = HO basis
+    1 = THO basis
+    2 = bins 
 - bosc: oscillator parameters used in the HO and THO bases.
 - mlst, gamma: parameters for the local scale transformation (LST) in the THO basis  
 - eta: Sommerfeld parameter for Coulomb LST by J.A. Lay.
@@ -98,14 +104,22 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
   - emin, emax, nk: Energy grid for continuum dB/dE 
 
 
-### REACTION namelist: elab, namep, mp, mt, namet, zt, jt, ntex, notgdef/
-&targstates et=1.171 It=2.0 part=1 /
+### REACTION namelist: elab, namep, mp, mt, namet, zt, jt, ntex, notgdef
  - elab: incident energy (in LAB) of reaction
  - namep, namet: projectile and target names 
  - mp, mt: projectile and target masses (in atomic units)
  - zt, jt: target charge and spin. 
  - ntex: number of excited target states to be read (default=0)
- - notgdef: 
+ - notgdef: if zero, no target excitation/deformation will be included. 
+
+### TARGSTATES namelist
+  If ntex>0, one or more TARGSTATES namelists will be read with the details of the target excited states to be included
+  - et: excitation energy (with respect to target ground state)
+  - It:
+  - part: parity
+  - nphon: number of phonons (vibrational model)
+  - K: rotational band (rotational model)
+  - inc:
 
 ### TRANS namelist: skip, rcc, writeff 
 - skip  (T/F): if true, skip calculation of transition potentials
@@ -128,17 +142,16 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 - qfactorn(1:q): array of scaling factors for nuclear couplings of multipolarity 1:q
 - qfactorc(1:q): idem for Coulomb couplings
 
-### COREPOTENTIAL/VALENCEPOTENTIAL namelists: ptype,ap,at,V0,r0,a0,rc0,cptype,Vcp0,rcp0,acp,delta,deltat,beta,betat,V0i,r0i,a0i,Vcp0i,rcp0i,acpi,deltai,betai,mel,deltait,betait,melt,     & potfile,np,nv,normr,normi
+### COREPOTENTIAL/VALENCEPOTENTIAL namelists: ptype,ap,at,V0,r0,a0,rc0,cptype,Vcp0,rcp0,acp,delta,deltat,beta,betat,V0i,r0i,a0i,Vcp0i,rcp0i,acpi,deltai,betai,mel,deltait,betait,melt,potfile,np,nv,normr,normi
 - ptype type of central potential
-  0: Coulomb
-  1: WS
-  2: WS derivative
-  3: Gaussian
-  4: Posch-Teller
-  7: External potential
-  
+  ptype=0: Coulomb
+       =1: WS
+       =2: WS derivative
+       =3: Gaussian
+       =4: Posch-Teller
+       =7: External potential
 - potfile: external potential filename 
--- normr, normi= scaling factors for external potential  
+- normr, normi= scaling factors for external potential  
 - ap,at: projectile and target mass for radius conversion
 - Vcp0,rcp0,acp, ,Vcp0i,rcp0i,acpi,: parameters of coupling potential for core or target excitation for real and imaginary parts
 - delta, deltai: deformation length for core excitation
@@ -157,19 +170,17 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 ### NUMEROV namelist: hcm, rmaxcc, hort, method, jtmin, jtmax, skip
   - skip (T/F): if true, skips this section
   - method: method of solution of the CC equations. Available options are:
-  
          0=PC-numerov, 
          1=ENA with 5 terms in Cosh[Sqrt[T]]
          2=ENA with 5 terms in Cosh[Sqrt[T]], only diagonal 
          3=Raynal
-         4=Modified Numerov used in Fresco
-         
+         4=Modified Numerov used in Fresco         
    - hcm: radial step for projectile-target coordinate for solving the CC equations
    - jtmin, jtmax: min, max total angular momentum for solving the CC equations
    - hort: if nonzero, uses a stabilization procedure of the CC equations (see long text description)
    
    
-### XSECTIONS namelist:  fileamp, thmin, thmax, dth, thcut, doublexs, triplexs, phixs, icore, ner, ermin, ermax, jsets(:) 
+### XSECTIONS namelist:  fileamp, thmin, thmax, dth, thcut, doublexs, triplexs, phixs, icore, ner, ermin, ermax, jsets(:), itarg 
 - fileamp: if defined, filename of file containing scattering amplitudes for the computation of double and triple differential cross sections. If no defined, these cross sections are calculated with the amplitudes previously calculated. 
 - thmin, thmax, dth: angular grid for printing scattering amplitudes and cross sections
 - thcut: angular cutoff for computation of relative energy distribution
@@ -179,7 +190,7 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 - icore: index of core state for the calculation of double and triple differential cross sections
 - ner, ermin, ermax
 - jsets(:): array of jpsets indexes to be included in the computation of double and triple differential cross sections 
-   
+- itarg(:): array to select the target state for the calculation of scattering amplitudes and cross sections (default=1)   
    
 ### FRAMEWORK namelist: sys, idet 
 - sys=lab/com
