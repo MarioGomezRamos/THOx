@@ -1,12 +1,12 @@
 ## THOx
  
-THOx  is a CDCC code for two-body projectiles, with the possibility of including core excitations. The code has been developed by the Nuclear Theory Group based at the University of Seville. It works with standard fortran compilers (ifort, gfortran,etc)
+THOx  is a CDCC code for two-body projectiles, with the possibility of including core and target excitations. The code has been developed by the Nuclear Theory Group based at the University of Seville. It works with standard fortran compilers (ifort, gfortran,etc)
 
 The code assumes a reaction of the form
 
   a(=c+v) + A -> c + v + A
   
-where "c" and "v" are the fragment constituents (denoted, for convenience, core and valence particles, respectively). 
+where "c" and "v" are the fragment constituents (denoted, for convenience, core and valence particles, respectively) and "A" represents the target nucleus. 
 
 ## Short input description 
 ###  SYSTEM  namelist: Zv, Av,  Zc, Ac, sn
@@ -20,7 +20,7 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
    This namelist can be repeated if more than one core state is to be included. After the last core state is introduced, an empty CORESTATE namelist must be included.
  
 ### OUTPUT namelist: wfout, cdcc, verb, solapout. 
-    Controls the information printed out in stdout and auxiliary files
+Controls the information printed out in stdout and auxiliary files.
 
   - wfout(:): array containing the indeces of the projectile eigenstates whose wavefunctions will be printed out.
   - solapout(:): array containing the indexes of the projectile eigenstates whose overlap with the scattering states will be printed. 
@@ -30,10 +30,12 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
   
    
 ### GRID namlist: ng, rmin, rint, rmax, dr, rlast
+Radial grid for projectile eigenfunctions:
  - rmin, rmax, dr: radial grid for core+valence relative motion
  - rint: when calculating the c+v scattering states, maximum radius up to which the equation will be integrated numerically. For r>rint, the asymptotic form will be assumed
 
 ### &POTENTIAL namelist: ptype, ap, at, Vl0(:), r0, a0, Vso, rso, aso, Vss,rss,ass,pcmodel, lambda, kband, lpot, cptype, Vcp0, rcp0, acp, delta, lsderiv 
+Core+valence central and deformed (coupling) potentials:
 - ptype: potential type
    * ptype=0: Coulomb
    * ptype=1: Woods-Saxon
@@ -53,23 +55,30 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 
  - lambda: multipolarity
  - kband: rotational band 
- - lpot 
+ - lpot: when computing coupling potentials < (lf sn)jf, jcf; Jt  | V | (li sn) ji jci; Jt>  between projectile channels with different orbital angular momentum, specifies how the angular-momentum dependent depths are chosen:
+   * 0=Use potential depth corresponding to the mininum "l"
+   * 1=Use mean value of initial and final depths
+   * 2=Use depth corresponding to maximum "l"
+   * 3=Use "lf" (left channel)
+
  - cptype: type of valence-core coupling potential
    * cptype=0: no coupling
    * cptype=1: derivative 
    * cptype=2: exact projection on spherical harmonics
    * cptype=3: as for cptype=2, but monopole potential recalculated by quadratures
- - Vcp0, rcp0, acp
- - delta: deformation length  
+ - Vcp0, rcp0, acp: parameters for the coupling potential. If Vcp0(:)=0, use the parameters of the central potential.
+ - delta: deformation length to deform the core-valence nuclear potential.
+
+*This namelist can be repeated if several potential components are to be added. Use an empty potential namelist to indicate that no more componets are to be read.
 
 ### PAULI namelist: n,l,j,wfname,wblock,hindrance,pfactor
- - n,l,j: quantum numbers of single-particle configuration to be removed by Pauli blocking 
+ - n,l,j: quantum numbers of single-particle configuration to be removed by Pauli blocking.
  - wfname: filename for external file containing radial part of wf to be removed by Pauli blocking operator.
- - wblock(:): array with lambda parameter multiplying the Pauli blocking operator for each core state
- - hindrance: disabled in current version
- - pfactor: disabled in current version
+ - wblock(:): array with lambda parameter multiplying the Pauli blocking operator for each core state.
+ - hindrance: disabled in this version.
+ - pfactor: disabled in this version.
  
-  This namelist can be repeated if more than one Pauli forbidden state is present. After the last state is included, an empty PAULI namelist must be included.
+  *This namelist can be repeated if more than one Pauli forbidden state is present. After the last state is included, an empty PAULI namelist must be included.*
 
 ### JPSET namelist: bastype, mlst, gamma, bosc, nho, nsp, exmin, exmax, bas2, JTOT, PARITY, lmax
 - bastype: index to specify the basis type: 
@@ -131,26 +140,26 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 ### COUPLING namelist:qcmin,qcmax,kcmax,lamin,lamax,coups,ncoul, qfactorn,qfactorc
 - qcmin,qcmax: core or target excitation maximum multipolarity
 - kcmax: 
-- lamin, lamax: maximum multipolarity for porjectile-target formfactor
-- coups=0: all couplings will be considered
-       =1: only gs to continuum couplings
-       =2: diagonal nuclear couplings plus all coulomb couplings
-       =3: use gs-gs diagonal couplinng for all states, plus groun state -> continuum couplings
-       =4: gs -> continuum (no diagonal couplings)
-- ncoul=0: coulomb + nuclear (default)
-       =1: only nuclear couplings
-       =2: only Coulomb couplings
+- lamin, lamax: maximum multipolarity for porjectile-target coupling formfactors
+- coups: select couplings to be considered in the CC equations
+  * 1= only gs to continuum couplings
+  * 2= diagonal nuclear couplings plus all coulomb couplings
+  * 3= use gs-gs diagonal couplinng for all states, plus groun state -> continuum couplings
+  * 4= gs -> continuum (no diagonal couplings)
+- ncoul=0: Coulomb + nuclear (default)
+  ncoul=1: only nuclear couplings
+  ncoul=2: only Coulomb couplings
 - qfactorn(1:q): array of scaling factors for nuclear couplings of multipolarity 1:q
 - qfactorc(1:q): idem for Coulomb couplings
 
 ### COREPOTENTIAL/VALENCEPOTENTIAL namelists: ptype,ap,at,V0,r0,a0,rc0,cptype,Vcp0,rcp0,acp,delta,deltat,beta,betat,V0i,r0i,a0i,Vcp0i,rcp0i,acpi,deltai,betai,mel,deltait,betait,melt,potfile,np,nv,normr,normi
 - ptype type of central potential
-  ptype=0: Coulomb
-       =1: WS
-       =2: WS derivative
-       =3: Gaussian
-       =4: Posch-Teller
-       =7: External potential
+  * 0=Coulomb
+  * 1= WS
+  * 2= WS derivative
+  * 3= Gaussian
+  * 4= Posch-Teller
+  * 5= External potential
 - potfile: external potential filename 
 - normr, normi= scaling factors for external potential  
 - ap,at: projectile and target mass for radius conversion
@@ -161,7 +170,7 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 - melt: Coulomb reduced matrix element for target excitation
 
 
-### GRID namelist: 
+### GRID namelist:
 - nquad: number of quadrature pooints for r variable in the computation of the coupling potentials V(r,R)
 - radmax: valence-core maximum radius for coupling potentials V(r,R)
 - rstep, rmax: radial step and maximum projectile-target distance for coupling potentials
@@ -171,11 +180,11 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 ### NUMEROV namelist: hcm, rmaxcc, hort, method, jtmin, jtmax, skip
   - skip (T/F): if true, skips this section
   - method: method of solution of the CC equations. Available options are:
-         0=PC-numerov, 
-         1=ENA with 5 terms in Cosh[Sqrt[T]]
-         2=ENA with 5 terms in Cosh[Sqrt[T]], only diagonal 
-         3=Raynal
-         4=Modified Numerov used in Fresco         
+    * 0= PC-numerov, 
+    * 1= ENA with 5 terms in Cosh[Sqrt[T]]
+    * 2= ENA with 5 terms in Cosh[Sqrt[T]], only diagonal 
+    * 3= Raynal
+    * 4= Modified Numerov used in Fresco         
    - hcm: radial step for projectile-target coordinate for solving the CC equations
    - jtmin, jtmax: min, max total angular momentum for solving the CC equations
    - hort: if nonzero, uses a stabilization procedure of the CC equations (see long text description)
