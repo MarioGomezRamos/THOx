@@ -1,6 +1,6 @@
-# THOx
+## THOx
  
-### THOx ###  is a CDCC code for two-body projectiles, with the possibility of including core excitations. The code has been developed by the Nuclear Theory Group based at the University of Seville. It works with standard fortran compilers (ifort, gfortran,etc)
+THOx  is a CDCC code for two-body projectiles, with the possibility of including core excitations. The code has been developed by the Nuclear Theory Group based at the University of Seville. It works with standard fortran compilers (ifort, gfortran,etc)
 
 The code assumes a reaction of the form
 
@@ -17,14 +17,15 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
 ### CORESTATES namelist: spin, parity, ex
  - spin, parity, ex: intrinsic spin, parity and excitation energy of this core state
  
-   This namelist can be repeated if more than one core state is present. After the last core state is included, an empty CORESTATE namelist must be included.
+   This namelist can be repeated if more than one core state is to be included. After the last core state is introduced, an empty CORESTATE namelist must be included.
  
 ### OUTPUT namelist: wfout, cdcc, verb, solapout. 
     Controls the information printed out in stdout and auxiliary files
 
   - wfout(:): array containing the indeces of the projectile eigenstates whose wavefunctions will be printed out.
   - solapout(:): array containing the indexes of the projectile eigenstates whose overlap with the scattering states will be printed. 
-  - cdcc: 
+  - cdccwf (T/F): If true, write CDCC wavefunction (internal and channel wfs)
+  - checkort (T/F): If true, computes overlap matrix for calculated eigenfunctions to check orthonormality. Overlap matrix is written in fort.90 file
   - verb: controls the amount of output information
   
    
