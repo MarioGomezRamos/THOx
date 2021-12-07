@@ -46,7 +46,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
      
       parameter (eps=1e-6)
 
-      logical fail3,checkorth,ifphase,dummy,tres,realcc
+      logical fail3,checkort,ifphase,dummy,tres,realcc
       integer:: nfmax,mlst
       real*8 ::  lambda,r,norm
       integer :: al
@@ -61,7 +61,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
 
 c Input namelists -------------------------
       namelist/system/ Zc,Ac,Zv,Av,egs,sn
-      namelist/output/ wfout,checkorth,verb,ifphase,solapout,xcdcc,
+      namelist/output/ wfout,checkort,verb,ifphase,solapout,
      &                 cdccwf
 
       DATA PSIGN / '-','?','+' /, BLANK / ' ' /
@@ -162,13 +162,14 @@ c *** Read core states (last state followed an empty namelist)
  
  
 c *** Output trace
-      wfprint(:)=.false.
-      ifbel=.false.
-      checkorth=.false.
-      ifphase=.false.
-      wfout(:)=0
+      wfprint(:) =.false.
+      ifbel      =.false.
+      checkort   =.false.
+      ifphase    =.false.
+      wfout(:)   =0
       solapout(:)=0
-      cdccwf=.false.
+      cdccwf     =.false.
+      
       read(*,nml=output)
       do i=1,10
        if (wfout(i)>0) wfprint(wfout(i))=.true.
@@ -214,7 +215,7 @@ c *** Build and diagonalize FULL VALENCE+CORE Hamiltonian
         call fullham(nset,nho)
 
 c *** Check orthonormality
-        if (checkorth) call orthonorm
+        if (checkort) call orthonorm
 
 c *** Overlap between THO and scattering wfs
         call solap
