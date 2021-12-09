@@ -705,9 +705,9 @@ c     ..........................................................................
       complex*16:: fxytab(6,6),fint2d,fint2dd,fint2db_jin
 
 !MGR---------------------------------------------------------------------
-      real*8,allocatable :: xs3body(:,:,:), energ3(:),energ4(:)
+      real*8,allocatable :: xs3body(:,:,:), energ3(:)
 ! AMM July 19
-      real*8,allocatable :: xs3body_phi(:,:,:,:)
+      real*8,allocatable :: xs3body_phi(:,:,:,:), energ4(:,:,:,:)
 !------------------------------------------------------------------------
 c ------------------------------------------------------------------------------
       namelist /framework/ sys,idet ! ,atarget not needed
@@ -1375,7 +1375,8 @@ c-------------------------------------------------------------------------------
       write(0,*) '- Triple diff xsections need ',
      &           itc*itv*iten*lr8/1e6,'MB' !MGR  
       allocate(xs3body(iten,itv,itc),energ3(iten))
-      allocate(energ4(itphim*itc*itv*iten))
+!      allocate(energ4(itphim*itc*itv*iten))
+
       xs3body=0d0
 !AMM 
       if (phixs) then
@@ -1383,6 +1384,7 @@ c-------------------------------------------------------------------------------
        write(0,*) '- Triple diff xsections WITHOUT phi int. need ',
      &           itc*itv*iten*itphim*lr8/1e6,'MB' !AMM
       allocate(xs3body_phi(iten,itv,itc,itphim))
+      allocate(energ4(iten,itv,itc,itphim))
       xs3body_phi=0.0
       end if
       
@@ -1541,7 +1543,8 @@ c-------------------------------------------------------------------------------
 *     -----------------------------------------------------------------
       Ec=(p1L*p1L)/(2.d0*mc)
       Ev=(p2L*p2L)/(2.d0*mv)
-      energ4(icount)=ev
+      if ((phixs).and.(idet.eq.1)) energ4(ien,iv,ii,ip)=Ev
+      if ((phixs).and.(idet.eq.2)) energ4(ien,iv,ii,ip)=Ec
 
       
       if(idet.eq.1) then
@@ -1556,9 +1559,11 @@ c-------------------------------------------------------------------------------
       enddo
       endif
 
-!      if (wrt)
-!      write(99,'(i8,a,i2,a,i2,a,i2,a,i2,a,2g14.7)') 
-!     & icount,' iv=',iv,' ic=',ii,' ien=',ien,' ip=',ip,' ec,ev=',ec,ev
+!      if (phixs)
+!     & write(99,'(i8,a,i2,a,i2,a,i2,a,i2,a,4g14.7,a,2g14.7)') 
+!     & icount,' iv=',iv,' ic=',ii,' ien=',ien,' ip=',ip,
+!     & 'ec,ev,ener3,ener4=',ec,ev,energ3(ien),energ4(ien,iv,ii,ip),
+!     & 'bq=',bq
 *     -----------------------------------------------------------------
 *     construct remaining vectors
 *     -----------------------------------------------------------------
@@ -2009,15 +2014,15 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
             do ip=1,itphim
             icount=icount+1
             if (phixs) write(777,318) ien,iv,ii,ip,
-     &           xs3body_phi(ien,iv,ii,ip),energ3(ien),energ4(icount)
+     &       xs3body_phi(ien,iv,ii,ip),energ3(ien),energ4(ien,iv,ii,ip)
             enddo !ip
           enddo
         enddo
       enddo    
-      deallocate(xs3body,energ3,energ4)
+      deallocate(xs3body,energ3)
       
-      if (phixs) deallocate(xs3body_phi)
-!      write(*,*)'xs3body_phi has',icount, 'elements'
+      if (phixs) deallocate(xs3body_phi,energ4)
+      write(*,*)'xs3body_phi has',icount, 'elements'
 !-----------------------------------------------------------------------      
       call cpu_time(tf)
       t3d=tf-ti
