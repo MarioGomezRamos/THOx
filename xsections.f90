@@ -1374,7 +1374,8 @@ c-------------------------------------------------------------------------------
       
       write(0,*) '- Triple diff xsections need ',
      &           itc*itv*iten*lr8/1e6,'MB' !MGR  
-      allocate(xs3body(iten,itv,itc),energ3(iten),energ4(iten))
+      allocate(xs3body(iten,itv,itc),energ3(iten))
+      allocate(energ4(itphim*itc*itv*iten))
       xs3body=0d0
 !AMM 
       if (phixs) then
@@ -1440,6 +1441,7 @@ c-------------------------------------------------------------------------------
 *     ---------------------------------------------------------------
 *     loop over azimuth detection angle          
       do 40 ip=1,itphim
+      icount= icount+1
       sigphi(ip)=0.d0
       phid=phil+(ip-1)*dphi
       phi=phid*degrad  
@@ -1539,6 +1541,8 @@ c-------------------------------------------------------------------------------
 *     -----------------------------------------------------------------
       Ec=(p1L*p1L)/(2.d0*mc)
       Ev=(p2L*p2L)/(2.d0*mv)
+      energ4(icount)=ev
+
       
       if(idet.eq.1) then
       do j=1,3
@@ -1552,8 +1556,9 @@ c-------------------------------------------------------------------------------
       enddo
       endif
 
-!      if (wrt)write(99,'(a,i2,a,i2,a,i2,a,i2,a,2g14.5)') 
-!     & ' iv=',iv,' ic=',ii,' ien=',ien,' ip=',ip,' ec,ev=',ec,ev
+!      if (wrt)
+!      write(99,'(i8,a,i2,a,i2,a,i2,a,i2,a,2g14.7)') 
+!     & icount,' iv=',iv,' ic=',ii,' ien=',ien,' ip=',ip,' ec,ev=',ec,ev
 *     -----------------------------------------------------------------
 *     construct remaining vectors
 *     -----------------------------------------------------------------
@@ -1984,7 +1989,7 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
 *     -----------------------------------------------------------------
 *     close the angle (core and valence thetas) and energy loops
 *     -----------------------------------------------------------------
-      energ4(ien)=ev
+!      energ4(ien)=ev
 !      write(0,*)ec,energ3(ien),ev
 30    continue      
 20    continue
@@ -2004,7 +2009,7 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
             do ip=1,itphim
             icount=icount+1
             if (phixs) write(777,318) ien,iv,ii,ip,
-     &           xs3body_phi(ien,iv,ii,ip),energ3(ien),energ4(ien)
+     &           xs3body_phi(ien,iv,ii,ip),energ3(ien),energ4(icount)
             enddo !ip
           enddo
         enddo
