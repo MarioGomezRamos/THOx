@@ -284,7 +284,7 @@ c ------------------------------------------------------------
       use constants
       use channels, only: jpiset,ql,jpsets
       use wfs     , only: nr,dr,rvec,energ,wfc
-      use scattering, only: ifcont
+      use scattering, only: ifcont,method
       implicit none
 c     ........................................................
       logical :: energy,writewf,writesol
@@ -309,19 +309,23 @@ c     ........................................................
 
       complex*16,allocatable:: smate(:,:),wfcont(:,:,:)
       namelist/scatwf/ emin, emax,ifcont,nk,inc,writewf,ilout,eout,jset,
-     &                 energy, writesol,
+     &                 energy, writesol,method,
      &                 il,pcon ! not used, backward compatibility only (AMM)
 
       inc=0; il=0
-      jset=0; pcon=0
+      jset=0; pcon=0     
+!      write(0,*)'method=',method
+      method=4;
   
       writewf  =.false.
       writesol =.false.
       energy   =.false.
+
       
       write(*,'(//,5x,"******  PROJECTILE SCATTERING STATES ******")')
       read(kin,nml=scatwf)
       
+      if (method.eq.0) method=4
       
       if ((.not.ifcont).or.(nk.eq.0)) return
       if ((jset.gt.jpsets).or.(jset.eq.0)) then
@@ -370,6 +374,7 @@ c     ........................................................
       if (allocated(wfcont)) deallocate(wfcont)
       allocate(wfcont(nk,nchan,nr))
 !      deladd=0.
+!      write(0,*)'continuum_range: calling wfrange';stop
       call wfrange(jset,nchan,inc,emin,emax,nk,energy,wfcont,
      &     smate,psh_el)
      
@@ -525,7 +530,7 @@ c ------------------------------------------------------------
 !!!!!
       implicit none
       logical info,writewf
-      integer n,ir,ich,ichp,nskip,klog,method
+      integer n,ir,ich,ichp,nskip,klog !,method
       real*8:: r,r0,dk,kcont,econt,k,ecm, t1,t2
       real*8:: phase(nchan),aux,phadd(nchan)
       real*8,allocatable:: ph(:,:)
@@ -542,8 +547,10 @@ c  end bincc
       il=0
       ili=1
       klog=99
+      method=4
       read(kin,nml=scatwf)
-
+      
+      if (method.eq.0) method=4
       if ((.not.ifcont).or.(nk.eq.0)) return
 
       write(*,*)
@@ -571,6 +578,7 @@ c  end bincc
 100   format(3x,"Generating", i4, " continuum wf(s) for"
      &  ," [Emin=",1f6.3," Emax=",1f7.2," MeV]")
 
+      if (method.eq.5) write(*,*) "(using R-matrix routine)" 
       call factorialgen(100)
 
       call coefmat(jset,nchan)
@@ -636,7 +644,7 @@ c ----------------------------- end bincc call ---------------------
 !       wfcont(ik,iil,1:nchan,2:nr)=wf(1:nchan,1:nr-1)
        r0=rvec(1)
        info=.false.
-       method=4
+!       method=4
 c       call schcc(nchan,ecm,zv*zc,iil,ql,conv,dr,r0,nr,wf,phase,smat,
 c     &            info)
 

@@ -47,7 +47,7 @@ c***Auxiliary routine for calculation of scat. wf. for arbitrary jpi set and a
       use parameters, only:  maxchan
       use sistema
       use potentials, only: ccmat
-      use scattering, only: ifcont
+      use scattering, only: ifcont,method
       use wfs, only: nr,dr,rvec,wfsp,rint,rmin
       use globals, only: written,verb
       use forbidden ! added in v2.2g (TESTING)
@@ -56,7 +56,7 @@ c     ------------------------------------------------------------
       character*5 jpi
       logical :: info,energy,realcc,debug
 c ... 
-      integer ir,n,nchan,method,ne,ie,nrint,lmax
+      integer ir,n,nchan,ne,ie,nrint,lmax !method
       integer :: nset,inc,ifail,wftype
       real*8  :: ecm,ecmi,ecmf,de,excore,econt
       real*8  :: dk,kf,ki,kcm,kcont,krm,tkch
@@ -125,7 +125,7 @@ c *** Initialize some variables
 c *** -------------------------
 
 c     ------------------------------------------------------------
-      if (npauli.gt.0) then
+      if ((npauli.gt.0).or.(method.eq.5)) then
         ifrmat=.true.  ! use R-matrix routine by P.Descouvemnt
       else 
         ncp2=0
@@ -133,8 +133,7 @@ c     ------------------------------------------------------------
       endif 
 c     ------------------------------------------------------------
 
-
-
+!      write(0,*)'method=',method; stop
 
       if (info) then
         write(*,100)ne,jpi(jtot,partot),inc,ecmi,ecmf
@@ -192,7 +191,7 @@ c Initialize variables for Numerov integration
       method=4       ! enhanced Numerov as used in Fresco
       hort  =0       ! no stabilization
       info  =.false. ! silent output
-      cutr  =-50 
+      cutr  =-100 
       if ((rint.gt.0).and.(rint.lt.rvec(nr))) then
         nrint=ceiling((rint-rmin)/dr)+1
         rmatch=rint
