@@ -1,0 +1,16 @@
+deut.in, dni_cc.in: Deuteron structure and d+58Ni reaction 
+
+dni_cdc.in,  dni.frin: Fresco inputs for d+58Ni
+
+be11_prm.in: 11Be structure with particle-plus-core rotor model
+
+be11_pamd.in: 11Be bound and continuum states using externally read coupling potentials (PAMD model)
+  - Coupling potentials are read from fort.30 file (also included in this folder)
+
+be11p_bins.in: 11Be+p reaction using continuum bins
+
+be11p_ext.frin:  Fresco input to read external coupling potentials generated with THOx. 
+
+  - Potentials are read from ff.fr THOx output (to be linked to fort.4) 
+  - States namelists are read from states.fr (to be linked/copied to fort.23)
+

@@ -10,7 +10,7 @@
       parameter (ipmax=300)
       real*8 temp(ntmp) ! sig(iemax,ivmax,icmax,ipmax)
       real*8, allocatable:: sig(:,:,:,:)
-      real*8 raux, xstot
+      real*8 raux, xstot,ec,ev
       logical apt
 *     constants
       hbarc=197.34d0
@@ -64,6 +64,7 @@
 *     --------------------------------------------------------------- 
       xstot=0
       icount=0
+      xsaux=0
       do 10 ic=1,itc
       tc=tcl+(ic-1)*dtc
       tcr=tc*degrad
@@ -73,15 +74,20 @@
       do 10 ien=1,iten
       ed= enlow + (ien-1)*den
       
-      do 10 ip=1,itp
+      xsaux=0
+      do 20 ip=1,itp
       phi=phl + (ip-1)*dph
       phir=phi*degrad
       icount=icount + 1 
-      read(77,*) i1,i2,i3,i4,raux
+      read(77,*) i1,i2,i3,i4,raux,ev,ev
 !      write(*,'(5i7,1g14.6)') icount,ien,iv,ic,ip,raux
       sig(ic,iv,ien,ip)=raux
       xstot=xstot + raux*2.*pi*sin(tcr)*dtcr
      &             *sin(tvr)*dtvr*den*dphr
+      xsaux=xsaux+raux*2.*pi*sin(tcr)*dtcr
+     &             *sin(tvr)*dtvr*den*dphr
+   20 continue
+      if (xsaux>1e-4) write(98,*) ev,xsaux
    10 continue
       xstot=xstot*2.0
       close(77)
