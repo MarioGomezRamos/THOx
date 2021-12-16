@@ -62,7 +62,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
 c Input namelists -------------------------
       namelist/system/ Zc,Ac,Zv,Av,egs,sn
       namelist/output/ wfout,checkort,verb,ifphase,solapout,
-     &                 cdccwf
+     &                 cdccwf,froverlaps
 
       DATA PSIGN / '-','?','+' /, BLANK / ' ' /
       
@@ -169,6 +169,7 @@ c *** Output trace
       wfout(:)   =0
       solapout(:)=0
       cdccwf     =.false.
+      froverlaps =.false.
       
       read(*,nml=output)
       do i=1,10

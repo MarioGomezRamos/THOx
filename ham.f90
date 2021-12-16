@@ -1234,6 +1234,11 @@ c this is included in basis.f90, so it should be redundant here
        if (nchan.gt.nchmax) nchmax=nchan
        write(*,'(/,5x,"[",i3, " out of", i4,
      & " eigenvalues retained ]")')  ninc,hdim
+     
+     
+!       if (any(froverlap(1:20)>0)>0) open(300,file='overlaps.fr')
+       if (froverlaps) open(300,file='overlaps.fr')
+
 
 ! Write eigenfunctions 
         do i=1,hdim
@@ -1252,7 +1257,10 @@ c this is included in basis.f90, so it should be redundant here
         r=rmin+dr*dble(ir-1)
         faux(ir)=r*wfeig(i,m,ir)
        enddo !ir
+       
+      
 
+       
        do ir=1,np
        r=rmin+dr*dble(ir-1)
        if (r.lt.1e-4) r=1e-4
@@ -1273,6 +1281,8 @@ c this is included in basis.f90, so it should be redundant here
         write(100+i,*)'& '
 !        write(200+i,*)'& '
 
+
+
         if (verb.ge.4) then
         do ir=1,np
         r=rmin+dr*dble(ir-1)
@@ -1283,6 +1293,21 @@ c this is included in basis.f90, so it should be redundant here
         endif
 !        write(200+i,*)'& '
 	endif 
+
+
+! Write overlaps & vertex functions in fresco format
+        if(wfprint(i)) then
+        write(300, '("#Single particle overlap for state",i2,
+     & " E=",f10.5," MeV")') i, ebin(i)
+        write(300,*) np,dr,rmin
+        do m=1,nchan
+        write(300,260) (wfeig(i,m,ir),ir=1,np)   
+        write(300,260) (vertex(m,ir),ir=1,np)        
+        enddo ! m        
+        endif !print overlaps
+
+260    FORMAT(1P,6E12.4)
+ 
 
 
        enddo !i 

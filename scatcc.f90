@@ -473,10 +473,10 @@ c ... Avoid pi jumps in phase-shifts
 200     format("#WF for J/pi=",a5," Ecm=",1f7.3," MeV  Inc. chan.=",i3,
      &          " ql=",5i3)
 
-        
+        phc=exp(ci*cph(linc))  
         do ir=1,nr
         write(500,'(1f8.3,2x,50f12.8)') rvec(ir),
-     & (exp(-ci*phase(inc)*pi/180.)*wfc(ie,n,ir),n=1,nch)
+     & (exp(-ci*phase(inc)*pi/180.)*conjg(phc)*wfc(ie,n,ir),n=1,nch)
         enddo
         write(500,*)'&'
       endif

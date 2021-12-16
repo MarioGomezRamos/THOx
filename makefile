@@ -5,10 +5,10 @@
 #include pgf90.def
 
 ##If compiled with ifort
-include ifort.def
+#include ifort.def
 
 #If compiled with gfortran
-#	include gfortran.def
+	include gfortran.def
 
 #If compiled with gfortran-10
 #include gfortran-10.def
