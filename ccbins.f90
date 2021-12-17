@@ -217,7 +217,7 @@ c1      if (tres) yfac=conjg(tfac)              ! Fresco choice
 
       yfac=exp(iu*psh_el(ik)*pi/180.)*phc  ! NEW
       tfac=(smate(ik,inc)-1.)/(0.,2.)  ! two-body elastic t-matrix 
-      if (tres)   yfac=tfac            ! Fresco choice
+      if (tres)         yfac=tfac            ! Fresco recommendation for resonances
       if (bastype.eq.4) yfac=1.0             ! Real multichan wfs
 
       binset(iset)%pshel(ib,ik)=psh_el(ik)*pi/180.
