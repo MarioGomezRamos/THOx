@@ -376,7 +376,7 @@ c     ........................................................
 !      deladd=0.
 !      write(0,*)'continuum_range: calling wfrange';stop
       call wfrange(jset,nchan,inc,emin,emax,nk,energy,wfcont,
-     &     smate,psh_el)
+     &     smate,psh_el,writewf)
      
 
 c ... Write WFS

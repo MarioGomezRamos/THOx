@@ -11,7 +11,7 @@ c     Construct continuum single or multi-channel bins
       use nmrv, only : nopen
       implicit none
 c     ----------------------------------------------
-      logical :: energy,tres,debug,ifhat
+      logical :: energy,tres,debug,ifhat,writewf
       integer, parameter:: kfr=20
       integer :: iset,inc,nbins,nchan,ib,ibp,ich,ik,ir,nk,li
       integer :: bastype,wftype
@@ -44,9 +44,10 @@ c *** ----------------------------------------------
       fconv=hc**2/2/mu12 ! E=fconv*k^2
 
 c *** Initialize some variables ***********
-      energy=.false.
-      debug=.false.
-      bincc=.false.
+      energy  =.false.
+      debug   =.false.
+      bincc   =.false.
+      writewf =.false.
       if (bastype.eq.4) then
         realwf=.true.
         bcoef=1.0
@@ -158,7 +159,8 @@ c < phi |H | phi>
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (.NOT.BINCC) THEN 
-      call wfrange(iset,nchan,inc,ei,ef,nk,energy,wfcont,smate,psh_el)
+      call wfrange(iset,nchan,inc,ei,ef,nk,energy,wfcont,smate,psh_el,
+     &             writewf)
 
       if (bastype.eq.4) then ! Real multichannel WFS (Skip Phase-shift calculation)
        write(*,*)'makebins: nopen=',nopen 

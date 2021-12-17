@@ -39,7 +39,7 @@ c***Auxiliary routine for calculation of scat. wf. for arbitrary jpi set and a
 !              =2 : Real CC wfs
 !-------------------------------------------------------------------------------
       subroutine wfrange(nset,nchan,inc,ecmi,ecmf,ne,energy,wfc,
-     & smate,delta)
+     & smate,delta,writewf)
       use nmrv,only:nch,ech,vcoup,hort,cutr,nopen
       use constants
       use channels, only:jpiset,jtot,ql,qspl,qj,qspj,qjc,exc,
@@ -54,7 +54,7 @@ c***Auxiliary routine for calculation of scat. wf. for arbitrary jpi set and a
       implicit none
 c     ------------------------------------------------------------
       character*5 jpi
-      logical :: info,energy,realcc,debug
+      logical :: info,energy,realcc,debug,writewf
 c ... 
       integer ir,n,nchan,ne,ie,nrint,lmax !method
       integer :: nset,inc,ifail,wftype
@@ -459,9 +459,11 @@ c ... Avoid pi jumps in phase-shifts
 !    & (sin(phase(ich)*pi/180),ich=1,nchan)
         
 
+
+!	write(0,*)'writewf=',writewf; stop
         
 !!!! Diagnostic TEST WF
-        if ((verb.ge.4).and.(inc.eq.1)) then
+        if (writewf) then
 !        write(*,*)'Ecm=',Ecm,' Elastic S-matrix=',smat(1)
 !        write(*,*)'kch=',kch(1:nch)
 !        do ich=1,nch
