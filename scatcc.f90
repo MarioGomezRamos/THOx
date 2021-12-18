@@ -205,7 +205,7 @@ c ------------------------------------------------------
 c *** Initialize R-matrix ----------------------------------
       if (ifrmat) then
       nvc(1) =inc       ! incoming channel
-      nbas   =50       ! Lagrange functions per radial interval
+      nbas   =60       ! Lagrange functions per radial interval
       rmatch =rvec(nr)  ! rvec(nr)
       twf    =.true.    ! generate also WFS
       ncp2   =0         ! non-local couplings
@@ -464,6 +464,18 @@ c ... Avoid pi jumps in phase-shifts
         
 !!!! Diagnostic TEST WF
         if (writewf) then
+        if (ie.eq.1) then
+        write(500,400) jpi(jtot,partot), nchan,inc,energy !, ql(1:nchan)
+400     format("# Continuum WFS for Jp=",a5,"; Channels=",i2,
+     & " ;  Inc. chan.=",i2, ' Uniform Ecm=',l1)
+        write(500,'("#",1x,i5,2x,2f8.4)') nr,dr,r0
+        if (energy) then
+        write(500,'("#",1x,i5,2x,2f8.4)') ne,de,ecmi
+        else
+        write(500,'("#",1x,i5,2x,2f8.4)') ne,dk,ki
+       endif
+       endif
+
 !        write(*,*)'Ecm=',Ecm,' Elastic S-matrix=',smat(1)
 !        write(*,*)'kch=',kch(1:nch)
 !        do ich=1,nch
