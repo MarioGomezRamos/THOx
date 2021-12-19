@@ -1010,6 +1010,7 @@ c Build and diagonalize full Hamiltonian
       real*8 :: raux,d2wf,deriv2
 !      integer,allocatable:: iord(:)
       integer:: ifail
+      real*8    , parameter:: zero=0.0
       CHARACTER(LEN=80) formato
 c     --------------------------------------------------
       rmstot=0d0
@@ -1297,16 +1298,30 @@ c this is included in basis.f90, so it should be redundant here
 
 ! Write overlaps & vertex functions in fresco format
         if(wfprint(i)) then
-        write(300, '("#Single particle overlap for state",i2,
+        if (ebin(i).lt.0) then 
+        write(300, '("#Single particle REAL wf & vertex for state",i2,
      & " E=",f10.5," MeV")') i, ebin(i)
+        else ! complex
+        write(300,'("#Single particle COMPLEX wf & vertex for state",i2,
+     & " E=",f10.5," MeV")') i, ebin(i)
+        endif
+     
+     
         write(300,*) np,dr,rmin
         do m=1,nchan
-        write(300,260) (wfeig(i,m,ir),ir=1,np)   
-        write(300,260) (vertex(m,ir),ir=1,np)        
+        if (ebin(i).lt.0) then ! real
+          write(300,260) (wfeig(i,m,ir),ir=1,np)   
+          write(300,260) (vertex(m,ir),ir=1,np)
+        else                   ! complex   
+          write(300,260) (cmplx(wfeig(i,m,ir),zero),ir=1,np)   
+          write(300,260) (cmplx(vertex(m,ir),zero) ,ir=1,np)
+        endif
+
         enddo ! m        
         endif !print overlaps
 
 260    FORMAT(1P,6E12.4)
+262    FORMAT(1P,12E12.4)
  
 
 
