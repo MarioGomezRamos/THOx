@@ -284,7 +284,7 @@ c ------------------------------------------------------------
       use constants
       use channels, only: jpiset,ql,jpsets
       use wfs     , only: nr,dr,rvec,energ,wfc
-      use scattering, only: ifcont,method
+      use scattering, only: ifcont,method,nbas,ns
       implicit none
 c     ........................................................
       logical :: energy,writewf,writesol
@@ -309,23 +309,30 @@ c     ........................................................
 
       complex*16,allocatable:: smate(:,:),wfcont(:,:,:)
       namelist/scatwf/ emin, emax,ifcont,nk,inc,writewf,ilout,eout,jset,
-     &                 energy, writesol,method,
+     &                 energy, writesol,method,nbas,ns,
      &                 il,pcon ! not used, backward compatibility only (AMM)
 
       inc=0; il=0
       jset=0; pcon=0     
 !      write(0,*)'method=',method
       method=4;
+      nbas  =50
+      ns    =1; 
   
       writewf  =.false.
       writesol =.false.
       energy   =.false.
+      
 
       
       write(*,'(//,5x,"******  PROJECTILE SCATTERING STATES ******")')
       read(kin,nml=scatwf)
       
       if (method.eq.0) method=4
+      
+      if (method.eq.5) then
+       write(*,*)' Using R-matrix with nbas=',nbas,' ns=',ns
+      endif
       
       if ((.not.ifcont).or.(nk.eq.0)) return
       if ((jset.gt.jpsets).or.(jset.eq.0)) then
@@ -548,6 +555,8 @@ c  end bincc
       ili=1
       klog=99
       method=4
+      nbas= 50
+      ns=   1
       read(kin,nml=scatwf)
       
       if (method.eq.0) method=4
@@ -572,6 +581,8 @@ c  end bincc
         ili=il
       endif
       endif 
+      
+      write(*,*)'R-matrix solution with nbas,ns=',nbas,ns
 
       write(*,*)
       write(*,100)nk,emin,emax

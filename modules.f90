@@ -277,7 +277,7 @@ c ... to store bin information
 
 c Scattering states of core+valence system
        module scattering
-         integer:: method
+         integer:: method,nbas,ns
          integer:: nk,pcon,il,ilout,ili
          logical:: ifcont
          real*8:: emin,emax,kmin,kmax,eout

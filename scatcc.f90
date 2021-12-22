@@ -47,7 +47,7 @@ c***Auxiliary routine for calculation of scat. wf. for arbitrary jpi set and a
       use parameters, only:  maxchan
       use sistema
       use potentials, only: ccmat
-      use scattering, only: ifcont,method
+      use scattering, only: ifcont,method,nbas,ns
       use wfs, only: nr,dr,rvec,wfsp,rint,rmin
       use globals, only: written,verb
       use forbidden ! added in v2.2g (TESTING)
@@ -70,7 +70,8 @@ c ...
 c *** R-matrix solutions -----------------------------------------
       integer*4, parameter:: ninc=1,nr2=0,nmax=100
       logical :: iftr,twf,ifrmat
-      integer*4 :: nbas,ich,ichp,nvc(inc)
+      integer*4 :: ich,ichp,nvc(inc)
+      
       real*8 :: r,zrma(nmax),eta(nchan),kch(nchan),jci,jcf,rmatch
       real*8,parameter :: alpha=0.
       real*8 :: aux,auxp,fival
@@ -84,7 +85,6 @@ c *** Pauli blocking (TESTING) -----------------------------------------
       integer:: lp,np,li,linc
       real*8:: ji,jp,rp
       real*8,allocatable:: wfpau(:)  
-      integer :: ns
       complex*16, allocatable:: cpnl(:,:,:)     
 c *** Extrapolation of WFS
       real*8,parameter :: zero=0.0
@@ -205,11 +205,12 @@ c ------------------------------------------------------
 c *** Initialize R-matrix ----------------------------------
       if (ifrmat) then
       nvc(1) =inc       ! incoming channel
-      nbas   =60       ! Lagrange functions per radial interval
+!      nbas   =60       ! Lagrange functions per radial interval
       rmatch =rvec(nr)  ! rvec(nr)
       twf    =.true.    ! generate also WFS
       ncp2   =0         ! non-local couplings
-      ns     =1         ! nb. of intervals
+!      ns     =1         ! nb. of intervals
+
       if (npauli.gt.0) ns=1
 
       if(nbas*ns.gt.nmax)then
