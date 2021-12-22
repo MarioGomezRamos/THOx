@@ -99,11 +99,13 @@ Core+valence central and deformed (coupling) potentials:
 - vscale: scaling factor for central potential for this particular J/Pi set 
 
        
-### SCATWF namelist: ifcont, emin, emax, nk, inc, jset
+### SCATWF namelist: ifcont, emin, emax, nk, inc, jset,method,nbas,ns
  - ifcont (T/F): true, compute scattering states for the core+valence system
  - emin, emax, nk: minimum energy, maximum energy and number of scattering functions to be computed
  - inc: for multichannel states, index of incoming channel
  - jset: index of JPSET to specify the angular momentum and spin of the scattering states to be computed
+ - method: integration method (see NUMEROV namelist before)
+ - ns,nbas: for R-matrix method (method=5) number intervals and number of basis function per interval (defaults: ns=1, ns=50)
 
 
 ### BELAMBDA namelist: ifbel, uwfgsfile, lambda, jset, emin, emax, nk. 
