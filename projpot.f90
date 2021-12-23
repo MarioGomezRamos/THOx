@@ -23,7 +23,7 @@ c
        use parameters, only: maxl,maxcore!,maxchan
        implicit none
        logical:: lsderiv,uu
-       integer kin,ir,ith,ncomp,mmultipole,l,p
+       integer kin,ir,ith,ncomp,mmultipole,l,p,lmax
        parameter(mmultipole=4) !!better in a module???
        real*8:: alpha,fival
        parameter(alpha=0.)
@@ -66,7 +66,7 @@ c
      & cptype,lpot,beta,delta,Vcp0,rcp0,acp,
      & np,nv,pfact,pgfact,
      & kband, lambda,pcmodel,normr,
-     & npow
+     & npow,lmax
 
        pcmodel=0
        delta=0d0
@@ -75,7 +75,8 @@ c
        ncomp=0 !number of potential components
        laminc(:)=.false.
 
-		if (.not.allocated(vcl)) then
+       if (.not.allocated(vcl)) then
+       write(0,*)'allocating vcl with maxl,nr=',maxl,nr
 	  allocate(
      &    vcl(0:maxl,1:nr),     ! central, l-dependent
      &    vls(0:maxl,1:nr),            ! spin-orbit for valence MGR
@@ -92,7 +93,7 @@ c
        vcp(:,:)=0d0
 
 100    V0=0; vl0(:)=0d0; r0=0d0; a0=0d0; 
-       Vso(:)=0d0; rso=0d0; aso=0d0; rc0=0d0!MGR
+       Vso(:)=0d0; rso=0d0; aso=0d0; rc0=1e-3  !MGR
        Vsoc(:)=0; rsoc=0; rsoc=0!MGR
        Vcp0(:)=0d0; rcp0=0d0; acp=0d0!MGR
        Vss0(:)=0d0; rss=0d0; ass=0d0!MGR
@@ -101,6 +102,7 @@ c
        npow=1
        ap=0
        at=1
+       lmax=0
        if (cptype.ne.5) cptype=0
        normr(:)=1.
        delta=0d0
@@ -225,8 +227,11 @@ c ------------------------------------------------------
         case(4) !  Externally read
 c ------------------------------------------------------
            write(*,*)'- type=4 => Read from fort.2x files'
-           write(*,153)np, maxl
-153        format(3x,i5,' points for maxl=',i3)
+! AMoro
+!           write(*,153)np, maxl
+           write(*,153)np, lmax
+
+153        format(3x,i5,' points for lmax=',i3)
 
 c ------------------------------------------------------
         case(5) !  Externally read
@@ -337,15 +342,20 @@ c .. External potential from fort.20
         open(20)
         do ir=1,np
 !        read(20,'(12f10.4)')rvecp(ir),(vvec(ir,l),l=0,maxl)    !what happens if there is only a pot for all l's    
+! Changed by AMoro dec '21 
+!        read(20,*)rvecp(ir),(vvec(ir,l),l=0,maxl)    !what happens if there is only a pot for all l's    
         read(20,*)rvecp(ir),(vvec(ir,l),l=0,maxl)    !what happens if there is only a pot for all l's    
+
         if (ir.lt.20) print*,rvecp(ir),vvec(ir,0)   
         enddo
-        do l=0,maxl
+! AMoro
+!        do l=0,maxl
+        do l=0,lmax
         do ir=1,nr
         vaux=fival(rvec(ir),rvecp(:),vvec(:,l),np,alpha)  
 !        write(*,*)rvec(ir),normr(l)*vaux
         vcl(l,ir)=vcl(l,ir) + normr(l)*vaux
-        if (ir.eq.1)print*, 'norm,vaux=',normr(0),vaux
+        if (ir.eq.1)print*, 'l,norm,vaux=',l,normr(0),vaux
         enddo
         enddo
 c .. External spin-orbit potential from fort.21
@@ -680,9 +690,9 @@ c add monopole to previous potential
 200   continue
 
 ! TEMP
-      do ir=1,nr
-         write(40,*)rvec(ir),vcl(0,ir) 
-      enddo
+!      do ir=1,nr
+!         write(40,*)rvec(ir),vcl(0,ir) 
+!      enddo
 
 
       if ((.not.written(40)).and.(verb.ge.2)) then
@@ -695,25 +705,25 @@ c add monopole to previous potential
       do ir=1,nr
          write(40,*)rvec(ir),vcou(ir),vcl(0,ir) 
       if ((cptype.ne.5).and.(ptype.ne.4)) then
-         written(20)=.true.
+         written(200)=.true.
 
-         write(20,'(12f10.4)')rvec(ir),(vcl(l,ir),l=0,maxl)
-         write(21,'(12f10.4)')rvec(ir),(vls(l,ir),l=0,maxl)!MGR
+         write(200,'(12f10.4)')rvec(ir),(vcl(l,ir),l=0,maxl)
+         write(201,'(12f10.4)')rvec(ir),(vls(l,ir),l=0,maxl)!MGR
          if (laminc(2)) then 
            written(22)=.true. 
-           write(22,'(12f10.4)')rvec(ir),(vlcoup(2,l,ir),l=0,maxl)
+           write(202,'(12f10.4)')rvec(ir),(vlcoup(2,l,ir),l=0,maxl)
          endif
          if (laminc(3)) then 
            written(23)=.true. 
-           write(23,'(12f10.4)')rvec(ir),(vlcoup(3,l,ir),l=0,maxl)
+           write(203,'(12f10.4)')rvec(ir),(vlcoup(3,l,ir),l=0,maxl)
          endif
       else
-         write(20,'(12f10.4)')rvec(ir),vtran(1,1,0,ir,1)
+         write(200,'(12f10.4)')rvec(ir),vtran(1,1,0,ir,1)
      &,vtran(1,1,0,ir,2)
-         write(21,'(12f10.4)')rvec(ir),(vls(l,ir),l=0,maxl)!MGR
-         write(22,'(12f10.4)')rvec(ir),vtran(2,1,2,ir,1)
+         write(201,'(12f10.4)')rvec(ir),(vls(l,ir),l=0,maxl)!MGR
+         write(202,'(12f10.4)')rvec(ir),vtran(2,1,2,ir,1)
      &,vtran(1,2,2,ir,1),vtran(2,1,2,ir,2),vtran(1,2,2,ir,2)
-         write(23,'(12f10.4)')rvec(ir),vtran(2,2,0,ir,1)
+         write(203,'(12f10.4)')rvec(ir),vtran(2,2,0,ir,1)
      &,vtran(2,2,2,ir,1),vtran(2,2,0,ir,2),vtran(2,2,2,ir,2)
       endif
       enddo

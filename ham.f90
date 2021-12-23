@@ -39,7 +39,6 @@ c     for each channel {l,s,j}
       
       jtot   =jpiset(nset)%jtot
       vscale= jpiset(nset)%vscale
-!      write(0,*)'jtot=',jtot, ' vscale=',vscale
 
       write(*,'(//,5x,"SINGLE-PARTICLE eigenstates:",/)')
       if (allocated(hmat))   deallocate(hmat)
@@ -207,12 +206,13 @@ c        real*8:: all,als,as0,j,vcou,vpot,deriv1,deriv2
      &           + fact*xl*(xl+1d0)/r/r*un*um  !centrifugal term
 
 	   vnm=  (vcou(i)+vscale*vcl(l,i)+als*vls(l,i)+all*vll(l,i))*un*um !coulomb+nucl(only s-o)  MGR l-dependence
+!	   write(0,*)'ir,n,m,vnm=',i,r,vnm
 
            if (cptype.eq.5) then
              if (partot.eq.1) then
- 	   vnm=  vnm+(vtran(ic,ic,0,i,1)/sqrt(2.*jcore+1))*un*um
+ 	     vnm= vnm+(vtran(ic,ic,0,i,1)/sqrt(2.*jcore+1))*un*um
              else
-        vnm=  vnm+(vtran(ic,ic,0,i,2)/sqrt(2.*jcore+1))*un*um
+             vnm=vnm+(vtran(ic,ic,0,i,2)/sqrt(2.*jcore+1))*un*um
              endif
            endif
 
