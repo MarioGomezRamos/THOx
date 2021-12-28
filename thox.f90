@@ -699,9 +699,9 @@ c *** ------------------------------------------------------
 
 c Write output files units and names
        subroutine fkind(written,KO)
-       character*40 flkind(399)
+       character*40 flkind(600)
        integer writf(399),nwrit
-       logical written(399)
+       logical written(600)
        flkind(:) = ' '
        flkind(20)='Val-core central potential for each l'
        flkind(22)='Val-core coupling potential for lambda=2'
@@ -710,7 +710,7 @@ c Write output files units and names
        flkind(44)='Fragment-target potentials'
        flkind(45)='Phase-shifts'
        flkind(50)='Full list of Cont. Wf.'
-	   flkind(51)='Continuum Wavefunction'
+       flkind(51)='Continuum Wavefunction'
        flkind(60:65)='wfs of Hsp eigenstates'
        flkind(70)='Full H matrix for each channel block'
        flkind(72)='Orthog. matrix for each channel block'
@@ -739,8 +739,10 @@ c Write output files units and names
        flkind(300)='All diff. x-sections'
        flkind(301:310)='Separate diff. x-sections'
 
+       flkind(500)='Continuum WFS from SCATWF namelist'
+
 	nwrit = 0
-	do i=1,399
+	do i=1,600
 	 if(written(i)) then
 		flkind(i) = trim(flkind(i))//'.'
 	   nwrit = nwrit+1

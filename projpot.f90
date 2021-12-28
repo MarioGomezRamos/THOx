@@ -77,7 +77,7 @@ c
        laminc(:)=.false.
 
        if (.not.allocated(vcl)) then
-       write(0,*)'allocating vcl with maxl,nr=',maxl,nr
+!       write(0,*)'allocating vcl with maxl,nr=',maxl,nr
 	  allocate(
      &    vcl(0:maxl,1:nr),     ! central, l-dependent
      &    vls(0:maxl,1:nr),            ! spin-orbit for valence MGR
@@ -347,7 +347,7 @@ c .. External potential from fort.20
 !        read(20,*)rvecp(ir),(vvec(ir,l),l=0,maxl)    !what happens if there is only a pot for all l's    
         read(20,*)rvecp(ir),(vvec(ir,l),l=0,maxl)    !what happens if there is only a pot for all l's    
 
-        if (ir.lt.20) print*,rvecp(ir),vvec(ir,0)   
+!        if (ir.lt.20) print*,rvecp(ir),vvec(ir,0)   
         enddo
 ! AMoro
         do l=0,maxl

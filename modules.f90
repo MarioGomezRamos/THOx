@@ -2,7 +2,7 @@ c --------------------------------------------------------
 c *** Modules
 c -------------------------------------------------------
       module globals
-        logical:: debug,written(399)
+        logical:: debug,written(600)
         integer:: kin,kout,verb,nfacmax
         real*8:: egs,mu12,kgs
       end module globals
