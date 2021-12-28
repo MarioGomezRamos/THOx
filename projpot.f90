@@ -66,7 +66,8 @@ c
      & cptype,lpot,beta,delta,Vcp0,rcp0,acp,
      & np,nv,pfact,pgfact,
      & kband, lambda,pcmodel,normr,
-     & npow,lmax
+     & npow
+!     ,lmax
 
        pcmodel=0
        delta=0d0
@@ -349,8 +350,8 @@ c .. External potential from fort.20
         if (ir.lt.20) print*,rvecp(ir),vvec(ir,0)   
         enddo
 ! AMoro
-!        do l=0,maxl
-        do l=0,lmax
+        do l=0,maxl
+!        do l=0,lmax
         do ir=1,nr
         vaux=fival(rvec(ir),rvecp(:),vvec(:,l),np,alpha)  
 !        write(*,*)rvec(ir),normr(l)*vaux
@@ -366,10 +367,12 @@ c .. External spin-orbit potential from fort.21
         rvecp(:)=0d0
         vvec(:,:)=0d0
         do ir=1,np
-        read(21,*)rvecp(ir),vvec(ir,1) 
+! Modified by AMoro Dec '21
+!        read(21,*)rvecp(ir),vvec(ir,1) 
+        read(21,*)rvecp(ir),vvec(ir,0) 
         enddo
         do ir=1,nr
-        vls(0,ir)=fival(rvec(ir),rvecp(:),vvec(:,1),np,alpha) !MGR l-dependence not included here  
+        vls(0,ir)=fival(rvec(ir),rvecp(:),vvec(:,0),np,alpha) !MGR l-dependence not included here  
          do l=1,maxl!MGR
            vls(l,ir)=vls(0,ir)
          enddo!MGR
