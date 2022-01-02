@@ -630,6 +630,7 @@ c ----------------------------------------------------------------
 
 c     ----------------------------------------------------------------------- 
       character*40:: line,fileamp
+      logical :: writewf=.false.
       logical, parameter:: energy=.true.   ! NEEDED FOR FFC4 INTERPOLATION!! 
       logical :: jsets(maxsets),doublexs,triplexs,phixs
       integer , parameter:: kfam=137  ! file containing amplitudes
@@ -931,7 +932,7 @@ c *** Overlaps between PS's and Scattering states  -----------------------------
       if (ncont.gt.0) then
         allocate(wfcont(ncont,nchan,nr)); wfcont=0.
         call wfrange(iset,nchan,inc,emin,emax,ncont,energy,wfcont,
-     & smate,delta)
+     & smate,delta,writewf)
       else
        write(*,*)'*ERROR* ncont,nchan=',ncont,nchan
       endif
