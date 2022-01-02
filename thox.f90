@@ -709,6 +709,7 @@ c Write output files units and names
        flkind(40)='Valence-core potentials'
        flkind(44)='Fragment-target potentials'
        flkind(45)='Phase-shifts'
+       flkind(46)='Eigenphases'
        flkind(50)='Full list of Cont. Wf.'
        flkind(51)='Continuum Wavefunction'
        flkind(60:65)='wfs of Hsp eigenstates'

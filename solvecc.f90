@@ -887,7 +887,7 @@ c     .............................................................
       write(*,300) ix,ni,idi,li,jpi,parity(pari+2),
      &                nf,idf,lf,jpf,parity(parf+2),
      &             lam,r1,r2,r3,coef,coef/frconv,phc !,ffc(idi,idf,lam,1)
-300   format(5x,"IX=",i4," Ch. IEX L, Jpi=",3i3,f4.1,a1,
+300   format(5x,"IX=",i5," Ch. IEX L, Jpi=",3i3,f4.1,a1,
      &     " =>",3i3,f4.1,a1,3x,
      &     'with LAM=',i3,4x,'r1-3=',3f8.3,
      &     2x,'COEF=',1f7.3,' COEF(FR)=',1g10.4,
@@ -1074,7 +1074,7 @@ c     ...............................................................
      &                nf,idf,lf,jpf,parity(parf+2),
      &             nint(lamr),r1,r2,r3,coef,ffcn(idi,idf,nint(lamr),1),
      &             ffcc(idi,idf,nint(lamr),1)
-300   format(5x,"IX=",i4," Ch. IEX L, Jpi=",3i3,f4.1,a1,
+300   format(5x,"IX=",i5," Ch. IEX L, Jpi=",3i3,f4.1,a1,
      &     " =>",3i3,f4.1,a1,3x,
      &     'with LAM=',i3,4x,'r1-3='3f8.3,
      &     2x,'COEF=',1f7.3,' FN(1)=',2g10.4,' FC(1)=',2g10.4)

@@ -524,6 +524,7 @@ c
 !      print 101, "Eigen:",(n,evec(n),abs(evec(n)),eph(n),n = 1, nopen)
 101   format(/A, 10(/"d(", I1, ") = ", F10.6, SP, F10.6, SS, " I", 
      & "|d|=",f10.6, " Phas=",f10.6))
+      written(46)=.true.
       write(46,'(1f8.4,50f12.6)') ecm,(eph(n)*180./pi,n = 1, nchan)
       endif
 
@@ -538,7 +539,7 @@ c Sort eigenphases
 
       enddo ! energy loop (ie)
 
-      write(450,*)'&'
+      write(45,*)'&'
       deallocate(ccmat,vcoup)
       end subroutine
 
@@ -1933,7 +1934,9 @@ c ..............................................................................
       rm      =rvec(nr)    !Max radius for integration
       rmatch  =rvec(nr-2)  !Matching radius if derivative is used
 
-      norto=nint(hort/h)
+! CHanged by AMoro to prevent undefined mod(ir-irmin,norto) below
+!      norto=nint(hort/h)
+      norto=max(nint(hort/h),1)
       if (abs(hort).gt.0.) orto=.true.
 
       if (info) then
@@ -2210,8 +2213,10 @@ c ..............................................................................
       rm      =rvec(nr)    !Max radius for integration
       rmatch  =rvec(nr-2)  !Matching radius if derivative is used
      
-   
-      norto=nint(hort/h)
+! CHanged by AMoro to prevent undefined mod(ir-irmin,norto) below
+!      norto=nint(hort/h)
+      norto=max(nint(hort/h),1)   
+      
       if (abs(hort).gt.0.) orto=.true.
 
       if (info) then
@@ -4869,7 +4874,9 @@ c     ---------------------------------------------
       rm      =rvec(nr)    !Max radius for integration
       rmatch  =rvec(nr-2)  !Matching radius for derivative
 
-      norto=nint(hort/h)
+! CHanged by AMoro to prevent undefined mod(ir-irmin,norto) below
+!      norto=nint(hort/h)
+      norto=max(nint(hort/h),1)
       if (abs(hort).gt.0.) orto=.true.
 
 c     ------------------------------------------------
@@ -5315,8 +5322,10 @@ c ..............................................................................
       rm      =rvec(nr)    !Max radius for integration
       rmatch  =rvec(nr-2)  !Matching radius if derivative is used
      
-   
-      norto=nint(hort/h)
+! CHanged by AMoro to prevent undefined mod(ir-irmin,norto) below
+!      norto=nint(hort/h)
+      norto=max(nint(hort/h),1)   
+
       if (abs(hort).gt.0.) orto=.true.
 
       if (info.and.(verb.ge.3)) then
@@ -5659,7 +5668,10 @@ c     -------------------------------------------------------
       rm      =rvec(nr)    !Max radius for integration
       rmatch  =rvec(nr-2)  !Matching radius
 
-      norto=nint(hort/h)
+! CHanged by AMoro to prevent undefined mod(ir-irmin,norto) below
+!      norto=nint(hort/h)
+      norto=max(nint(hort/h),1)
+
       if (abs(hort).gt.0.) orto=.true.
 
       if (verb.ge.3) then
@@ -5975,6 +5987,7 @@ c   NS   = nb. of radial intervals
 c   -----------------------------------------------------------------
       subroutine schcc_rmat_MGR(nch,ecm,z12,incvec,ql,conv,dr,
      & r0,nr,wf,phase,smat,info,nlag,ns,einc,icc)
+      use globals, only: written
       use nmrv,only: vcoup,ech
       use xcdcc, only: rvcc,smats
       use constants , only: e2,pi
@@ -6122,6 +6135,7 @@ c
       print 101, "Eigen:",(n,evec(n),abs(evec(n)),eph(n),n = 1, nopen)
 101   format(/A, 10(/"d(", I1, ") = ", F10.6, SP, F10.6, SS, " I", 
      & "|d|=",f10.6, " Phas=",f10.6))
+      written(46)=.true.
       write(46,'(1f8.4,50f12.6)') ecm,(eph(n)*180./pi,n = 1, nch)
       endif
           
