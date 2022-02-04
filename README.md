@@ -127,11 +127,11 @@ Core+valence central and deformed (coupling) potentials:
 ### TARGSTATES namelist
   If ntex>0, one or more TARGSTATES namelists will be read with the details of the target excited states to be included
   - et: excitation energy (with respect to target ground state)
-  - It:
+  - It: target spin 
   - part: parity
   - nphon: number of phonons (vibrational model)
   - K: rotational band (rotational model)
-  - inc:
+  - inc: not used
 
 ### TRANS namelist: skip, rcc, writeff 
 - skip  (T/F): if true, skip calculation of transition potentials
