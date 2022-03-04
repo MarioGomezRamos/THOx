@@ -36,7 +36,7 @@ c***Auxiliary routine for calculation of scat. wf. for arbitrary jpi set and a
 !               <k|k'> =(pi/2) delta(k-k')  
 !   o phase    =phase-shifts (complex)
 !   o wftype   =1 : Scattering states (complex in general)
-!              =2 : Real CC wfs
+!              =2 : Real CC wfs (NOT FUNCTIONAL!) 
 !-------------------------------------------------------------------------------
       subroutine wfrange(nset,nchan,inc,ecmi,ecmf,ne,energy,wfc,
      & smate,delta,writewf)
@@ -101,6 +101,7 @@ c     For S-matrix diagonalization
       integer sort
       parameter (sort = 1)
       complex*16:: umat(nchan,nchan),evec(nchan)
+!      complex*16, allocatable::umat(:,:),evec(:),saux(:,:)
       real*8 :: WORK(NCHAN,NCHAN),
      &          WORK1(NCHAN),WORK2(3*NCHAN)
 
@@ -260,7 +261,6 @@ c *** Pauli blocking operator (used only with R-matrix solutions!) --------
         jci=qjc(ich)
         ncorei=cindex(ich)
         ispi=spindex(ich)
-!        write(0,*)'ich,spindex=',ich,spindex(ich)
         if (li.ne.lp) cycle
         if (ji.ne.jp) cycle
         write(*,*)' -> remove pauli ip',ip,'chan=',ich,
@@ -318,7 +318,7 @@ c ... Real multichannel states from Numerov solutions ...........
           endif
           cycle ! go to next energy
  
-         case (1)  ! CC Bins
+         case (1)  ! CC continuum wfs
 c *** Scattering states with numerov solution ................
          if (.not.ifrmat) then
 !                  if (.not.ifrmat.and.(ecm>0.2)) then
@@ -500,12 +500,16 @@ c ... Avoid pi jumps in phase-shifts
 !!!! TEST
 
       
-      
-          
-c
+      enddo ! energy loop (ie)
+
+      write(45,*)'&'
+      deallocate(ccmat,vcoup)
+      RETURN
+               
+c     **********************************************************************
 c Diagonalize S-matrix to get eigenphases.
 c
-!      write(0,*)'ie,diagonalize S-matrix=¡, ifcont',ie,ifcont
+!      write(0,*)'ie,diagonalize S-matrix=, ifcont',ie,ifcont
 
       if (ifcont) then
 !      write(0,*)'diagonalize S-matrix'
@@ -513,7 +517,8 @@ c
 !      write(*,*)ich,'smat=',smat(ich)
 !      enddo
 !      write(0,*) 'nopen,sort=',nopen,sort
-
+!      allocate (saux(nopen,nopen),Umat(nopen,nopen),evec(nopen))
+!      saux(1:nopen,1:nopen)=smat(1:nopen,1:nopen)
       eph(:)=0
       call SEigensystem(nopen,smat,nopen,evec, Umat,nopen, sort)
 
@@ -527,7 +532,7 @@ c
       written(46)=.true.
       write(46,'(1f8.4,50f12.6)') ecm,(eph(n)*180./pi,n = 1, nchan)
       endif
-
+!      deallocate(saux,umat,evec)
 c Sort eigenphases
 !      write(*,*)'Try making ephases continuous'
 
@@ -537,10 +542,11 @@ c Sort eigenphases
 !     &   (phz(n,ie),n = 1, nch)
 !      enddo ! ie 
 
-      enddo ! energy loop (ie)
 
-      write(45,*)'&'
-      deallocate(ccmat,vcoup)
+!      enddo ! energy loop (ie)
+
+!      write(45,*)'&'
+!      deallocate(ccmat,vcoup)
       end subroutine
 
 
@@ -648,7 +654,8 @@ c     -----------------------------------------------------------
 c     -----------------------------------------------------------
       complex*16 :: cfival,caux,phc,ph2
       complex*16 :: cpot(nlag*ns,nch,nch),cu(nch,nch),
-     &              cf(nlag*ns,nch,ninc),cpnl,faux(nr)
+     &              cf(nlag*ns,nch,ninc),faux(nr)
+      complex*16, allocatable:: cpnl(:,:,:)    
       complex*16 cfx(nch)
       complex*16, intent(out):: wf(nch,nr)
       complex*16 :: phase(nch),smat(nch) !,svel(nch)
@@ -2111,7 +2118,7 @@ c Re-orthogonalize solution vectors ....................................
 c 
 c Match y with asymptotic solution 
 c            
-      write(0,*)'schccrc: calling matching4'
+!      write(0,*)'schccrc: calling matching4'
       call matching4(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,
      &               info,eph) ! gauss5 + 2 points
 ! Under development!
@@ -2486,6 +2493,7 @@ c
 !      call matching2(ecm,z12,nch,ql,lmax,inc,rmatch,y,wf,phase,smat,info) ! LAPACK 
 !      call matching3(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,info) ! gauss5 + 2 points
       
+!      write(0,*)'schcc_erwin: calling matching3_eph: ecm=',ecm
       call matching3_eph(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,
      &     info,eph) ! gauss5 + 2 points; eigenphase calculation
 
@@ -3683,7 +3691,7 @@ c ----------------------------------------------- --------------
      & n1,y,wf,phref,smati,show,eph)
       use nmrv, only: nr,mu,ech,h,conv,rvec
       use constants, only : e2,pi
-      use globals, only: verb,debug
+      use globals, only: verb,debug,written
       use trace , only: cdccwf
       use scattering, only: ifcont
       implicit none
@@ -3732,12 +3740,11 @@ c     ...............................................................
       phase(1:nch,1:nch)=0.
 
       if (nch.eq.0) then
-       write(*,*)'Matching: nch=0! Abort'; stop     
+       write(*,*)'In matching3_eph: nch=0! Abort'; stop     
       endif
       
-!      write(*,*)'ifcont=',ifcont
-      
-! NEW: calculated S-matrix for all open channels
+! NEW: calculated S-matrix for all open channels in order to 
+!      later compute the eigenphases 
       iop=0
       do inc=1,nch
       if (.not.ifcont.and.(iref.ne.inc)) cycle
@@ -3929,6 +3936,7 @@ c
 !      enddo
 
       eph(:)=0
+!      write(0,*)'matching3_eph: calling seigensystem'
       call SEigensystem(nopen,smat,nopen,evec, Umat,nopen, sort)
 
 !       call dsyev('v','l',nopen,smat,nopen,work1,work2,3*nopen,
@@ -3948,7 +3956,9 @@ c
 !      print 101, "Eigen:",(n,evec(n),abs(evec(n)),eph(n),n = 1, nopen)
 101   format(/A, 10(/"d(", I1, ") = ", F10.6, SP, F10.6, SS, " I", 
      & "|d|=",f10.6, " Phas=",f10.6))
-      write(47,'(1f8.4,50f12.6)') ecm,(eph(n)*180./pi,n = 1, nch)
+     
+      written(46)=.true.
+      write(46,'(1f8.4,50f12.6)') ecm,(eph(n)*180./pi,n = 1, nch)
       endif
 
 
@@ -4044,7 +4054,7 @@ c .............................
       enddo
       enddo
 
-      write(0,*)'inc=',inc,'ech=',ech(inc),'iref=',iref,' Ecm=',tkch
+!      write(0,*)'inc=',inc,'ech=',ech(inc),'iref=',iref,' Ecm=',tkch
 
       do ich=1,nch
       l=ql(ich) 
@@ -6009,8 +6019,8 @@ c     -----------------------------------------------------------
 !      real*8 fc(500),dfc(500),gc(500),dgc(500),xfac(nchan,nchan)
 c     -----------------------------------------------------------
       complex*16 :: cfival,caux,phc,ph2
-      complex*16 :: cpot(nlag*ns,nch,nch),cu(nch,nch),
-     &              cpnl,faux(nr)
+      complex*16 :: cpot(nlag*ns,nch,nch),cu(nch,nch),faux(nr)
+      complex*16, allocatable:: cpnl(:,:,:)    
       complex*16 cfx(nch)
       complex*16, intent(out):: wf(nch,nr)
       complex*16 :: phase(nch),smat(nch) !,svel(nch)
@@ -6047,8 +6057,6 @@ c *** Initialize some variables & R-matrix
       endif
       enddo
       allocate(cf(nlag*ns,nch,ninc))
-      
-      write(0,*)'entering rmat'
       
       call rmat_ini(nlag,ns,rmax,zrma)
 c *** -----------------------------------
@@ -6117,10 +6125,10 @@ c *** Interpolation of coupling matrix in Lagrange mesh
 c
 c Diagonalize S-matrix to get eigenphases.
 c
-      write(0,*)'diagonalize S-matrix ifcont=',ifcont
+!      write(0,*)'diagonalize S-matrix ifcont=',ifcont
 
       if (ifcont) then
-      write(0,*)'diagonalize S-matrix'
+!      write(0,*)'diagonalize S-matrix'
 !      do ich=1,nopen
 !      write(*,*)ich,'smat=',smat(ich,1:nopen)
 !      enddo
