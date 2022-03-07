@@ -2,7 +2,7 @@
       subroutine belam() !,jtot,partot
 c ** Calculates B(E;lambda) distributions using THO pseudostates
       use globals !, only: written,mu12,pi,verb
-      use constants, only: hc,pi,amu
+      use constants, only: hc,pi,amu,e2
       use hmatrix, only: hmatx
       use potentials, only: delta,maxlamb
       use sistema
@@ -10,12 +10,14 @@ c ** Calculates B(E;lambda) distributions using THO pseudostates
       use channels
       use belambdamod
       use scattering
+      use factorials
       implicit none
 c      ------------------------------------------------------------------------
-      logical :: energy,fail3!,ifbel
+      logical :: energy,fail3,writewf!,ifbel
       integer :: i,np,ir,m,n,ncont,iil,is,itran,ik,jset,nex,ich
-      integer:: pci,pcf
+      integer:: pci,pcf,ibel!MGR 2022
       integer, parameter:: igs=1
+      integer:: jseti,ni
 c     --------------------------------------------------------------------------
       real*8:: fival,res,res2,lambdar
       real*8:: Elam,Elamcore,BEl,BElcore,matel,besum,rms
@@ -31,10 +33,12 @@ c     --------------------------------------------------------------------------
       real*8, allocatable:: uext(:,:)
       real*8, allocatable:: qlr(:)
       real*8, allocatable:: psh(:)
+      real*8:: capxs,photoxs,kphot,engs,sfactcap,sfactphoto,eta !MGR 2022
 c     --------------------------------------------------------------------------
       complex*16:: Elamcont,zero,resc,mecc
-      complex*16:: gaux(nr),faux(nr)!,test
-      complex*16,allocatable:: smate(:,:),wfscat(:,:,:)
+      complex*16:: gaux(nr),faux(nr),solapc!,test
+      complex*16,allocatable:: smate(:,:)
+      complex*16,allocatable:: wfscat(:,:,:)
 !      complex*16,allocatable :: ugs(:,:)
       integer coremodel,qc,ic,icp,nctrans
       CHARACTER*1 PSIGN(3)
@@ -42,23 +46,37 @@ c     --------------------------------------------------------------------------
       DATA PSIGN / '-','?','+' / 
 c     --------------------------------------------------------------------------  
       namelist /belambda/ uwfgsfile,lambda,BElcore,ifbel,rms,
-     &  coremodel,jset,emin,emax,nk
+     &  coremodel,jset,emin,emax,nk,engs,jseti,ni
       namelist /coretrans/ic, icp, rme, qc  
 c     --------------------------------------------------------------------------
+      writewf=.false.
+      ifcont=.false.
+      call factorialgen(10)
+      do ibel=1,100
       eps=1e-6
       zero=(0d0,0d0)
       BElcore=0d0
       Elamcorem=0d0
       rms=0d0
+      engs=0d0
       coremodel=0
       nctrans=0
       uwfgsfile=""
       energy=.false. 
       jset=0
+      lambda=-1 !MGR 2022
+      jseti=1 ! default initial set
+      ni=1    ! default initial state within initial set
+      
       read(kin,nml=belambda)
+      
       if (.not.ifbel) return
+      
+      if (lambda .eq. -1) return
+!      write(0,*) 'nk',nk,'maxchan',maxchan
       allocate(smate(nk,maxchan),psh(nk))
       smate(:,:)=0. ; psh(:)=0
+!      
 c     ----------------- Core RME specified by user -----------------------------
       if (coremodel.eq.1) then
       mec=0d0
@@ -84,40 +102,54 @@ c     --------------------------------------------------------------------------
 235   write(*,*)    
       write(*,'(5x,//," ** CALCULATION OF B(ELAM) **",/ )')
       
+   
       
       if ((jset.gt.jpsets).or.(jset.eq.0)) then
        write(*,'(5x,a,i3,a,i3,a)')'=> B(E) requested for set jset',jset,
      & ' but only', jpsets,' available!. Skipping'
       return
       endif
-      
-
+        
 c     ------------------------------ GS WF  -----------------------------------
       write(*,'("- Calculating B(E",i1,"; gs->n)")')lambda
+      write(95,'("#Calculating B(E",i1,"; gs->set ",i2,")")')lambda,jset
+      write(96,'("#Calculating B(E",i1,"; gs->set ",i2,")")')lambda,jset
+
+      zeff=zv*(ac/(ac+av))**lambda+zc*(-av/(ac+av))**lambda
+      write(*,'(3x,"Effective charge=",1f9.4,/)')zeff
 
       if (uwfgsfile.eq."") then
-      ncni=jpiset(igs)%nchan
+      ncni=jpiset(jseti)%nchan
    
-      allocate(qjci(ncni),qli(ncni),qlir(ncni),qji(ncni),cindexi(ncni))
-      allocate(ugs(nr,ncni))
+      if(.not. allocated(qjci))
+     & allocate(qjci(ncni),qli(ncni),qlir(ncni),qji(ncni),cindexi(ncni))
+      if(.not. allocated(ugs))
+     & allocate(ugs(nr,ncni))
       ugs(:,:)=0d0
-      partoti        =jpiset(igs)%partot
-      jtoti          =jpiset(igs)%jtot
-      qli (1:ncni)   =jpiset(igs)%lsp(1:ncni)
-      qlir(1:ncni)   =jpiset(igs)%lsp(1:ncni)
-      qji (1:ncni)   =jpiset(igs)%jsp(1:ncni)
-      qjci(1:ncni)   =jpiset(igs)%jc (1:ncni)
-      cindexi(1:ncni)=jpiset(igs)%cindex(1:ncni)
-      write(*,*)'The gs has j,parity=',jtoti,partoti,
-     & 'and', ncni,' channel(s)'
+      partoti        =jpiset(jseti)%partot
+      jtoti          =jpiset(jseti)%jtot
+      qli (1:ncni)   =jpiset(jseti)%lsp(1:ncni)
+      qlir(1:ncni)   =jpiset(jseti)%lsp(1:ncni)
+      qji (1:ncni)   =jpiset(jseti)%jsp(1:ncni)
+      qjci(1:ncni)   =jpiset(jseti)%jc (1:ncni)
+      cindexi(1:ncni)=jpiset(jseti)%cindex(1:ncni)
+      
+      if (abs(engs).lt.1e-6)  engs=energ(jseti,ni)
+      
+      write(*,'(2x,"Initial state:",/, 5x,"Jset=",i3,3x, "J/pi=",a5,  
+     & 3x,"Nb. chans:",i2,3x,"Energy:",1f8.3, "MeV")')
+     &  jseti,jpi(jtoti,partoti),ncni,engs
+!
+!      write(*,*)'The initial state has j,parity,energy=',
+!     & jtoti,partoti,engs,' and', ncni,' channel(s)'
         aux=0
         do ir=1,nr
         do ich=1,ncni
-        ugs(ir,ich)=wfc(1,1,ich,ir)*rvec(ir)
+        ugs(ir,ich)=wfc(jseti,ni,ich,ir)*rvec(ir)
         aux=aux+ugs(ir,ich)**2*dr
         enddo !ich
         enddo !ir
-        write(*,*)'GS has norm=',aux
+        write(*,'(5x,"[ Norm=",1f10.5,"]")'),aux
       else !....................................EXTERNAL GS WF (ASSUMED REAL!!!!!)
       write(*,'(2x,"Initial WF from file: ",a)') uwfgsfile
       open(20,file=uwfgsfile)
@@ -211,6 +243,7 @@ c     Select FINAL j/pi set and check triangularity condition -----------------.
       if (allocated(edisc)) deallocate(edisc)
       allocate(edisc(nex))
       edisc(1:nex)  =energ(jset,1:nex)
+      if (allocated(mel)) deallocate(mel)
       allocate(mel(nex,nchan));  mel(:,:)=0d0
       
      
@@ -272,10 +305,9 @@ c--------------------------------------------
           ncont=ncont+1 
         endif
         enddo
-        write(*,'(3x,"[Final set has",i2," bound states ]")')ncont
+        write(*,'(5x,"[Final set has",i2," bound states ]",/)')ncont-1
 
-        zeff=zv*(ac/(ac+av))**lambda+zc*(-av/(ac+av))**lambda
-        write(*,'(a,2f7.2,1f9.4)')'- Ac, Av, Zeff=',ac,av,zeff
+
         do i=1,nex
         Elam=0d0
         BEl=0d0
@@ -290,7 +322,7 @@ c--------------------------------------------
 	    else
            wid=(edisc(i+1)-edisc(i-1))/2d0
         endif
-
+                          
 !------------------------------------------------------------------
         mvc=0d0
         itran=0
@@ -309,8 +341,9 @@ c--------------------------------------------
 !c Overlap between radial parts for n and m channels
 !        faux(:)=rvec(:)*ugs(:,n)*wfeig(i,m,:) !the gs has already an r
         faux(1:nr)=rvec(1:nr)*ugs(1:nr,n)*wfc(jset,i,m,1:nr) !the gs has already an r
-        call simc(faux,solap,1,nr,dr,nr)    !it will improve if we go only until rlast
 
+        call simc(faux,solapc,1,nr,dr,nr)    !it will improve if we go only until rlast
+        solap=dble(solapc)
 !c Core reduced matrix element (model dependent) -------------------------------
         select case(coremodel)
         case(0) ! ----------->  rotor
@@ -352,8 +385,10 @@ c < n | r^lambda | m >
 !        faux(:)=rvec(:)**(1+lambda)*ugs(:,n)*wfeig(i,m,:) !the gs have already an r
        faux(1:nr)=rvec(1:nr)**(1+lambda)
      &            *ugs(1:nr,n)*wfc(jset,i,m,1:nr) !the gs have already an r
-       call simc(faux,rlam,1,nr,dr,nr)    !it will improve if we go only until rlast
-
+! AMoro March '22
+!       call simc(faux,rlam,1,nr,dr,nr)    !it will improve if we go only until rlast
+       call simc(faux,resc,1,nr,dr,nr)    !it will improve if we go only until rlast
+       rlam=resc
        mv=zeff*rlam*
      & matel(lambdar,sn,qjc(m),jtoti,qji(n),qlir(n),jtot,qj(m),qlr(m))
        mvc=mvc+mv
@@ -430,13 +465,14 @@ c------------------------------------------------
       if (.not.allocated(dbde)) allocate(dbde(il,nk))
       dbde(:,:)=0.
       do iil=ili,il ! incoming channels
+        
         if (allocated(wfscat)) deallocate(wfscat)
          allocate(wfscat(nk,nchan,nr))
 
          write(96,*)'# inc. channel=',iil
          excore =jpiset(jset)%exc(iil) ! core exc. energy for this inc. chan.
          call wfrange(jset,nchan,iil,emin,emax,nk,energy,
-     &             wfscat(:,:,:),smate,psh)
+     &             wfscat(:,:,:),smate,psh,writewf)
          wfscat(:,:,:)=sqrt(2./pi)*wfscat(:,:,:) ! set norm to delta(k-k')
 
       do ik=1,nk
@@ -528,14 +564,40 @@ c < n | r^lambda | m >
         enddo !n
         enddo  !m
 
-	 BEl=BEl+ (2*jtot+1)*abs(Elamcont)**2/(2*jtoti+1)
+        BEl=BEl+ (2*jtot+1)*abs(Elamcont)**2/(2*jtoti+1)
      &      *mu12*kcont/hc**2/(2*pi)**3
         dbde(iil,ik)=dbde(iil,ik)
      &      + (2*jtot+1)*abs(Elamcont)**2/(2*jtoti+1)
      &      *mu12*kcont/hc**2/(2*pi)**3
         Elam=0d0
+!        write(0,*)'engs=',engs, 'jtoti=',jtoti, 'excore=',excore
+!        kphot=(econt+excore+engs)/hc!MGR 2022
+        kphot=(econt+excore-engs)/hc !AMM2022
 
-        write(96,*) econt+excore,BEl,dbde(1,ik)
+        eta=conv*zc*zv*e2/kcont/2
+*
+* Photo-absorption cross section (see e.g. Thompson Nunes (14.4.3))
+*         
+        photoxs=8*pi**3*(lambda+1d0)/(lambda*exp(2*dlfac2(2*lambda+1)))*
+     &  kphot**(2d0*lambda-1d0)*BEl*e2        ! fm^2
+        photoxs=photoxs*10                    ! fm^2 -> mb
+        sfactphoto=econt*exp(2*pi*eta)*photoxs
+        
+!        write(0,*)'ill,jc=',iil,jpiset(jset)%jc(iil)
+        
+*
+* Radiative capture cross section
+*        
+        capxs=2*(2*jtoti+1d0)/(2*sn+1d0)/(2*jpiset(jset)%jc(iil)+1d0)*
+     &  kphot**2/kcont**2*photoxs
+
+*
+* S-factor
+*     
+        sfactcap=econt*exp(2*pi*eta)*capxs!MGR 2022
+        
+        write(96,*) econt+excore,BEl,photoxs,capxs,sfactphoto,sfactcap,
+     &  dbde(1,ik)
         besum=besum+BEl*hc**2*kcont/mu12*dk    !de=de/dk*dk
         enddo ! ik
         write(*,'(3x, "For inc chan=",i3," B(El)=",1f8.3)') iil,besum
@@ -543,6 +605,12 @@ c < n | r^lambda | m >
         enddo ! iil
         write(*,*)'- From Continuum wfs:'
         write(*,'(30x,"Total BE=",1f10.6," e^2 fm^",i1)')besum,2*lambda
+        write(95,*)'&'
+        if (allocated(smate))deallocate(smate)
+        if (allocated(psh))deallocate(psh)
+        if (allocated(qlr))deallocate(qlr)
+        if (allocated(dbde))deallocate(dbde)
+        enddo !MGR 2022
 
 
 c-----------------------------------------------------------------------------
@@ -679,6 +747,7 @@ c-----------------------------------------------------------------------------
         besr=besr*(2*lambda+1)/sqrt(4*pi)*(2*jtot+1)/(2*jtoti+1)
         besr=besr*zeff**2
 
+
         end
 
 
@@ -700,3 +769,4 @@ c-----------------------------------------------------------------------------
 !        matel=(-1)**(jni-jnf)*matel !in case of coupling (I jn) J instead of (jn I) J; our coupling is ((l s) j I ) J
         end
 
+        

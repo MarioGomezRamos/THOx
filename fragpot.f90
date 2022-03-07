@@ -31,9 +31,9 @@ c    Vc(r)   = nuclear central potential
        real*8:: beta(1:10),delta(1:10),Vcp0,rcp0,acp !coupling MGR
        real*8:: betai(1:10),deltai(1:10),Vcp0i,rcp0i,acpi,normr,normi !MGR
        integer np,nv,iv!,maxlamb    !Lay:added for read external potential   
-       real*8,allocatable:: veaux(:),weaux(:),raux(:)!Lay:added for read external potential   
-       real*8:: fival,pi
-       integer, parameter::alpha=0d0
+       real*8,allocatable:: veaux(:),weaux(:),rvaux(:)!Lay:added for read external potential   
+       real*8:: fival,pi,raux
+       real*8, parameter::alpha=0d0
        
               !MGR   
        real*8:: betat(1:10),deltat(1:10)
@@ -496,17 +496,18 @@ c add central part to fragment-target potential
          write(*,*)' CPYTE=5 in TESTING!!!! '
          vcaux(:)=0d0
          wcaux(:)=0d0
-         allocate(veaux(np),weaux(np),raux(np))
+         allocate(veaux(np),weaux(np),rvaux(np))
          veaux(:)=0.
          weaux(:)=0.
          read(32,'(a80)') line
          write(*,'(a80)') line
          do ir=1,np	
-            read(32,*)raux(ir),veaux(ir),weaux(ir)
+            read(32,*)rvaux(ir),veaux(ir),weaux(ir)
 	 enddo
          do ir=1,nr
-           vcaux(ir)=fival(rfrag(ir),raux,veaux,np,alpha)
-           wcaux(ir)=fival(rfrag(ir),raux,weaux,np,alpha)
+           raux=rfrag(ir)
+           vcaux(ir)=fival(raux,rvaux,veaux,np,alpha)
+           wcaux(ir)=fival(raux,rvaux,weaux,np,alpha)
          enddo!          written(40)=.true.
 	 read(32,*) !this reads the last line which is a &
 				
@@ -522,11 +523,12 @@ c add central part to fragment-target potential
              read(32,'(a80)')  line           ! A second loop for deformed part
              write(*,'(a80)') line
              do ir=1,np	
-                read(32,*)raux(ir),veaux(ir),weaux(ir)
+                read(32,*)rvaux(ir),veaux(ir),weaux(ir)
              enddo
              do ir=1,nr
-              vcaux(ir)=fival(rfrag(ir),raux,veaux,np,alpha)
-              wcaux(ir)=fival(rfrag(ir),raux,weaux,np,alpha)
+              raux=rfrag(ir)
+              vcaux(ir)=fival(raux,rvaux,veaux,np,alpha)
+              wcaux(ir)=fival(raux,rvaux,weaux,np,alpha)
              enddo!
 !!!
             vfrag (1:nr,2)=vfrag (1:nr,2)+3.5449/sqrt(5.)*vcaux(1:nr)
@@ -579,7 +581,7 @@ c Next lines: real, imag
         character*40 filename,header
         real*8:: fival,r,rstep,rfirst,x,y1,y2
         real*8,allocatable::xv(:),faux(:),gaux(:)
-        real,parameter:: alpha=0
+        real*8,parameter:: alpha=0.0
 
         uu = .false.
         inquire(file=filename,exist=uu)
