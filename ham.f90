@@ -1301,10 +1301,10 @@ c this is included in basis.f90, so it should be redundant here
         do m=1,nchan
         if (ebin(i).lt.0) then 
         write(300, '("#Single particle REAL wf & vertex for state",i2,
-     & " E=",f10.5," MeV", "Chan=",i3)') i, ebin(i),m
+     &  2x,"Chan=",i3," E=",f10.5," MeV", "Chan=",i3)') i, m,ebin(i)
         else ! complex
         write(300,'("#Single particle COMPLEX wf & vertex for state",i2,
-     & " E=",f10.5," MeV", "Chan=",i3)') i, ebin(i),m
+     &  2x,"Chan=",i3," E=",f10.5," MeV", "Chan=",i3)') i,m, ebin(i)
         endif
      
      
