@@ -1298,6 +1298,7 @@ c this is included in basis.f90, so it should be redundant here
 
 ! Write overlaps & vertex functions in fresco format
         if(wfprint(i)) then
+        do m=1,nchan
         if (ebin(i).lt.0) then 
         write(300, '("#Single particle REAL wf & vertex for state",i2,
      & " E=",f10.5," MeV")') i, ebin(i)
@@ -1308,7 +1309,7 @@ c this is included in basis.f90, so it should be redundant here
      
      
         write(300,*) np,dr,rmin
-        do m=1,nchan
+!        do m=1,nchan
         if (ebin(i).lt.0) then ! real
           write(300,260) (wfeig(i,m,ir),ir=1,np)   
           write(300,260) (vertex(m,ir),ir=1,np)
