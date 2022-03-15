@@ -169,7 +169,7 @@ c *** Output trace
       wfout(:)   =0
       solapout(:)=0
       cdccwf     =.false.
-      froverlaps =.false.
+      froverlaps =0
       
       read(*,nml=output)
       do i=1,10

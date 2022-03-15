@@ -39,7 +39,8 @@ c	real*8:: sn
         logical:: wfprint(1:500)
         integer:: wfout(1:20)
         integer:: solapout(1:20)
-        logical:: cdccwf,froverlaps
+        integer:: froverlaps
+        logical:: cdccwf
       end module trace
 
 c    

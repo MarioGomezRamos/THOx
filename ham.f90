@@ -1238,7 +1238,7 @@ c this is included in basis.f90, so it should be redundant here
      
      
 !       if (any(froverlap(1:20)>0)>0) open(300,file='overlaps.fr')
-       if (froverlaps) open(300,file='overlaps.fr')
+       if (froverlaps>0) open(300,file='overlaps.fr')
 
 
 ! Write eigenfunctions 
@@ -1269,7 +1269,7 @@ c this is included in basis.f90, so it should be redundant here
 !       write(99,*)rmin+dr*dble(ir-1),faux(ir),d2wf
        vertex(m,ir)=ebin(i)*faux(ir)
      &      + (hc**2/2/mu12)*(d2wf-ql(m)*(ql(m)+1.)*faux(ir)/r/r)
-
+       vertex(m,ir)=vertex(m,ir)/r   ! to conform with Fresco convention
        enddo !ir
        enddo !m
 
@@ -1288,7 +1288,7 @@ c this is included in basis.f90, so it should be redundant here
         do ir=1,np
         r=rmin+dr*dble(ir-1)
         if (r> rlast) cycle
-        write(100+i,'(1f8.3,2x,10g14.6)') r,(vertex(m,ir),m=1,nchan)
+        write(100+i,'(1f8.3,2x,10g14.6)') r,(r*vertex(m,ir),m=1,nchan)
         enddo !ir
         write(100+i,*)'& '
         endif
@@ -1299,18 +1299,18 @@ c this is included in basis.f90, so it should be redundant here
 ! Write overlaps & vertex functions in fresco format
         if(wfprint(i)) then
         do m=1,nchan
-        if (ebin(i).lt.0) then 
+        if (froverlaps==1 .or. ebin(i).lt.0) then 
         write(300, '("#Single particle REAL wf & vertex for state",i2,
-     &  2x,"Chan=",i3," E=",f10.5," MeV", "Chan=",i3)') i, m,ebin(i)
+     &  2x,"Chan=",i3," E=",f10.5," MeV")') i, m,ebin(i)
         else ! complex
         write(300,'("#Single particle COMPLEX wf & vertex for state",i2,
-     &  2x,"Chan=",i3," E=",f10.5," MeV", "Chan=",i3)') i,m, ebin(i)
+     &  2x,"Chan=",i3," E=",f10.5," MeV")') i,m, ebin(i)
         endif
      
      
         write(300,*) np,dr,rmin
 !        do m=1,nchan
-        if (ebin(i).lt.0) then ! real
+        if (froverlaps==1 .or. ebin(i).lt.0) then ! real
           write(300,260) (wfeig(i,m,ir),ir=1,np)   
           write(300,260) (vertex(m,ir),ir=1,np)
         else                   ! complex   
