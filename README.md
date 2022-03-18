@@ -19,7 +19,7 @@ where "c" and "v" are the fragment constituents (denoted, for convenience, core 
  
    This namelist can be repeated if more than one core state is to be included. After the last core state is introduced, an empty CORESTATE namelist must be included.
  
-### OUTPUT namelist: wfout, cdcc, verb, solapout. 
+### OUTPUT namelist: wfout, cdcc, verb, solapout, froverlaps
 Controls the information printed out in stdout and auxiliary files.
 
   - wfout(:): array containing the indeces of the projectile eigenstates whose wavefunctions will be printed out.
@@ -27,6 +27,10 @@ Controls the information printed out in stdout and auxiliary files.
   - cdccwf (T/F): If true, write CDCC wavefunction (internal and channel wfs)
   - checkort (T/F): If true, computes overlap matrix for calculated eigenfunctions to check orthonormality. Overlap matrix is written in fort.90 file
   - verb: controls the amount of output information
+  - froverlaps (integer): print wavefunctions and vertex functions in fresco format (overlaps.fr)
+     * froverlaps=0: no printing
+     * froverlaps=1: print REAL functions
+     * froverlaps=2: for unbound eigenvalues, print COMPLEX functions
   
    
 ### GRID namlist: ng, rmin, rint, rmax, dr, rlast
