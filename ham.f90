@@ -646,10 +646,12 @@ c     j      =point for derivative
 !           write(96,*) i,f(i)
 !        enddo
 
-        if ((j.eq.1).or.(j.eq.2)) then
-           deriv2=(f(j+2)-2*f(j+1)+f(j))/2d0/h
-        else if ((j.eq.ndim).or.(j.eq.ndim-1)) then
-           deriv2=(f(j)-2*f(j-1)+f(j-2))/h/h
+        if (j.eq.1) then
+           deriv2=(f(j+2)-2*f(j+1)+f(j))/h/h
+        else if (j.eq.ndim) then
+           deriv2=(f(j)-2*f(j-1)+f(j-2))/h/h           
+        else if ((j.eq.2).or.(j.eq.ndim-1)) then
+           deriv2=(f(j+1)-2*f(j)+f(j-1))/h/h
         else 
            deriv2=(f(j+1)-2*f(j)+f(j-1))/h/h ! O(h^2)
            deriv2=(-f(j+2)+16*f(j+1)-30*f(j)+16*f(j-1)-f(j-2))/(12*h*h)
@@ -1252,10 +1254,12 @@ c this is included in basis.f90, so it should be redundant here
         write(100+i,248)np
 248     format("# ",i5," points")
 
-! Compute & write vertex functions (march 2019)
+! Compute & write vertex functions (march 2019) 
+! Modified by Pedro (march 2022)
        do m=1,nchan
        do ir=1,np
         r=rmin+dr*dble(ir-1)
+        !if (r.lt.1e-4) r=1e-4
         faux(ir)=r*wfeig(i,m,ir)
        enddo !ir
        
@@ -1264,15 +1268,22 @@ c this is included in basis.f90, so it should be redundant here
        
        do ir=1,np
        r=rmin+dr*dble(ir-1)
-       if (r.lt.1e-4) r=1e-4
+       if (r.lt.1e-5) then !Avoid indeterminate form
+       if (ql(m).eq.0) then !l=0
+       vertex(m,ir)=ebin(i)*wfeig(i,m,ir)
+     &   +(hc**2/2/mu12)*2*(wfeig(i,m,ir+2)-wfeig(i,m,ir+1))/dr/dr
+       else !l>0
+       vertex(m,ir)=0
+       endif 
+       else !r>0
        d2wf=deriv2(faux,dr,np,ir)
 !       write(99,*)rmin+dr*dble(ir-1),faux(ir),d2wf
-       vertex(m,ir)=ebin(i)*faux(ir)
-     &      + (hc**2/2/mu12)*(d2wf-ql(m)*(ql(m)+1.)*faux(ir)/r/r)
-       vertex(m,ir)=vertex(m,ir)/r   ! to conform with Fresco convention
+       vertex(m,ir)=ebin(i)*wfeig(i,m,ir)
+     &   +(hc**2/2/mu12)*(d2wf/r-ql(m)*(ql(m)+1.)*wfeig(i,m,ir)/r/r)
+       endif
        enddo !ir
        enddo !m
-
+             
         do ir=1,np
         r=rmin+dr*dble(ir-1)
         if (r> rlast) cycle
