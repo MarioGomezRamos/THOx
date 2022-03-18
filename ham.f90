@@ -1308,7 +1308,7 @@ c this is included in basis.f90, so it should be redundant here
 
 
 ! Write overlaps & vertex functions in fresco format
-        if(wfprint(i)) then
+        if(froverlaps>0) then
         do m=1,nchan
         if (froverlaps==1 .or. ebin(i).lt.0) then 
         write(300, '("#Single particle REAL wf & vertex for state",i2,
