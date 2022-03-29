@@ -1272,7 +1272,8 @@ c this is included in basis.f90, so it should be redundant here
        if (r.lt.1e-5) then !Avoid indeterminate form
        if (ql(m).eq.0) then !l=0
        vertex(m,ir)=ebin(i)*wfeig(i,m,ir)
-     &   +(hc**2/2/mu12)*2*(wfeig(i,m,ir+2)-wfeig(i,m,ir+1))/dr/dr
+     &   +(hc**2/2/mu12)*6*(wfeig(i,m,2)-wfeig(i,m,1))/(2*r+dr)/dr
+!     &   +(hc**2/2/mu12)*2*(wfeig(i,m,ir+2)-wfeig(i,m,ir+1))/dr/dr
        else !l>0
        vertex(m,ir)=0
        endif 
