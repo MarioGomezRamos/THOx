@@ -1218,6 +1218,7 @@ c store wfs and energies for all j/pi sets
         endif
           ninc=ninc+1
           energ(nset,ninc)=ex
+          nst=nst +1 ! global counter
 c changed in version 2.3 for complex bins
 !         wfr(nset,ninc,1:nchan,:)=wfeig(i,1:nchan,:)
           wfc(nset,ninc,1:nchan,:)=wfeig(i,1:nchan,:)
@@ -1335,7 +1336,6 @@ c this is included in basis.f90, so it should be redundant here
 260    FORMAT(1P,6E12.4)
 262    FORMAT(1P,12E12.4)
  
-
 
        enddo !i 
        call flush(6)

@@ -68,7 +68,7 @@ c ...
       complex*16 :: ci
       
 c *** R-matrix solutions -----------------------------------------
-      integer*4, parameter:: ninc=1,nr2=0,nmax=100
+      integer*4, parameter:: ninc=1,nr2=0,nmax=200
       logical :: iftr,twf,ifrmat
       integer*4 :: ich,ichp,nvc(inc)
       
@@ -455,7 +455,7 @@ c ... Avoid pi jumps in phase-shifts
 205     format("#Phase-shifts for J/pi=",a5,"  Inc. chan.=",
      &         i3, " ql=",5i3)
         endif
-        write(45,'(1f6.3,2x,10f12.5)') ecm, (phase(ich),ich=1,nchan)
+        write(45,'(1f6.3,2x,10g14.5)') ecm, (phase(ich),ich=1,nchan)
 !        write(46,'(1f6.3,2x,10f12.5)') ecm, 
 !    & (sin(phase(ich)*pi/180),ich=1,nchan)
         

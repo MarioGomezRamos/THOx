@@ -34,6 +34,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
       use trace
       use forbidden, only: npauli,ppauli,eshift,qpauli,hindrance
       use channels
+      use wfs, only: nst
       use belambdamod, only: ifbel
       use memory
 ! added by JLei 
@@ -185,6 +186,7 @@ c *** Read potential parameters
 c Pauli-forbidden states to be removed
       call pauli_forbidden(kin)
 
+      nst=0 ! total number of selected eigenvalues
       do iset=1,inpsets
       dummy=.false.
       nset=iset
@@ -231,6 +233,8 @@ c *** ------------------------------------------------------------
       end select 
       
       enddo ! loop on j/pi sets
+      
+      call write_states()
 
 c *** Continuum WFS (scatwf namelist)
 !      call continuum!(nchan)
@@ -914,4 +918,49 @@ c ----------------------------------------------------------------
         end subroutine solap
 
 
+
+c     -----------------------------------------------------------
+c     Write states & energies in Fresco format
+c     ----------------------------------------------------------- 
+       subroutine write_states()
+       use wfs, only: energ,nst
+       use channels, only: jpsets,jpiset
+       use sistema
+!      use hmatrix
+       use globals
+!      use trace
+      implicit none
+      integer, parameter:: kst=25
+      integer i,ie,icopyt,ibandp,ibandt,icpot,n
+      real*8:: et, jt,rjp,ep       
+      open(kst,file="states2.fr",status='unknown')     
+      i=0
+      icopyt=0
+      icpot=1
+      ibandt=0
+      et=0.d0
+      jt=jtgs ! inherited from module 'sistema'
+      write(0,*)'energ(1,1)=',energ(1,1)
+      write(kst,*) nst
+      do n=1,jpsets
+      rjp    =jpiset(n)%jtot    ! xjp(n)
+      ibandp =jpiset(n)%partot  ! ipar(n)
+      do ie=1,jpiset(n)%nex    ! np(n)
+      i=i+1
+      ep=energ(n,ie)-energ(1,1)
+      if (i.eq.2) icopyt=1
+      write(kst,11511) rjp,ibandp,ep,icpot
+      if(icopyt==0) write(kst,1153) jt,ibandt,et
+      if(icopyt.ne.0) write(kst,1154) icopyt
+      enddo !ie
+      enddo !n
+
+11511 format(' &States jp=',f4.1,' ptyp=',i2,' ep=',f8.4,'  cpot=',i3)
+ 1153 format('         jt=',f4.1,' ptyt=',i2,' et=',f8.4,' /')
+ 1154 format('         copyt=',i2,' /')
+ 1155 format(' Skipping state #',i3,' J/pi',f4.1,i2,' and Ex=',f8.4)
+c     ----------------------------------------------------------------
+ 
+       close(kst)
+       end subroutine 
 
