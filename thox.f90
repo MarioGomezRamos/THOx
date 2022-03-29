@@ -940,7 +940,7 @@ c     -----------------------------------------------------------
       ibandt=0
       et=0.d0
       jt=jtgs ! inherited from module 'sistema'
-      write(0,*)'energ(1,1)=',energ(1,1)
+!      write(0,*)'energ(1,1)=',energ(1,1)
       write(kst,*) nst
       do n=1,jpsets
       rjp    =jpiset(n)%jtot    ! xjp(n)
