@@ -198,7 +198,7 @@ c new derived type for core variables
 
 
       module wfs
-        integer:: nst
+        integer:: nst   ! global index for selected eigenvalues
         real*8 exmin,exmax
         integer:: ng,nr,hdim,nrint
         real*8::  rmin,rmax,dr,rlast,rint
