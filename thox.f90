@@ -716,6 +716,9 @@ c Write output files units and names
        flkind(46)='Eigenphases'
        flkind(50)='Full list of Cont. Wf.'
        flkind(51)='Continuum Wavefunction'
+       flkind(52)='Overlaps between PS and scattering states'
+       flkind(53)='Overlaps between PS and scat.stat. (no head)'
+
        flkind(60:65)='wfs of Hsp eigenstates'
        flkind(70)='Full H matrix for each channel block'
        flkind(72)='Orthog. matrix for each channel block'

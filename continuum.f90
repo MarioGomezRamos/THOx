@@ -476,6 +476,8 @@ c ... Write WFS
      
 c *** -------------- PRINT OVERLAPS  ----------------------------
       if (writesol) then
+      written(52)=.true.
+      written(53)=.true.
 !      do jset=1,jpsets
 !      if (.not.jsets(iset)) cycle
 !      nex  =jpiset(iset)%nex
@@ -491,7 +493,7 @@ c *** -------------- PRINT OVERLAPS  ----------------------------
       do n=1,nex
       write(52,'(i3,1f10.4)') n , energ(jset,n)
       raux=0
-      write(520,'(a,i3,a,i3,a,1f10.4)')'# Set:',jset,
+      write(53,'(a,i3,a,i3,a,1f10.4)')'# Set:',jset,
      & ' n=',n,' Ex=',energ(jset,n)
       do ik=1,nk
        ecv=erel(ik)
@@ -499,7 +501,7 @@ c *** -------------- PRINT OVERLAPS  ----------------------------
        if (ecv.lt.eps) ecv=eps
        kcv=sqrt(2.d0*mu12*ecv)/hc
        jac=mu12/(hc**2)/kcv
-       write(520,111)ecv, jac*abs(gsolap(n,ik))**2
+       write(53,111)ecv, jac*abs(gsolap(n,ik))**2
        write(52,'(1f8.3,3x,2g14.6)')ecv,gsolap(n,ik)
 !     &  (jac*abs(gsolap(n,ik))**2,inc=1,nchan)
 111    format(2x,1f12.6,2x,10g14.6)
@@ -511,7 +513,7 @@ c *** -------------- PRINT OVERLAPS  ----------------------------
 !      write(97,'(3x,a,i3,a,i3,a,1f8.5)')'# -> Set:',jset, '  PS=',n,
 !     & ' Norm solap=',raux*2/pi
 !      endif
-      write(520,*)'&'
+      write(53,*)'&'
       enddo ! n
 !      enddo !iset
       endif ! verb
