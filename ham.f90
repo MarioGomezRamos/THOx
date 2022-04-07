@@ -1005,7 +1005,7 @@ c Build and diagonalize full Hamiltonian
       implicit none
       integer:: i,ir,m,n,ip,n1,m1,inchani,inchanf,ninc
       integer:: incn,np,nho,nset
-      real*8:: norm,r,norm2,rms,rl,rmstot,ex
+      real*8:: norm,r,norm2,rms,rl,rmstot,ex,excore
       real*8,parameter:: uno=1.0
       real*8 :: wcut(1:maxchan)
       real*8,allocatable:: faux(:),ebaux(:),vertex(:,:)
@@ -1258,20 +1258,19 @@ c this is included in basis.f90, so it should be redundant here
 ! Compute & write vertex functions (march 2019) 
 ! Modified by Pedro (march 2022)
        do m=1,nchan
+       excore =jpiset(nset)%exc(m) ! core energy
+       
        do ir=1,np
         r=rmin+dr*dble(ir-1)
         !if (r.lt.1e-4) r=1e-4
         faux(ir)=r*wfeig(i,m,ir)
        enddo !ir
-       
-      
-
-       
+             
        do ir=1,np
        r=rmin+dr*dble(ir-1)
        if (r.lt.1e-5) then !Avoid indeterminate form
        if (ql(m).eq.0) then !l=0
-       vertex(m,ir)=ebin(i)*wfeig(i,m,ir)
+       vertex(m,ir)=(ebin(i)-excore)*wfeig(i,m,ir)
      &   +(hc**2/2/mu12)*6*(wfeig(i,m,2)-wfeig(i,m,1))/(2*r+dr)/dr
 !     &   +(hc**2/2/mu12)*2*(wfeig(i,m,ir+2)-wfeig(i,m,ir+1))/dr/dr
        else !l>0
@@ -1280,7 +1279,7 @@ c this is included in basis.f90, so it should be redundant here
        else !r>0
        d2wf=deriv2(faux,dr,np,ir)
 !       write(99,*)rmin+dr*dble(ir-1),faux(ir),d2wf
-       vertex(m,ir)=ebin(i)*wfeig(i,m,ir)
+       vertex(m,ir)=(ebin(i)-excore)*wfeig(i,m,ir)
      &   +(hc**2/2/mu12)*(d2wf/r-ql(m)*(ql(m)+1.)*wfeig(i,m,ir)/r/r)
        endif
        enddo !ir
@@ -1312,7 +1311,7 @@ c this is included in basis.f90, so it should be redundant here
 ! Write overlaps & vertex functions in fresco format
         if(froverlaps>0) then
         ex=ebin(i)
-!        write(0,*)'print overlap for i=',i, 'ex=',ebin(i)
+        write(0,*)'print overlap for i=',i, 'ex=',ebin(i)
         if((ex.lt.exmin).or.(ex.gt.exmax)) cycle
         if (any(wchan(i,1:nchan).lt.wcut(1:nchan))) then   
           print*,'i=',i, 'excluded due to small weight'; 
@@ -1438,5 +1437,36 @@ c      u(r)
 	   enddo ! ir
       enddo ! n
       end subroutine
+      
+c  ----------------------------------------
+c  write vertex functions for a given jpset
+!  PS wfs from wfc(jset,ichan,ir)
+!  < a | V | a'> in   stored in  ccmat(1:nchan,1:nchan,1:nr)
+c  -----------------------------------------
+      subroutine vertex(jset)
+      use wfs, only: energ,wfc
+      use potentials, only: ccmat
+      use channels, only:  jpiset
+      implicit none
+      integer:: nch,jset,i,j,ir
+
+      
+      nch=jpiset(jset)%nchan
+      call coefmat(jset,nch)
+      write(0,*)'calculation of vertex finished ok'
+      do i=1,nch
+      do j=1, nch
+      
+      write(*,*) i,j,ccmat(i,j,1)
+      
+      enddo
+      enddo
+      
+      
+      deallocate(ccmat)
+      
+      end subroutine
+      
+      
 
 

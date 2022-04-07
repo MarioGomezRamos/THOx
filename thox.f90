@@ -216,6 +216,9 @@ c *** Build and diagonalize s.p. Hamiltonian for each j/pi set
 
 c *** Build and diagonalize FULL VALENCE+CORE Hamiltonian 
         call fullham(nset,nho)
+        
+c *** Vertex functions
+        call vertex(nset,nho)        
 
 c *** Check orthonormality
         if (checkort) call orthonorm
