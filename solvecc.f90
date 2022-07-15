@@ -1413,11 +1413,11 @@ c Read STATES specifications from states.fr file (fresco style)
       subroutine read_states()
       use xcdcc, only: exch,parch,jpch,nex
       implicit none
-      namelist /states/jp,bandp,cpot,jt,copyt,bandt,ep,et,ptyp,ptyt
       integer, parameter:: kst=20
       integer ie,nst
       integer bandp,bandt,copyp,copyt,cpot,ptyp,ptyt
       real*8 jp,jt,ep,et
+      namelist /states/jp,bandp,cpot,jt,copyt,bandt,ep,et,ptyp,ptyt
       CHARACTER PARITY(3)
       DATA PARITY / '-','?','+' / 
 
