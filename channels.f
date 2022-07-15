@@ -60,6 +60,7 @@ C     do l=0,l2bmax
             jmax=min(jtmax,J2b+J_spect)
       	    do nj=nint(2.*jmin),nint(2.*jmax),2
       	      incdcc%nchmax=incdcc%nchmax+1
+      	      write(0,*)'incdcc%nchmax=',incdcc%nchmax
       	    end do
            end do
          end do

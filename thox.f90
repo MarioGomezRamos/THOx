@@ -121,7 +121,8 @@ c     ------------------------------------------------------------
 
 c *** Defined global constants
       call initialize()
-      if (cdccwf) call alpha_cdcc_in()
+      write(0,*)'CDCCWF=',cdccwf
+!      if (cdccwf) call alpha_cdcc_in()
       write(*,'(50("*"))')
       write(*,'(" ***",8x,"THOx+DCE+CC code: version 2.6",8x, "***")')
       write(*,'(50("*"),/)')
@@ -176,6 +177,10 @@ c *** Output trace
       do i=1,10
        if (wfout(i)>0) wfprint(wfout(i))=.true.
       enddo
+
+
+      if (cdccwf) call alpha_cdcc_in()
+
 
 c *** Radial grid (quadratures?)
       call readgrid(kin)
