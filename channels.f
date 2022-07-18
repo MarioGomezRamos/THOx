@@ -3,8 +3,7 @@
 
        integer :: indexthoxmax,exmax
        integer,dimension(:,:),allocatable :: indexthox
-       logical :: gs
-       integer,dimension(10) :: l2b
+
 
 
 !Jacobi set for 3b channels
@@ -36,23 +35,21 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
       integer :: nJ,nJ2b,nJ_spect
       integer :: nch !index of {(l(jxjb)s2b)J2b (lam jt)J_spect ; J}
       real*8 :: jtmin, jtmax
+      integer,dimension(10) :: l2b
       integer :: nl
-      namelist /cdccwf/ l2b,lmax_cdcc,jtmin, jtmax,gs
+      namelist /cdccwf/ l2b,lmax_cdcc,jtmin, jtmax
       l2b=-99
-      gs=.false.
       open (unit=551,file='iav.in')
       read(551,nml=cdccwf)
 
       s2b=0.0d0 ! by assuming all spin zero particle, need to improved
       s=0.0d0 ! spin of the target
 
-      write(*,*)'READING IAV.IN'
 
       incdcc%nchmax=0
 C     do l=0,l2bmax
       do nl=1,10
         l=l2b(nl)
-        write(0,*)'alpha_cdcc_in:l=',l
         if(l<0) cycle
         do nJ2b=nint(2.*(l+s2b)),nint(2.*abs(l-s2b)),2
            j2b=nJ2b/2.0d0
@@ -63,7 +60,6 @@ C     do l=0,l2bmax
             jmax=min(jtmax,J2b+J_spect)
       	    do nj=nint(2.*jmin),nint(2.*jmax),2
       	      incdcc%nchmax=incdcc%nchmax+1
-      	      write(0,*)'incdcc%nchmax=',incdcc%nchmax
       	    end do
            end do
          end do

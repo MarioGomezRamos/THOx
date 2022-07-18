@@ -6,14 +6,14 @@
 FC=ifort
 
 # Normal compilation (no debugging)
-#FFLAGS=   -cm -w  -zero -FI -checkall 
-3FFLAGS1=   -FI -cm -w -fpp  -c -O2 -checkall 
+FFLAGS=   -cm -w  -zero -FI -checkall 
+FFLAGS1=   -FI -cm -w -fpp  -c -O2 -checkall 
 PARALELL= -openmp
 
 
 # For debugging:
-FFLAGS=   -g   -traceback  -cm -w  -zero -FI -checkall   
-FFLAGS1=  -g -traceback -FI -cm -w -fpp  -c -O2 -checkall      
+#FFLAGS=   -g   -traceback  -cm -w  -zero -FI -checkall   
+#FFLAGS1=  -g -traceback -FI -cm -w -fpp  -c -O2 -checkall      
 #-fpe:0
 # Profiling and vectorization
 #FFLAGS= -02 -guide -parallel -cm -w  -zero -FI -checkall
