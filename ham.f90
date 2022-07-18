@@ -1124,6 +1124,7 @@ c     (changed in version 2.3 to complex)
         allocate(wfc(jpsets,maxeset,maxchan,nr))
         allocate(energ(jpsets,maxeset))
       endif
+!      allocate(idenerg(jpsets,maxeset))
 
       if (verb.ge.1) then
       written(78)=.true.
@@ -1222,6 +1223,7 @@ c store wfs and energies for all j/pi sets
 c changed in version 2.3 for complex bins
 !         wfr(nset,ninc,1:nchan,:)=wfeig(i,1:nchan,:)
           wfc(nset,ninc,1:nchan,:)=wfeig(i,1:nchan,:)
+!          idenerg(nset,ninc)=i
         
         write(formato,'( "(5x,",'' "#" '',",i3,1f10.4,2x,",
      & '' "[", '',I0,"f9.5",'' ,"]" '',",4x,",    
@@ -1246,13 +1248,15 @@ c this is included in basis.f90, so it should be redundant here
 
 ! Write eigenfunctions 
         do i=1,hdim
-        if (written(100+i)) then
+        if (written(100+i).or.froverlaps>0) then
+        if((ex.lt.exmin).or.(ex.gt.exmax)) cycle
+        if (any(wchan(i,1:nchan).lt.wcut(1:nchan))) cycle
         if ((rlast.gt.0).and.(rlast.lt.rmax)) then 
             np=idint((rlast-rmin)/dr)
         else
             np=idint((rmax-rmin)/dr)
         endif
-        write(100+i,248)np
+        if (written(100+i)) write(100+i,248)np
 248     format("# ",i5," points")
 
 ! Compute & write vertex functions (march 2019) 
@@ -1284,7 +1288,7 @@ c this is included in basis.f90, so it should be redundant here
        endif
        enddo !ir
        enddo !m
-             
+       if (written(100+i)) then      
         do ir=1,np
         r=rmin+dr*dble(ir-1)
         if (r> rlast) cycle
@@ -1306,7 +1310,7 @@ c this is included in basis.f90, so it should be redundant here
         endif
 !        write(200+i,*)'& '
 	endif 
-
+        endif !written(100+i)
 
 ! Write overlaps & vertex functions in fresco format
         if(froverlaps>0) then
@@ -1440,31 +1444,52 @@ c      u(r)
       
 c  ----------------------------------------
 c  write vertex functions for a given jpset
-!  PS wfs from wfc(jset,ichan,ir)
-!  < a | V | a'> in   stored in  ccmat(1:nchan,1:nchan,1:nr)
+!  PS wfs from wfc(jset,i,ichan,ir)
+!  < a | V | a'> is stored in  ccmat(1:nchan,1:nchan,1:nr)
 c  -----------------------------------------
       subroutine vertex(jset)
-      use wfs, only: energ,wfc
+      use wfs, only: energ,wfc,rmax,rmin,dr,rlast !,idenerg
       use potentials, only: ccmat
       use channels, only:  jpiset
+      use globals, only: mu12
+      use constants, only: hc
       implicit none
-      integer:: nch,jset,i,j,ir
+      integer:: nch,jset,ch,np,ni,i,j,ir
+      character (len=9):: file_name
 
-      
+      ni=jpiset(jset)%nex
       nch=jpiset(jset)%nchan
       call coefmat(jset,nch)
-      write(0,*)'calculation of vertex finished ok'
-      do i=1,nch
-      do j=1, nch
+      ccmat=ccmat*hc**2/mu12/2
+
+      ch=1  !ONlY CHANEL 1
+
+      if ((rlast.gt.0).and.(rlast.lt.rmax)) then 
+            np=idint((rlast-rmin)/dr)
+        else
+            np=idint((rmax-rmin)/dr)
+        endif
       
-      write(*,*) i,j,ccmat(i,j,1)
+      write(file_name,'("vertex.",i0)') jset 
+      open(525,file=trim(file_name))
       
-      enddo
-      enddo
-      
-      
-      deallocate(ccmat)
-      
+      !wfc are converted to real
+      do i=1, ni  !wfc states for this jset
+      do j=1, nch !output chanel
+      if (ch.GT.0 .and. ch.NE.j) cycle !if a chanel is selected
+       write(525, '("#Single particle REAL wf & vertex for state",i2,2x,
+     &  "Chan=",i3," E=",f10.5," MeV")') i,j,energ(jset,i)
+        write(525,*)np, dr, rmin
+        write(525,'(1P 6E12.4)') (dble(wfc(jset,i,j,ir)), ir=1,np)
+        write(525,'(1P 6E12.4)') 
+     & (dble(DOT_PRODUCT(ccmat(j,:,ir),wfc(jset,i,1:nch,ir))), ir=1,np)     
+    
+      enddo !j
+      enddo !i
+                 
+      close(525)
+      deallocate(ccmat)     
+
       end subroutine
       
       
