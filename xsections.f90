@@ -624,6 +624,7 @@ c ----------------------------------------------------------------
       use globals,  only: debug,written,verb,kin
       use wfs,      only: nr,dr,energ,rvec,wfc !,wbin
       use memory,   only: t3d,lr8
+      use scattering, only: method,nbas,ns
       implicit none
 
       include "omp_lib.h"
@@ -927,6 +928,11 @@ c *** Overlaps between PS's and Scattering states  -----------------------------
      &   write(*,'(4x,"-> skipping core state",i3)')ic 
       cycle
       endif
+      
+!          write(0,*)'method=',method
+      method=4;
+      nbas  =50
+      ns    =1; 
 
       if (allocated(wfcont)) deallocate(wfcont)
       if (ncont.gt.0) then
