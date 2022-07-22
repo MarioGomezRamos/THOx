@@ -210,9 +210,9 @@ c        real*8:: all,als,as0,j,vcou,vpot,deriv1,deriv2
 
            if (cptype.eq.5) then
              if (partot.eq.1) then
- 	     vnm= vnm+(vtran(ic,ic,0,i,1)/sqrt(2.*jcore+1))*un*um
+ 	     vnm= vnm+(vscale*vtran(ic,ic,0,i,1)/sqrt(2.*jcore+1))*un*um
              else
-             vnm=vnm+(vtran(ic,ic,0,i,2)/sqrt(2.*jcore+1))*un*um
+             vnm=vnm+(vscale*vtran(ic,ic,0,i,2)/sqrt(2.*jcore+1))*un*um
              endif
            endif
 

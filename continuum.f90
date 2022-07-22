@@ -213,6 +213,11 @@ c spin.spin term
             vcp=vtran(ici,icf,il,ir,2)
            endif
            
+! TEST Jul/22           
+           if ((nchani.eq.nchanf).and.(ici.eq.icf).and.(il.eq.0)) then
+              vcp=vcp*vscale
+           endif    
+           
            faux(ir)=faux(ir)+((-1d0)**(ji+jcf+jtot)*
      &          sixj(jf,ji,lambdar,jci,jcf,jtot)*
      &          sqrt((2*jf+1.)*(2*ji+1.))*
