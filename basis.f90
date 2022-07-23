@@ -5,6 +5,7 @@ c     nchan={Ic,lsj} configurations
       use channels
       use globals,only: kin
       use wfs    ,only: exmin,exmax
+      use potentials, only: vscale
       implicit none
       logical fail3,tres,ehat,merge
       integer l,lmin,lmax,bastype,mlst
@@ -16,7 +17,7 @@ c     nchan={Ic,lsj} configurations
       integer,save:: prevset
       CHARACTER*1 BLANK,PSIGN(3)      
       character*40 filewf
-      real*8 :: wcut(maxchan),vscale
+      real*8 :: wcut(maxchan) !,vscale
       DATA PSIGN / '-','?','+' /, BLANK / ' ' /
 
 
@@ -74,6 +75,7 @@ c      endif
       jpiset(nset)%bastype = bastype
       jpiset(nset)%vscale  = vscale
  
+!      write(0,*)'set',nset,'scaled by',vscale
 
       write(*,'(/)') 
       write(*,*)  '******************************************'

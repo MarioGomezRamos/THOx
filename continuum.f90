@@ -15,7 +15,8 @@ c -------------------------------------------------------------------------
      &                  sn,partot,qnc,jpiset
       use sistema
       use globals
-      use potentials
+      use potentials, only:ccmat,vtran,vlcoup,laminc,lpot,pcmodel,kband,
+     &                     cptype,maxlamb,vcou,vss,vcl,vls,vlsc,vll 
       use constants
       use forbidden ! added in v2.2f
       implicit none

@@ -306,6 +306,7 @@ c Scattering states of core+valence system
          real*8,allocatable,target::vcou(:),vlcoup(:,:,:)
          complex*16,allocatable:: ccmat(:,:,:)
          real*8 :: beta,delta,kband ! fixed in 2.3b
+         real*8 :: vscale
        end module potentials
 
 

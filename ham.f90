@@ -191,7 +191,6 @@ c        real*8:: all,als,as0,j,vcou,vpot,deriv1,deriv2
               
       rmax=rvec(nr)
   
-!      write(*,*)'hspnm: vscale',vscale
 	 
       do i=1,nr
            r=rvec(i)
@@ -209,6 +208,7 @@ c        real*8:: all,als,as0,j,vcou,vpot,deriv1,deriv2
 !	   write(0,*)'ir,n,m,vnm=',i,r,vnm
 
            if (cptype.eq.5) then
+!                 write(*,*)'hspnm: vscale',vscale
              if (partot.eq.1) then
  	     vnm= vnm+(vscale*vtran(ic,ic,0,i,1)/sqrt(2.*jcore+1))*un*um
              else
@@ -314,7 +314,7 @@ c *** ---------------------------------------------------
       use sistema
       use potentials, only: vls,vlsc,vss,vcl,vcou,vlcoup,
      &lpot,vll,vtran,cptype,maxlamb,  
-     &lambda,pcmodel,laminc ! v2.1          
+     &lambda,pcmodel,laminc,vscale ! v2.1          
       use constants
       use channels
       use wfs
@@ -335,7 +335,7 @@ c *** ---------------------------------------------------
       parameter(uno=1d0, cero=0d0)
       integer:: ici,icf,il,ichsp,nphi,nphf
       real*8:: jci,jcf,lambdar,sixj,cleb,lfr,lir,cl
-      real*8:: cmic,cmic2
+      real*8:: cmic,cmic2,raux
       character*10 chname
       real*8:: pfactor,p1,p2
       real*8:: ui,uf,vi,vf,ren
@@ -526,12 +526,14 @@ c Non-diagonal
 !           else
 !             cl=1d0
 !           endif
+           raux=1.0
+           if ((il.eq.0).and.(nchani.eq.nchanf)) raux=vscale
                if (partot.eq.1) then
            vnm=vnm+cmic2(lir,ji,jci,lfr,jf,jcf,jtot,sn,lambdar)
-     &        *vtran(ici,icf,il,i,1)*un*um
+     &        *vtran(ici,icf,il,i,1)*un*um*raux
                else
             vnm=vnm+cmic2(lir,ji,jci,lfr,jf,jcf,jtot,sn,lambdar)
-     &        *vtran(ici,icf,il,i,2)*un*um
+     &        *vtran(ici,icf,il,i,2)*un*um*raux
                endif
 
 !           vnm=vnm+((-1d0)**(ji+jcfr+jtot)*sixj(jf,ji,lambdar
