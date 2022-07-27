@@ -23,7 +23,7 @@ c     for each channel {l,s,j}
       use channels
       use hmatrix
       implicit none
-      real*8,allocatable:: gnm(:),faux(:),gaux(:)
+      real*8,allocatable:: faux(:),gaux(:)
       integer i,l,ich,nch,n,m,n1,m1,nprint,ifile,nset,nho
       parameter(nprint=11)
       real*8:: norm,r,rms,jn,vscale
@@ -142,17 +142,17 @@ c *** ---------------------------------------------------
       subroutine hspnm(n,m,ichan,vscale)
       use globals
       use sistema
-      use potentials, only: vls,vss,vcl,vcou,vll,cptype,vtran
+      use potentials, only: vls,vcl,vcou,vll,cptype,vtran
       use constants
       use wfs
       use channels
       use hmatrix
       implicit none
-      real*8::h,fact,d2wf,xl,r,d1wfm,d1wfn
-      real*8::deriv1,als,aspsp,all,vscale
+      real*8::h,fact,xl,r,d1wfm,d1wfn
+      real*8::deriv1,als,all,vscale
       integer::l,i,n,m,ichan
       real*8::j,res
-      real*8:: un,um,um1,um2,um3,um4,um5,aux,knm,vnm
+      real*8:: un,um,knm,vnm
 c        real*8:: z1,z2,a1,a2,rc,rc2,aux6
 c        real*8:: all,als,as0,j,vcou,vpot,deriv1,deriv2
       real*8,allocatable:: fmaux(:),fnaux(:),hnmaux(:)
@@ -240,7 +240,7 @@ c *** ----------------------------------------------------------
         implicit none
         integer:: n,m,nchani,nchanf,ndim
         integer:: li,lf
-        real*8::  ji,jf,jci,jcf,pari,parf
+        real*8::  ji,jf,jci,jcf
         real*8::  hnm !,r,fact
         ndim=nsp
         written(70)=.false.
@@ -321,21 +321,21 @@ c *** ---------------------------------------------------
       use hmatrix
       use forbidden
       implicit none
-      real*8:: hnm,res,wfpau
-      real*8::h,fact,d2wf,xl,r,d1wfm,d1wfn
+      real*8:: hnm,res
+      real*8::h,fact,xl,r,d1wfm,d1wfn
       real*8::deriv1,als,ass,alsc,corels,coefss,atens
-      real*8 allp,aspsp,ccoef,crotor,gcoup,all,ctens
+      real*8 allp,ccoef,crotor,gcoup,all,ctens
       integer::i,ip,n,nchani,m,nchanf,ichn,ichm
       integer li,lf
       real*8::ji,jf
-      real*8:: un,um,um1,um2,um3,um4,um5,aux,knm,vnm
+      real*8:: un,um,aux,knm,vnm
       real*8,allocatable:: fmaux(:),fnaux(:),hnmaux(:)
       real*8,allocatable:: fpaux(:),gpaux(:)
       real*8:: uno,cero
       parameter(uno=1d0, cero=0d0)
       integer:: ici,icf,il,ichsp,nphi,nphf
-      real*8:: jci,jcf,lambdar,sixj,cleb,lfr,lir,cl
-      real*8:: cmic,cmic2,raux
+      real*8:: jci,jcf,lambdar,cleb,lfr,lir,cl
+      real*8:: cmic2,raux
       character*10 chname
       real*8:: pfactor,p1,p2
       real*8:: ui,uf,vi,vf,ren
@@ -619,7 +619,7 @@ c   Renormalize non-diagonal couplings Quasi-Particle Core Model
 c *** Calculate du(r)/dr using five points derivative formula
       function deriv1(f,h,ndim,j)
         implicit none
-        integer ndim,j,i
+        integer ndim,j
         real*8 f(ndim),h,deriv1
  
 
@@ -641,7 +641,7 @@ c     h      =step
 c     j      =point for derivative
       function deriv2(f,h,ndim,j)
         implicit none
-        integer ndim,j,i
+        integer ndim,j
         real*8 f(ndim),h,deriv2
 !        write(*,*) 'deriv'
 !        do i=1,ndim
@@ -908,7 +908,7 @@ c spin.spin (borrowed from Fresco frxx4.f)
  90   CONTINUE
       COEFSS = T
       RETURN
- 95   RETURN
+      RETURN
       END
 
 c tensor (borrowed from Fresco frxx4.f)
@@ -920,10 +920,10 @@ c cleb6 -> cleb ???
       IMPLICIT NONE
       integer:: l,lp,is,isp,ns,nsp
       real*8:: ctens
-      real*8:: s1,s2,s1p,s2p,j,jp,jt, coefss
+      real*8:: s1,s2,s1p,s2p,j,jp,jt
       real*8:: s,smin,smax,spmin,spmax,sp ! CHECK!!
       real*8:: z,rac,u9,cleb
-      real*8:: t,j2,t1,t2,t3,t4,t5
+      real*8:: t,t1,t2,t3,t4,t5
       parameter(z=0.0)
       ctens=0d0
       SMIN = MAX(ABS(L-JT),ABS(S1-S2))
@@ -1011,7 +1011,7 @@ c Build and diagonalize full Hamiltonian
       real*8,parameter:: uno=1.0
       real*8 :: wcut(1:maxchan)
       real*8,allocatable:: faux(:),ebaux(:),vertex(:,:)
-      real*8 :: raux,d2wf,deriv2
+      real*8 :: d2wf,deriv2
 !      integer,allocatable:: iord(:)
       integer:: ifail
       real*8    , parameter:: zero=0.0
@@ -1153,7 +1153,7 @@ c     (changed in version 2.3 to complex)
        
       ninc=0
       do i=1,hdim
-	    ebin(i)=ebaux(iord(i))
+	ebin(i)=ebaux(iord(i))
         ex=ebin(i)
         rmstot=0d0
         n1=hdim-iord(i)+1
@@ -1165,15 +1165,15 @@ c     (changed in version 2.3 to complex)
         if (verb.ge.0) then
            write(79,*)hdim,hmatx(n1,n1),1.2
         endif
-        if ((hmatx(n1,n1)<0).or.wfprint(i)) then   
+        if (wfprint(i)) then   
         write(100+i,246)nchan,i,hmatx(n1,n1)
 !        write(200+i,246)nchan,i,hmatx(n1,n1)
 
-246	   format('# ',i2,' Channels, Eigenvalue:',i2,' Energy: ',f8.4)
-          write(100+i,247)jtot,partot
+246	 format('# ',i2,' Channels, Eigenvalue:',i2,' Energy: ',f8.4)
+         if (wfprint(i))  write(100+i,247)jtot,partot
 !          write(200+i,247)jtot,partot
 247	   format('# J:',f4.2,' parity:',i2)
-          write(100+i,*) '#  channel core Jc (l sn) jn'
+         if (wfprint(i))  write(100+i,*) '#  channel core Jc (l sn) jn'
 !           write(200+i,*)'#  channel core Jc (l sn) jn'
         endif
  
@@ -1197,9 +1197,10 @@ c     (changed in version 2.3 to complex)
         call normfun(faux,faux,dr,rmin,nr,1,norm2,rms,rl)
         rmstot=rmstot+rms**2
         wchan(i,inchanf)=norm
-        if ((hmatx(n1,n1)<0).or.wfprint(i)) then
+        if (wfprint(i)) then
         written(100+i)=.true.
         incn=inchanf
+         
         write(100+i,245)incn,cindex(incn),qjc(incn),ql(incn),sn,qj(incn)
 245	 format('# ',i2,' :',i2,f4.1,i2,f4.1,f4.1)
  
@@ -1250,7 +1251,8 @@ c this is included in basis.f90, so it should be redundant here
 
 ! Write eigenfunctions 
         do i=1,hdim
-        if (written(100+i).or.froverlaps>0) then
+         ex=ebin(i)
+        if (written(100+i)) then
         if((ex.lt.exmin).or.(ex.gt.exmax)) cycle
         if (any(wchan(i,1:nchan).lt.wcut(1:nchan))) cycle
         if ((rlast.gt.0).and.(rlast.lt.rmax)) then 
@@ -1261,6 +1263,8 @@ c this is included in basis.f90, so it should be redundant here
         if (written(100+i)) write(100+i,248)np
 248     format("# ",i5," points")
 
+
+       
 ! Compute & write vertex functions (march 2019) 
 ! Modified by Pedro (march 2022)
        do m=1,nchan
@@ -1284,7 +1288,6 @@ c this is included in basis.f90, so it should be redundant here
        endif 
        else !r>0
        d2wf=deriv2(faux,dr,np,ir)
-!       write(99,*)rmin+dr*dble(ir-1),faux(ir),d2wf
        vertex(m,ir)=(ebin(i)-excore)*wfeig(i,m,ir)
      &   +(hc**2/2/mu12)*(d2wf/r-ql(m)*(ql(m)+1.)*wfeig(i,m,ir)/r/r)
        endif
@@ -1302,22 +1305,24 @@ c this is included in basis.f90, so it should be redundant here
 
 
 
-        if (verb.ge.4) then
-        do ir=1,np
-        r=rmin+dr*dble(ir-1)
-        if (r> rlast) cycle
-        write(100+i,'(1f8.3,2x,10g14.6)') r,(r*vertex(m,ir),m=1,nchan)
-        enddo !ir
-        write(100+i,*)'& '
-        endif
-!        write(200+i,*)'& '
-	endif 
+!        if (verb.ge.4) then
+!        do ir=1,np
+!        r=rmin+dr*dble(ir-1)
+!        if (r> rlast) cycle
+!        write(100+i,'(1f8.3,2x,10g14.6)') r,(r*vertex(m,ir),m=1,nchan)
+!        enddo !ir
+!        write(100+i,*)'& '
+!        endif
+ 	endif 
         endif !written(100+i)
+
+
+! July'22: Vertex functions calculated here are not printed, since they are now computed more accurately & printed in a separate routine
 
 ! Write overlaps & vertex functions in fresco format
         if(froverlaps>0) then
         ex=ebin(i)
-        write(0,*)'print overlap for i=',i, 'ex=',ebin(i)
+!        write(0,*)'print overlap for i=',i, 'ex=',ebin(i)
         if((ex.lt.exmin).or.(ex.gt.exmax)) cycle
         if (any(wchan(i,1:nchan).lt.wcut(1:nchan))) then   
           print*,'i=',i, 'excluded due to small weight'; 
@@ -1348,7 +1353,7 @@ c this is included in basis.f90, so it should be redundant here
         endif !print overlaps
 
 260    FORMAT(1P,6E12.4)
-262    FORMAT(1P,12E12.4)
+!262    FORMAT(1P,12E12.4)
  
 
        enddo !i 
@@ -1449,14 +1454,14 @@ c  write vertex functions for a given jpset
 !  PS wfs from wfc(jset,i,ichan,ir)
 !  < a | V | a'> is stored in  ccmat(1:nchan,1:nchan,1:nr)
 c  -----------------------------------------
-      subroutine vertex(jset)
+      subroutine vertex(jset,froverlaps)
       use wfs, only: energ,wfc,rmax,rmin,dr,rlast !,idenerg
       use potentials, only: ccmat
       use channels, only:  jpiset
       use globals, only: mu12
       use constants, only: hc
       implicit none
-      integer:: nch,jset,ch,np,ni,i,j,ir
+      integer:: nch,jset,ch,np,ni,i,j,ir,froverlaps
       character (len=9):: file_name
 
       ni=jpiset(jset)%nex
@@ -1475,19 +1480,36 @@ c  -----------------------------------------
       write(file_name,'("vertex.",i0)') jset 
       open(525,file=trim(file_name))
       
+      if (jpiset(jset)%bastype<2) then
       !wfc are converted to real
       do i=1, ni  !wfc states for this jset
       do j=1, nch !output chanel
-      if (ch.GT.0 .and. ch.NE.j) cycle !if a chanel is selected
+!      if (ch.GT.0 .and. ch.NE.j) cycle !if a chanel is selected
+      if ((froverlaps.eq.1).and.(j>1)) cycle
        write(525, '("#Single particle REAL wf & vertex for state",i2,2x,
      &  "Chan=",i3," E=",f10.5," MeV")') i,j,energ(jset,i)
         write(525,*)np, dr, rmin
         write(525,'(1P 6E12.4)') (dble(wfc(jset,i,j,ir)), ir=1,np)
-        write(525,'(1P 6E12.4)') 
-     & (dble(DOT_PRODUCT(ccmat(j,:,ir),wfc(jset,i,1:nch,ir))), ir=1,np)     
-    
+      write(525,'(1P 6E12.4)')
+     &  (dble(DOT_PRODUCT(wfc(jset,i,1:nch,ir),ccmat(j,:,ir))), ir=1,np)       
       enddo !j
       enddo !i
+      
+      else
+      !wfc are complex
+      do i=1, ni  !wfc bins for this jset
+      do j=1, nch !output chanel
+!      if (ch.GT.0 .and. ch.NE.j) cycle !if a chanel is selected
+      if ((froverlaps.eq.1).and.(j>1)) cycle
+       write(525, '("#Single particle COMPLEX wf & vertex for bin",i2,2x,
+     &  "Chan=",i3," E=",f10.5," MeV")') i,j,energ(jset,i)
+        write(525,*)np, dr, rmin
+        write(525,'(1P 6E12.4)') (CONJG(wfc(jset,i,j,ir)), ir=1,np)
+        write(525,'(1P 6E12.4)') 
+     & (DOT_PRODUCT(wfc(jset,i,1:nch,ir),ccmat(j,:,ir)), ir=1,np)    
+      enddo !j
+      enddo !i
+      endif
                  
       close(525)
       deallocate(ccmat)     

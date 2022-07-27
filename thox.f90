@@ -121,7 +121,6 @@ c     ------------------------------------------------------------
 
 c *** Defined global constants
       call initialize()
-      write(0,*)'CDCCWF=',cdccwf
 !      if (cdccwf) call alpha_cdcc_in()
       write(*,'(50("*"))')
       write(*,'(" ***",8x,"THOx+DCE+CC code: version 2.6",8x, "***")')
@@ -223,7 +222,7 @@ c *** Build and diagonalize FULL VALENCE+CORE Hamiltonian
         call fullham(nset,nho)
         
 c *** Vertex functions
-        call vertex(nset,nho)        
+      if (froverlaps>0)  call vertex(nset,froverlaps)        
 
 c *** Check orthonormality
         if (checkort) call orthonorm
@@ -233,6 +232,9 @@ c *** Overlap between THO and scattering wfs
 c *** ------------------------------------------------------------
       case(2,3,4) ! Bins   
         call makebins(nset,nk,tres,ehat)
+
+c *** Vertex functions
+      if (froverlaps>0)  call vertex(nset,froverlaps)
 
 c *** ------------------------------------------------------------
       case(5) ! External   

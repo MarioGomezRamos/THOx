@@ -296,7 +296,7 @@ c     ........................................................
       logical :: energy,writewf,writesol
       character*5::jpi
       integer:: il, pcon ! deprecated, backward compatibility only
-      integer inc,ilout,ili,jset,partot,nchan,nk,n,ir,ik
+      integer inc,ilout,ili,jset,partot,nchan,nk,n,ir,ik, chan
       real*8 :: emin,emax,eout,jtot,ecv
       real*8 :: kmin,dk,de,kmax,kcv
       real*8 :: r0,conv,rm
@@ -386,6 +386,11 @@ c     ........................................................
       allocate(smate(nk,maxchan),psh_el(nk))
       if (allocated(wfcont)) deallocate(wfcont)
       allocate(wfcont(nk,nchan,nr))
+
+      chan=inc
+      do inc=1,nchan
+      if (chan.ge.0.and.chan.ne.inc) cycle
+
 !      deladd=0.
 !      write(0,*)'continuum_range: calling wfrange';stop
       call wfrange(jset,nchan,inc,emin,emax,nk,energy,wfcont,
@@ -420,7 +425,7 @@ c ... Write WFS
       nho= jpiset(jset)%nho
       if (nho.eq.0) return ! no PS's in this jset
       nex =jpiset(jset)%nex             ! number of states in this jset
-      allocate(gsolap(nex,nk))
+      if(.not. allocated(gsolap)) allocate(gsolap(nex,nk))
       gsolap(:,:)=0
       
 !      if (emax<0)     emax=maxval(energ(:,:))
@@ -523,6 +528,9 @@ c *** -------------- PRINT OVERLAPS  ----------------------------
       enddo ! n
 !      enddo !iset
       endif ! verb
+      
+      enddo !inc
+  
 c-------------------------------------------------------------------------------
       
       end subroutine 
