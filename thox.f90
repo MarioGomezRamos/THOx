@@ -63,7 +63,8 @@ c v2.6 AMM: calculation of core+valence eigenphases
 c Input namelists -------------------------
       namelist/system/ Zc,Ac,Zv,Av,egs,sn
       namelist/output/ wfout,checkort,verb,ifphase,solapout,
-     &                 cdccwf,froverlaps
+     &                 cdccwf,froverlaps,
+     &                 xcdcc
 
       DATA PSIGN / '-','?','+' /, BLANK / ' ' /
       
