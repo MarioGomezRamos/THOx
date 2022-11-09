@@ -441,14 +441,14 @@ c ... write channels quantum numbers in CDCC file
        write(85,*) '#ich: n  L   Jp  Jt   KCM' 
 !                      1  9 12  2.0  0.0  2.6053
        do ich=1,nch
-         l   = jptset(icc)%l(nch)  
-         jp  = jptset(icc)%jp(nch) 
-         jt  = jptset(icc)%jt(nch) 
-         iex = jptset(icc)%idx(nch)
-         kcmf= jptset(icc)%kcm(nch)
+         l   = jptset(icc)%l(ich)  
+         jp  = jptset(icc)%jp(ich) 
+         jt  = jptset(icc)%jt(ich) 
+         iex = jptset(icc)%idx(ich)
+         kcmf= jptset(icc)%kcm(ich)
 !         jptset(icc)%exc(nch)= ex - exch(iexgs)
 !         jptset(icc)%jlp(nch)  = jlp_tmp !MGR
-         jtarg= jptset(icc)%jt(nch) 
+         jtarg= jptset(icc)%jt(ich) 
 !         jptset(icc)%ext(nch)  = etarg
 !         jptset(icc)%idt(nch)  = itex
          write(85,317) ich,iex,l,jp,jt,kcmf
