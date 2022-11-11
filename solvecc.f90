@@ -694,7 +694,7 @@ c c *** -----------------------------------------------------
       use writecdccwf ! added by JLei for IAV input
 !      use memory   , only: tcc
       implicit none
-      integer    :: ir,n,nr,icc,nch,inc,nlag,ns
+      integer    :: ir,n,nr,icc,nch,inc,nlag,ns,ninc
       complex*16 :: phase(nch),wf(nch,nr),smat(nch)
       real*8:: ecm,einc
       real*8:: rmass,factor,rstart
@@ -780,7 +780,8 @@ c -----------------------------------------------------
 c NEW in v2.5 (mar/17): write CDCC wf
 !       if (cdccwf) call write_cdcc_wf(icc,wf,nch,nr)
 ! JLei for IAV input
-      write(0,*)'ninc=',count(incvec)
+      ninc=count(incvec)
+      write(0,*)'ninc=',ninc
       if (cdccwf) call cdcc_wf_thoxin(icc,wf,nch,nr)
 
 c ...................................
