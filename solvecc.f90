@@ -460,8 +460,12 @@ c ... write channels quantum numbers in CDCC file
        enddo ! ich
 
 ! To store full CDCC wf (11/11/22)
-       if (cdccwf) allocate(wfcdcc(ninc,nch,nrcc))
 
+       if (cdccwf) then
+        if (allocated(wfcdcc)) deallocate(wfcdcc)
+        allocate(wfcdcc(ninc,nch,nrcc))
+	endif 
+	
        call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)    
           
 c ... Compute integrated cross sections
