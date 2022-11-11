@@ -3472,6 +3472,7 @@ c ----------------------------------------------- --------------
       use constants, only : e2,pi
       use globals, only: verb,debug
       use trace , only: cdccwf
+      use xcdcc, only : wfcdcc
       implicit none
       logical :: sing,show
       integer ich,is,inc,ir,klog,nd,n1,n2
@@ -3665,6 +3666,7 @@ c To make the wfs real in the single-channel case:
 ! TO MATCH WITH FRESCO FORT.17 , NO FACTORS ARE NEEDED HERE!
 
       if (cdccwf)then
+          wfcdcc(inc,1:nch,1:nr)=wf(1:nch,1:nr)
           do is=1,nch
           write(85,*)'# Initial chan =>  Final chan'
           write(85,'(2i7)') inc,is

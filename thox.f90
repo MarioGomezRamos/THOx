@@ -32,7 +32,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
       use constants
       use hmatrix
       use trace
-      use forbidden, only: npauli,ppauli,eshift,qpauli,hindrance
+      use forbidden, only: npauli,eshift,hindrance
       use channels
       use wfs, only: nst
       use belambdamod, only: ifbel
@@ -49,7 +49,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
 
       logical fail3,checkort,ifphase,dummy,tres,realcc
       integer:: nfmax,mlst
-      real*8 ::  lambda,r,norm
+      real*8 ::  lambda,norm
       integer :: al
       CHARACTER*1 BLANK,PSIGN(3)
       character*40 filename
@@ -57,7 +57,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
 
 !!! TEST 
       integer iset,inc,iexgs
-      real*8 ecm,c,c2,s,s2,plm_nr
+      real*8 ecm,c,c2,plm_nr
 
 
 c Input namelists -------------------------

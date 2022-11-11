@@ -253,6 +253,7 @@ c     Solving the CC (separate module??)
       complex*16, allocatable:: ffcn(:,:,:,:),ffcc(:,:,:,:) !MGR
       real*8:: hcm,rmatch,elab,ecm,jtmin,jtmax,rmaxcc
       real*8:: jump(1:5),jbord(1:5) 
+      complex*16, allocatable:: wfcdcc(:,:,:) ! Full CDCC WF      
 
 c ... to store bin information
       TYPE BIN_INFO

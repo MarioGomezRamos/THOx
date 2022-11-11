@@ -6,7 +6,7 @@ c *** ---------------------------------------------------
       use xcdcc   , only: nex,jpch,exch,parch,iftrans,
      &            lamax,hcm,nmatch,elab,ecm,smats,
      &            jtmin,jtmax,rvcc,rmaxcc,nrcc,method,
-     &            jump,jbord
+     &            jump,jbord,wfcdcc
       use nmrv,only: hort,rmort,vcoup
       use sistema
       use globals, only: kin,debug,verb
@@ -25,7 +25,7 @@ c     ----------------------------------------------------------------
       character(len=80) numethod
       DATA PARITY / '-','?','+' / 
       integer:: i,iex,iexgs,ir,nfacmax,ncc,itex,part,ijlp !MGR
-      integer:: l,lmin,lmax,icc,pargs,ijp,parp,partot
+      integer:: l,lmin,lmax,icc,pargs,ijp,parp,partot,ninc
       integer:: ich,nch,icalc,nsets,ijt,njt,nchmax,inc,ijump,iblock
       integer:: nlag,ns ! R-matrix
 c     ----------------------------------------------------------------
@@ -422,17 +422,21 @@ c ... Solve CC equations for each incoming channel
         einc=jptset(icc)%exc(iexgs)
         incvec(:)=.false.
         incch=.false.
+        ninc=0
         do inc=1,nch  ! incoming channels are those with iex=iexgs
           iex  = jptset(icc)%idx(inc)
           if ((iex.eq.iexgs) .and. (jptset(icc)%idt(inc).eq.1)) then
           incvec(inc)=.true.
           incch=.true.
+          ninc=ninc+1
           endif
         enddo  
         if (.not. incch) then
         deallocate(incvec,vcoup)
         cycle
         endif 
+        
+        
          
 c ... write channels quantum numbers in CDCC file
        write(85,315) icc,nch,jtot,partot
@@ -454,6 +458,9 @@ c ... write channels quantum numbers in CDCC file
          write(85,317) ich,iex,l,jp,jt,kcmf
 317    format(2x,3i3,2f5.1,2f8.4)
        enddo ! ich
+
+! To store full CDCC wf (11/11/22)
+       if (cdccwf) allocate(wfcdcc(ninc,nch,nrcc))
 
        call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)    
           
