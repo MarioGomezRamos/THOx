@@ -782,7 +782,8 @@ c NEW in v2.5 (mar/17): write CDCC wf
 ! JLei for IAV input
       ninc=count(incvec)
       write(0,*)'ninc=',ninc
-      if (cdccwf) call cdcc_wf_thoxin(icc,wf,nch,nr)
+!      if (cdccwf) call cdcc_wf_thoxin(icc,wf,nch,nr)
+      if (cdccwf) call cdcc_wf_thoxin(icc,incvec,ninc,nch,nr) 
 
 c ...................................
 
