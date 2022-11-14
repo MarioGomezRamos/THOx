@@ -37,27 +37,46 @@
 c *** -----------------------------------------------------------
 c *** write CDCC wave function in each alpha n
 c *** ------------------------------------------------------------
-      subroutine cdcc_wf_thoxin(icc,wf,nch,nr)
+      subroutine cdcc_wf_thoxin(icc,incvec,ninc,nch,nr)
         use channels, only: jpiset,jpsets
         use parameters, only: maxeset
-        use xcdcc,only:nquad,frad,rquad,nrcc,rvcc,parch
+        use xcdcc,only:nquad,frad,rquad,nrcc,rvcc,parch,wfcdcc
       use channels, only: jptset,jpsets
       implicit none
       integer, parameter:: kwf=322
-      integer :: ich,nch,nr,ir,icc,partot
-      integer :: lsp,jsp,jc,parc,lam,iex,parp
-      real*8 :: jtot,exc,jp,jlp
-      complex*16 wf(nch,nr)
+      integer :: ich,nch,nr,ir,icc,partot,ninc
+      integer :: lsp,jsp,jc,parc,lam,iex,parp, lam_in
+      real*8 :: jtot,exc,jp,jlp,jp_in 
+      logical,dimension(1:nch) :: incvec
+      complex*16 :: wf(nch,nr)
 
       integer :: jset,ne,nchan,iparity,nst,ii,ie
       real*8  :: xjtot
       integer :: alphacdcc,irbx,ira
       complex*16 :: phi, chi
+      
+      integer :: inc
+      integer,dimension(ninc) :: inc_ich
+      integer :: ain
+      
+      
+      do inc=1, ninc 
+        do ich=1, nch
+         if (incvec(ich)) then 
+         inc_ich(inc) = ich 
+         incvec(ich)=.false.
+         exit
+         else 
+            cycle 
+         end if 
+         end do 
+      end do 
+      
 
 
 
 
-
+      write(186,*) "nch=", nch 
 
       partot=jptset(icc)%partot
       jtot  =jptset(icc)%jtot
@@ -67,6 +86,18 @@ c *** ------------------------------------------------------------
       write(kwf,350) icc,nch,jtot,partot
 350   format(2x,"CC set:", i4, " Chans:",i4,
      &  " JTOT=",1f6.1, " Parity:",i2)
+
+      do inc=1, ninc 
+        jp_in= jptset(icc)%jp (inc_ich(inc)) 
+        lam_in= jptset(icc)%l  (inc_ich(inc))
+        
+        do ain=1, alpha_in%nchmax
+           if (nint(2.*jtot) == nint(2.*alpha_in%j(ain))
+     +     .and.  nint(2.*jp_in) == nint(2.*alpha_in%j2b(ain))
+     +     .and. lam_in == alpha_in%lam(ain)) exit
+        end do 
+        
+        
 
       do ich=1,nch
        iex   =jptset(icc)%idx(ich)
@@ -129,29 +160,36 @@ C       write(322,*) "n=",incdcc%n(alphacdcc)
          do ira=1,nrcc
 
          phi=frad(jset,ie,irbx,nchan)/rquad(irbx)
-         chi=wf(ich,ira)
+         chi=wfcdcc(inc,ich,ira)
 
-         cdccwf_thox(irbx,ira,indexthox(ie,alphacdcc))=phi*chi
+         cdccwf_thox(irbx,ira,indexthox(ie,abar(ain,alphacdcc)))
+     +          =phi*chi
          end do
        end do
 
 c-------new out put set
+       write(186,*) "indexthox=", indexthox(ie,abar(ain,alphacdcc)),
+     +      "n2ch=",abar(ain,alphacdcc)
        do irbx=1,nquad
-
+         
+        
+         
          phi=frad(jset,ie,irbx,nchan)/rquad(irbx)
-         cdccwf_thox_phi(irbx,indexthox(ie,alphacdcc))=phi
+         cdccwf_thox_phi(irbx,indexthox(ie,abar(ain,alphacdcc)))=phi
 
        end do
 
        do ira=1,nrcc
-         chi=wf(ich,ira)
-         cdccwf_thox_chi(ira,indexthox(ie,alphacdcc))=chi
+         chi=wfcdcc(inc,ich,ira)
+         cdccwf_thox_chi(ira,indexthox(ie,abar(ain,alphacdcc)))=chi
 
        end do
 
 
 
       enddo !ich
+      
+      end do ! inc 
       
       
       open (unit=222,file='rgrid.dat')
@@ -197,12 +235,12 @@ c-----------------new output
         open (unit=552,file='cdccwf_phi.dat')
         open (unit=553,file='cdccwf_chi.dat')
         open (unit=554,file='cdccwf_ranks.dat')
-        do acdcc=1, incdcc%nchmax
+        do acdcc=1, n2ch%max
           write(552,*) acdcc
           write(553,*) acdcc
-          write(554,*) incdcc%n(acdcc)
+          write(554,*) incdcc%n(n2ch%a3b(acdcc))
 
-         do ie=1, incdcc%n(acdcc)
+         do ie=1, incdcc%n(n2ch%a3b(acdcc))
           do ira=1,nrcc
              write(553,*) cdccwf_thox_chi(ira,indexthox(ie,acdcc))
           end do
