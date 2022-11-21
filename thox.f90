@@ -180,6 +180,8 @@ c *** Output trace
 
 
       if (cdccwf) call alpha_cdcc_in()
+      if (cdccwf) call alpha3b_in()
+      if (cdccwf) call abar_cdcc()
 
 
 c *** Radial grid (quadratures?)
