@@ -661,6 +661,7 @@ c -----------------------------------------------------
      &  rstart,nr,wf,phase,smat,method,info)
 
       case(5)     ! R-matrix method (P. Desc. subroutine)
+        write(0,*)'calling scchcc_rmat'
         call schcc_rmat(nch,ecm,zp*zt,inc,ql,factor,hcm,
      &  rstart,nr,wf,phase,smat,info,nlag,ns)
 
@@ -760,7 +761,7 @@ c -----------------------------------------------------
      &  rstart,nr,wf,phase,smat,method,info,einc,icc)
 
       case(5)     ! R-matrix method (P. Desc. subroutine)
-      write (0,*) 'R-matrix not properly implemented STOP'
+!      write (0,*) 'R-matrix not properly implemented STOP'
 !      STOP
         call schcc_rmat_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
      &  rstart,nr,wf,phase,smat,info,nlag,ns,einc,icc)
@@ -781,8 +782,6 @@ c NEW in v2.5 (mar/17): write CDCC wf
 !       if (cdccwf) call write_cdcc_wf(icc,wf,nch,nr)
 ! JLei for IAV input
       ninc=count(incvec)
-      write(0,*)'ninc=',ninc
-!      if (cdccwf) call cdcc_wf_thoxin(icc,wf,nch,nr)
       if (cdccwf) call cdcc_wf_thoxin(icc,incvec,ninc,nch,nr) 
 
 c ...................................

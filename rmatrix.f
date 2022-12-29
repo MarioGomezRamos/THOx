@@ -151,9 +151,7 @@ c  cf(nwf1,nwf2,nc)=complex array with the wave function
       nclo=0
       cu=0
       cfp=0
-!!!
-!      write(*,*)'lmax,twf,q=',lmax,twf,qk(1:nch)
-!!!
+
 c Stores Coulomb and Whittaker functions
       do 2 i1=1,nch
       l=lval(i1)

@@ -700,7 +700,8 @@ c *** Interpolation of coupling matrix in Lagrange mesh
 !      enddo 
       call rmatrix(nch,ql,kch,eta,rmax,nlag,ns,cpot,cu,nmax,nch,
      &             nopen,twf,cf,nmax,nch,ninc,nvc,0,cpnl)
-
+     
+     
        smat(1:nopen)=cu(1:nopen,inc)*sqrt(kch(inc)/kch(1:nopen))
 
        do ich=1,nch     
@@ -3674,6 +3675,16 @@ c To make the wfs real in the single-channel case:
           enddo !is (final channel)
       endif
 
+!!!! TEST
+      if (1>0)then
+          do ir=1,nr
+!          write(91,*)'# Initial chan =>  Final chan'
+!          write(91,'(2i7)') inc,is
+          write(91,'(1f8.3,10g16.6)')rvec(ir), (wf(ich,ir),ich=1,5)
+          enddo !is (final channel)
+      endif
+
+
       end subroutine
 
 c -------------------------------------------------------------
@@ -5531,6 +5542,8 @@ c Re-orthogonalize solution vectors ....................................
 
        y(:,:,ir)=y0(:,:) ! new (orthogonolized) solution at ir
 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if (debug) then
       write(*,*)'y0 (after) at ir,r=',ir,r
       do ich=1,min(15,nch)
@@ -5546,6 +5559,7 @@ c Re-orthogonalize solution vectors ....................................
      &      / abs(dot_product(y0(:,ich),y0(:,ich))), ich=1,nch) 
         enddo
       endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      
 
        call cpu_time(tf)
        torto=torto+tf-ti
@@ -5555,8 +5569,8 @@ c Re-orthogonalize solution vectors ....................................
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!! TEST
-      if (debug) then
-       write(91,'(5x,1f6.3,3x,50g14.5)') r,(abs(y(1,ich,ir)),ich=1,nch)
+      if (1>0) then
+       write(91,'(5x,1f7.3,3x,50g14.5)') r,(y(1,ich,ir),ich=1,nch)
       endif       
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -5946,12 +5960,6 @@ c Alternative Gramm-Schmitt orthogonalization of solution vectors
 !         call gsorto(yp,a,nch)
 !      end if 
 
-!!!!!!!!!!!!!!!!!!!!!!!!! TEST
-      if (debug) then
-       write(91,'(5x,1f6.3,3x,50g14.5)') r,(abs(y(1,ich,ip)),ich=1,nch)
-      endif       
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 
 c
 c wm <- w0 <- wp 
@@ -5978,11 +5986,6 @@ c
       enddo
        call cpu_time(finish)
        tmatch=tmatch+finish-start
-       
-
-
-      if (debug) write(klog,'(2f10.3,3x,10g14.6)') ecm,z12,ql(1),
-     &  (phase(ich),ich=1,nch) 
 
       call flush(6)
       end subroutine schcc_ena_MGR
@@ -5991,7 +5994,7 @@ c
 
 
 c ------------------------------------------------------------------
-c   Solve multichannel Schrodinger equation callint R-matrix routines
+c   Solve multichannel Schrodinger equation calling R-matrix routines
 c   by P. Descouvemont CPC XXX XXX
 c
 c   NLAG = nb. of Laguerre bases per radial interval
@@ -6009,6 +6012,7 @@ c   -----------------------------------------------------------------
       logical :: iftr,twf,info
 c     -------------------------------------------------------------
       integer :: ir,nma,nch,inc,nr,nmax,icc,ninc,i,ql(nch)
+      integer, parameter  :: ncp2=0  ! nb of non-local couplings
       integer*4, parameter:: nr2=0
       integer*4 :: nlag,ns,ich,ichp,nopen
       integer*4,allocatable:: nvc(:)
@@ -6023,6 +6027,7 @@ c     -----------------------------------------------------------
       complex*16 :: cfival,caux,phc,ph2
       complex*16 :: cpot(nlag*ns,nch,nch),cu(nch,nch),faux(nr)
       complex*16, allocatable:: cpnl(:,:,:)    
+!      complex*16:: cpnl(0,nch,nch)   
       complex*16 cfx(nch)
       complex*16, intent(out):: wf(nch,nr)
       complex*16 :: phase(nch),smat(nch) !,svel(nch)
@@ -6034,8 +6039,8 @@ c     For S-matrix diagonalization
       parameter (sort = 1)
       complex*16:: umat(nch,nch),evec(nch)
       real*8 :: eph(nch)
-      real*8 :: WORK(NCH,NCH),
-     &          WORK1(NCH),WORK2(3*NCH)
+!      real*8 :: WORK(NCH,NCH),
+!     &          WORK1(NCH),WORK2(3*NCH)
       real*8 :: big,small
       big=huge(big)
       small=epsilon(small)
@@ -6084,21 +6089,23 @@ c *** Interpolation of coupling matrix in Lagrange mesh
     4 continue
       enddo !ich
       enddo !ichp
-      deallocate(vcoup) ! not needed any more ?????????????
+!      deallocate(vcoup) ! not needed any more ?????????????
 
 ! TEST
 !      do ir=1,nmax
-!        write(1,'(1f8.3,2x,50f12.8)')zrma(ir),cpot(ir,1,1)
+!        write(0,'(1f8.3,2x,50f12.8)')zrma(ir),cpot(ir,1,1)
 !      enddo
 !      do ir=1,nr
 !        write(2,'(1f8.3,2x,50f12.8)')rvec(ir),ccmat(1,1,ir)
 !      enddo 
-      call rmatrix(nch,ql,kch,eta,rmax,nlag,ns,cpot,cu,nmax,nch,
-     &             nopen,twf,cf,nmax,nch,ninc,nvc,0,cpnl)
 
+      call rmatrix(nch,ql,kch,eta,rmax,nlag,ns,cpot,cu,nmax,nch,
+     &             nopen,twf,cf,nmax,nch,ninc,nvc,ncp2,cpnl)
+
+  
        do ich=1,ninc
-       i=nvc(ich)
-       smat(1:nopen)=cu(1:nopen,i)*sqrt(kinc/kch(1:nopen))
+       inc=nvc(ich)
+       smat(1:nopen)=cu(1:nopen,inc)*sqrt(kinc/kch(1:nopen))
        smats(icc,inc,1:nopen)=smat(1:nopen) 
        enddo
 
