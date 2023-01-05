@@ -3671,12 +3671,12 @@ c To make the wfs real in the single-channel case:
           do is=1,nch
           write(85,*)'# Initial chan =>  Final chan'
           write(85,'(2i7)') inc,is
-          write(85,'(6g16.6)') (wf(1,ir),ir=1,nr)
+          write(85,'(6g16.6)') (wf(is,ir),ir=1,nr)
           enddo !is (final channel)
       endif
 
 !!!! TEST
-      if (1>0)then
+      if (0>1)then
           do ir=1,nr
 !          write(91,*)'# Initial chan =>  Final chan'
 !          write(91,'(2i7)') inc,is
