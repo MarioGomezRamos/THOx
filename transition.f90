@@ -8,14 +8,16 @@ c  -----------------------------------------------------------------------------
       subroutine transition
       use xcdcc
       use sistema
-      use wfs, only:energ,idx
+      use wfs, only:energ,idx,rvec
       use ptpots
       use globals
       use channels
       use memory
+      use potentials, only: vcl
       implicit real*8 (a-h,o-z)
       logical skip,writeff
       integer qcmin,qcmax,kcmax,coups!,lambmax
+      integer lgs
 c     -------------------------------------------------------------------------------
       character*5:: jpi
       character*3:: jname
@@ -33,6 +35,14 @@ c changed to complex in v2.3
       complex*16 xi,pot,xsum, xsumn,xsumc
 !      parameter(Kmax=6,xKrot=0.d0,nkmax=300)
       parameter(xKrot=0.d0,nkmax=300)
+      
+c  For adiabatic JT potential
+      complex*16,allocatable:: xintad(:),vadnorm(:)
+      complex*16 :: fauxad
+      complex*16 :: xsumad
+      real*8     ::xsumnad
+      real*8,allocatable:: vclquad(:)
+      
 c     ------------------------------------------------------------------------------
 
 ! v0.6c
@@ -164,6 +174,7 @@ c *** Radial grids ------------------------------------------------------------
       endif
       allocate(xquad(nquad),wquad(nquad),rquad(nquad))
       allocate(xintgn(nquad),xintgc(nquad)) ! AMoro
+      allocate(xintad(nquad),vclquad(nquad),vadnorm(nquad)) ! adiabatic
       a=-1.d0
       b=1.d0
       call gauleg(a,b,xquad,wquad,nquad)
@@ -171,7 +182,7 @@ c *** Radial grids ------------------------------------------------------------
       rquad=radmax*0.5d0*(1.d0+xquad)
       rvecmax=coef*radmax+rmax
       nr=nint((rvecmax-rvecin)/drvec)
-      nrin=nint(radmax/hin)
+
       allocate(rfrag(nr))
       allocate(rvin(nrin))
       do irvec=1,nr
@@ -209,6 +220,19 @@ c *** Radial grids ------------------------------------------------------------
 
 c *** Interpolate projectile wfs at quadrature points
       call wf2quad()
+      
+c *** Interpolate projectile v+c potential at quadrature points
+! Assuming single-channel and only central potential!!!!!!!!!!!!!!!!!!!
+      alpha=0.0
+      do iq=1,nquad
+      raux=rquad(iq)
+      lgs=jpiset(1)%lsp(1) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! GENERALIZE FOR MULTICHANNEL!!!!!!!!!!!!
+!      write(0,*) lgs,nr,vcl(lgs,1), size(vcl(lgs,:))
+      faux=fival(raux,rvec,vcl(lgs,:),size(rvec),alpha) ! R(r)
+!      faux=FFC4((raux-rmin)/dr,yvp,nr)
+      vclquad(iq)=faux 
+      write(95,'(1f8.3,2x,100g14.6)')raux,faux !,frad(jset,ie,iq,ich)
+      enddo ! iq=quadrature point      
 
 
 c *** Set limits for quantum numbers & multipoles ----------------------------------
@@ -262,6 +286,8 @@ c commented by AMoro, to save memory
       Ff=0.d0
       potQKn=0d0; potQKc=0d0
       rmat=0d0
+
+
 
        
       write(*,'(/,2x,"o V^{K,Q}(r,R) ",$)')
@@ -407,7 +433,7 @@ c ---------------------------------------------------------
       id2=idx(n,ie2)
       nff=nff+1 !number of FF
       do irad2=1,nrad2
-		do ik=1,NK
+      do ik=1,NK
         i=pk(ik)%i 
 		j=pk(ik)%f
         k=pk(ik)%k
@@ -418,6 +444,8 @@ c ---------------------------------------------------------
 !  radial integral: R(ik)=f*V(K,Q)*f'
         xsumn=(0.d0,0.d0)
         xsumc=(0.d0,0.d0)
+        xsumad=0.
+        xsumnad=0.
         if (abs(rmatc).lt.1e-5.and.abs(rmatn).lt.1e-5) goto 1200
       
 !        ui=>frad(m,ie1,:,i)
@@ -428,9 +456,20 @@ c ---------------------------------------------------------
       vmon=0d0
 ! AMM: frad(j) should be conjugate!! (fixed Sept 16)  
 !      fprod=frad(m,ie1,iquad,i)*frad(n,ie2,iquad,j) ! i -> j = <j | V | i> 
-      fprod=conjg(frad(n,ie2,iquad,j))*frad(m,ie1,iquad,i) ! i -> j = <j | V | i> 
+      fprod=conjg(frad(n,ie2,iquad,j))*frad(m,ie1,iquad,i) ! i -> j = <j | V | i>
+      if (irad2.eq.1) 
+     & write(94,*) rquad(iquad),real(frad(m,ie1,iquad,i)), real(fprod)  
       if(l.eq.nq) then
       xintgn(iquad)=fprod*potQKn(iquad,irad2,nq,k)*xrad2(irad2)**l
+
+
+      if ((m.eq.n).and.(ie1.eq.ie2).and.(n.eq.1).and.(k.eq.0)) then 
+! AMM: For adiabatic JT potential
+      xintad(iquad)=fprod*vclquad(iquad)*((
+     &              potQKn(iquad,irad2,nq,k)+potQKc(iquad,irad2,nq,k))
+     &              *xrad2(irad2)**l-VCOUL(xrad2(irad2),zp,zt,Rcc))
+      vadnorm(iquad)=fprod*vclquad(iquad)
+      endif
 
 c subtract projectile-target monopole Coulomb
       if ((nq.eq.0).and.zp*zt.gt.1e-3.and.k.eq.0.and.ncoul.ne.1)
@@ -443,6 +482,7 @@ c subtract projectile-target monopole Coulomb
      & (potQKc(iquad,irad2,nq,k)*xrad2(irad2)**l-vmon)
       
       else 
+!      write(0,*)'l,nq=',l,nq
       xintgn(iquad)=fprod*
      .potQKn(iquad,irad2,nq,k)*xrad2(irad2)**l*
      .(coefc*rquad(iquad))**(nq-l)
@@ -453,10 +493,29 @@ c subtract projectile-target monopole Coulomb
       endif
       xsumn=xsumn + xintgn(iquad)*wquad(iquad)
       xsumc=xsumc + xintgc(iquad)*wquad(iquad)
+      
+! ADIABATIC      
+      if ((m.eq.n).and.(ie1.eq.ie2).and.(n.eq.1).and.(k.eq.0)) then 
+      xsumad=xsumad   +  xintad(iquad)*wquad(iquad)
+      xsumnad=xsumnad + vadnorm(iquad)*wquad(iquad)
+      !if (irad2.eq.1) write(0,*)iquad,vadnorm(iquad)
+      if (irad2.eq.1) write(0,*)iquad,xsumnad*0.5d0*radmax
+      endif 
+      
       enddo ! iquad
+     
 
 1200  fauxn=rmatn*xsumn*dsqrt(2.d0*dble(k)+1.d0)*0.5d0*radmax
       fauxc=rmatc*xsumc*dsqrt(2.d0*dble(k)+1.d0)*0.5d0*radmax
+      
+      
+! ADIABATIC      
+      if ((m.eq.n).and.(ie1.eq.ie2).and.(n.eq.1).and.(k.eq.0)) then 
+!      write(0,*)'xsumna=',xsumnad
+      xsumad=xsumad/xsumnad ! divide by norm <phi|Vbx| phi> 
+      fauxad=rmatn*xsumad*dsqrt(2.d0*dble(k)+1.d0)!*0.5d0*radmax
+      write(999,'(1f10.3,2g16.6)') xrad2(irad2),fauxad
+      endif
       
 ! April 2019: only diagonal nuclear couplings for coups=2
       if (coups.eq.2.and.(ie1.ne.ie2.or.m.ne.n)) fauxn=0 

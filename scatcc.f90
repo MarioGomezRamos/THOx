@@ -451,9 +451,9 @@ c ... Avoid pi jumps in phase-shifts
 !!!! Diagnostic TEST PHASE SHIFT !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (ie.eq.1) then
         written(45)=.true.
-        write(45,205)jpi(jtot,partot),inc,ql(1:nchan)
+        write(45,205)jpi(jtot,partot),inc,min(ql(1:nchan),10)
 205     format("#Phase-shifts for J/pi=",a5,"  Inc. chan.=",
-     &         i3, " ql=",5i3)
+     &         i3, " ql=",10i3)
         endif
         write(45,'(1f6.3,2x,10g14.5)') ecm, (phase(ich),ich=1,nchan)
 !        write(46,'(1f6.3,2x,10f12.5)') ecm, 
@@ -485,9 +485,9 @@ c ... Avoid pi jumps in phase-shifts
 !     &    smat(ich)
 !        enddo
 
-        write(500,200)jpi(jtot,partot),ecm,inc,ql(1:nchan)
+        write(500,200)jpi(jtot,partot),ecm,inc,ql(1:min(nchan,10))
 200     format("#WF for J/pi=",a5," Ecm=",1f7.3," MeV  Inc. chan.=",i3,
-     &          " ql=",5i3)
+     &          " ql=",10i3)
 
         phc=exp(ci*cph(linc))  
         do ir=1,nr
