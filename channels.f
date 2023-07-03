@@ -301,11 +301,13 @@ c-----------------------------------------------------------------------
         integer :: ne
         integer :: jset,ie,acdcc
 
-        exmax=0
-        do jset=1,jpsets
-          ne=jpiset(jset)%nex
-          exmax=max(exmax,ne)
-        end do
+C       exmax=0
+C       do jset=1,jpsets
+C         ne=jpiset(jset)%nex
+C         exmax=max(exmax,ne)
+C       end do
+
+        exmax=99
 
          allocate(indexthox(1:exmax,1:n2ch%max))
          indexthoxmax=0

@@ -2,10 +2,10 @@
       use cdccchannels
       implicit none
 
-      complex*16, dimension(:,:,:),allocatable :: cdccwf_thox
+C     complex*16, dimension(:,:,:),allocatable :: cdccwf_thox
       complex*16, dimension(:,:),allocatable :: cdccwf_thox_phi
       complex*16, dimension(:,:),allocatable :: cdccwf_thox_chi
-      complex*16, dimension(:,:,:),allocatable :: cdccwf_NEB
+C     complex*16, dimension(:,:,:),allocatable :: cdccwf_NEB
 
 
       contains
@@ -16,12 +16,12 @@
         use xcdcc,only:nquad,frad,rquad,nrcc,rvcc,parch
        implicit none
 
-       allocate(cdccwf_thox(1:nquad,1:nrcc,1:indexthoxmax))  ! note that rvcc(ir)=dble(ir-1)*hcm
-       allocate(cdccwf_NEB(1:nquad,1:nrcc,1:incdcc%nchmax))  ! note that rvcc(ir)=dble(ir-1)*hcm
+C      allocate(cdccwf_thox(1:nquad,1:nrcc,1:indexthoxmax))  ! note that rvcc(ir)=dble(ir-1)*hcm
+C      allocate(cdccwf_NEB(1:nquad,1:nrcc,1:incdcc%nchmax))  ! note that rvcc(ir)=dble(ir-1)*hcm
        allocate(cdccwf_thox_phi(1:nquad,1:indexthoxmax))
        allocate(cdccwf_thox_chi(1:nrcc,1:indexthoxmax))
-       cdccwf_thox=0.0d0
-       cdccwf_NEB=0.0d0
+C      cdccwf_thox=0.0d0
+C      cdccwf_NEB=0.0d0
        cdccwf_thox_phi=0.0d0
        cdccwf_thox_chi=0.0d0
 
@@ -58,6 +58,8 @@ c *** ------------------------------------------------------------
       integer :: inc
       integer,dimension(ninc) :: inc_ich
       integer :: ain
+      integer :: ijpset, njpsets
+      integer,dimension(1:99) :: jpsetvalue
       
       
       do inc=1, ninc 
@@ -106,15 +108,36 @@ c *** ------------------------------------------------------------
        jlp   =jptset(icc)%jlp(ich)
        parp  = parch(iex)
 
-
+       
+       njpsets=0
+       jpsetvalue=0
        do jset=1, jpsets
         ne=jpiset(jset)%nex
         nchan=jpiset(jset)%nchan
         xjtot=jpiset(jset)%jtot
         iparity=jpiset(jset)%partot
-        if (nint(2.*xjtot)== nint(2.*jp) .and. iparity == parp) exit
+        if (nint(2.*xjtot)== nint(2.*jp) .and. iparity == parp) then 
+           njpsets=njpsets+1
+           jpsetvalue(njpsets) = jset
+        end if 
        end do
-
+       
+       ne=0
+       do ijpset=1,njpsets
+        ne=jpiset(ijpset)%nex+ne 
+       end do 
+C      if (ne /= nch) then 
+C       write(*,*) "error in channel recouping"
+C       write(*,*) "ne=",ne,"nch=",nch,"njpsets=",njpsets
+C       stop
+C      end if 
+     
+       ne=0
+C      write(319,*) "ich=",ich,"njpsets=",njpsets
+       do ijpset=1, njpsets    
+       ne=jpiset(ijpset)%nex+ne 
+       if(ich>ne .and. njpsets>1) cycle 
+       jset= jpsetvalue(ijpset)
 
        nchan=jpiset(jset)%nchan
        if(nchan/=1) stop "error in channel couplings"
@@ -123,10 +146,16 @@ c *** ------------------------------------------------------------
          ne=jpiset(ii)%nex
          nst=nst+ne
        end do
+       
+       
 
+C      write(321,*)  "ich=",ich, "ie=",ie,"iex=",iex, "nst=",nst
 
-
+       if (nst>=iex) cycle     
+C      write(320,*)  "ich=",ich, "ie=",ie,"iex=",iex, "nst=",nst
        if (iex>nst) ie=iex-nst
+       
+            
 
 
        do alphacdcc=1,incdcc%nchmax
@@ -136,10 +165,11 @@ c *** ------------------------------------------------------------
      +  .and. lam == incdcc%lam(alphacdcc)) exit
        end do
 
-       incdcc%n(alphacdcc)= jpiset(jset)%nex
-
-C       write(322,*) "n=",incdcc%n(alphacdcc)
-
+C      incdcc%n(alphacdcc)= jpiset(jset)%nex
+       if(njpsets>1) incdcc%n(alphacdcc) = iex
+       if(njpsets==1) incdcc%n(alphacdcc) = ie
+       write(319,*) "alphacdcc=",alphacdcc,"iex=",iex,"jset=",jset,
+     +              "jpsets=",jpsets
 
 
        if (alphacdcc > incdcc%nchmax) stop "error in channels"
@@ -156,34 +186,45 @@ C       write(322,*) "n=",incdcc%n(alphacdcc)
 
 
 
-       do irbx=1,nquad
-         do ira=1,nrcc
-
-         phi=frad(jset,ie,irbx,nchan)/rquad(irbx)
-         chi=wfcdcc(inc,ich,ira)
-
-         cdccwf_thox(irbx,ira,indexthox(ie,abar(ain,alphacdcc)))
-     +          =phi*chi
-         end do
-       end do
-
+C      do irbx=1,nquad
+C        do ira=1,nrcc
+C
+C        phi=frad(jset,ie,irbx,nchan)/rquad(irbx)
+C        chi=wfcdcc(inc,ich,ira)
+C
+C        cdccwf_thox(irbx,ira,indexthox(ie,abar(ain,alphacdcc)))
+C    +          =phi*chi
+C        end do
+C      end do
+C
 c-------new out put set
-       write(186,*) "indexthox=", indexthox(ie,abar(ain,alphacdcc)),
-     +      "n2ch=",abar(ain,alphacdcc)
+C      write(186,*) "indexthox=", indexthox(ie,abar(ain,alphacdcc)),
+C    +      "n2ch=",abar(ain,alphacdcc)
        do irbx=1,nquad
          
         
          
          phi=frad(jset,ie,irbx,nchan)/rquad(irbx)
-         cdccwf_thox_phi(irbx,indexthox(ie,abar(ain,alphacdcc)))=phi
+       if(njpsets>1) cdccwf_thox_phi(irbx,
+     +               indexthox(iex,abar(ain,alphacdcc)))=phi
+       if(njpsets==1) cdccwf_thox_phi(irbx,
+     +               indexthox(ie,abar(ain,alphacdcc)))=phi
+         
 
        end do
 
        do ira=1,nrcc
          chi=wfcdcc(inc,ich,ira)
-         cdccwf_thox_chi(ira,indexthox(ie,abar(ain,alphacdcc)))=chi
+         if(njpsets>1) cdccwf_thox_chi(ira,
+     +                 indexthox(iex,abar(ain,alphacdcc)))=chi
+         if(njpsets==1)cdccwf_thox_chi(ira,
+     +                 indexthox(ie,abar(ain,alphacdcc)))=chi
 
        end do
+       
+       
+       
+       end do  ! ijpset
 
 
 
