@@ -57,7 +57,7 @@ c *** ------------------------------------------------------------
       
       integer :: inc
       integer,dimension(ninc) :: inc_ich
-      integer :: ain
+      integer :: ain,nrank
       integer :: ijpset, njpsets
       integer,dimension(1:99) :: jpsetvalue
       
@@ -78,7 +78,6 @@ c *** ------------------------------------------------------------
 
 
 
-      write(186,*) "nch=", nch 
 
       partot=jptset(icc)%partot
       jtot  =jptset(icc)%jtot
@@ -122,9 +121,9 @@ c *** ------------------------------------------------------------
         end if 
        end do
        
-       ne=0
+       nrank=0
        do ijpset=1,njpsets
-        ne=jpiset(ijpset)%nex+ne 
+        nrank=jpiset(ijpset)%nex+nrank 
        end do 
 C      if (ne /= nch) then 
 C       write(*,*) "error in channel recouping"
@@ -133,27 +132,27 @@ C       stop
 C      end if 
      
        ne=0
-C      write(319,*) "ich=",ich,"njpsets=",njpsets
        do ijpset=1, njpsets    
        ne=jpiset(ijpset)%nex+ne 
-       if(ich>ne .and. njpsets>1) cycle 
+C      if(ich>ne .and. njpsets>1) cycle !!!!!!?????????? do not understand why I need this ?????
        jset= jpsetvalue(ijpset)
+       
+       
 
        nchan=jpiset(jset)%nchan
        if(nchan/=1) stop "error in channel couplings"
        nst=0
        do ii=1, jset-1
-         ne=jpiset(ii)%nex
-         nst=nst+ne
+         nst=nst+jpiset(ii)%nex
        end do
-       
-       
 
-C      write(321,*)  "ich=",ich, "ie=",ie,"iex=",iex, "nst=",nst
 
+
+C      write(333,*)  "ich=",ich, "iex=",iex, "nst=",nst
+       if (iex>ne) cycle 
        if (nst>=iex) cycle     
-C      write(320,*)  "ich=",ich, "ie=",ie,"iex=",iex, "nst=",nst
        if (iex>nst) ie=iex-nst
+C      write(320,*) "inc=",inc,"ich=",ich,"ie=",ie,"iex=",iex,"nst=",nst
        
             
 
@@ -165,11 +164,10 @@ C      write(320,*)  "ich=",ich, "ie=",ie,"iex=",iex, "nst=",nst
      +  .and. lam == incdcc%lam(alphacdcc)) exit
        end do
 
-C      incdcc%n(alphacdcc)= jpiset(jset)%nex
-       if(njpsets>1) incdcc%n(alphacdcc) = iex
-       if(njpsets==1) incdcc%n(alphacdcc) = ie
-       write(319,*) "alphacdcc=",alphacdcc,"iex=",iex,"jset=",jset,
-     +              "jpsets=",jpsets
+
+       incdcc%n(alphacdcc)=nrank
+C      write(319,*) "alphacdcc=",alphacdcc,"iex=",iex,"ie=",ie,
+C    +              "nex=",jpiset(jset)%nex
 
 
        if (alphacdcc > incdcc%nchmax) stop "error in channels"
