@@ -509,7 +509,7 @@ c ... Avoid pi jumps in phase-shifts
 c     **********************************************************************
 c Diagonalize S-matrix to get eigenphases.
 c
-!      write(0,*)'ie,diagonalize S-matrix=, ifcont',ie,ifcont
+      write(0,*)'ie,diagonalize S-matrix=, ifcont',ie,ifcont
 
       if (ifcont) then
 !      write(0,*)'diagonalize S-matrix'
@@ -3949,7 +3949,7 @@ c
 !      enddo
 
       eph(:)=0
-!      write(0,*)'matching3_eph: calling seigensystem'
+      write(0,*)'matching3_eph: calling seigensystem'
       call SEigensystem(nopen,smat,nopen,evec, Umat,nopen, sort)
 
 !       call dsyev('v','l',nopen,smat,nopen,work1,work2,3*nopen,

@@ -973,6 +973,8 @@ c rac(ria,rib,ric,rid,rie,rif)= w(abcd;ef)  (B&S)
        corels=0d0
        if (s1.ne.s1p) return
        if (l.ne.lp) return
+! Fixed bug by AMoro (Thanks to Shin Watanabe!) 
+       if (s2.ne.s2p) return
 
       J2MIN = MAX(ABS(L-S2),ABS(S1-JT),ABS(LP-S2))
       J2MAX = MIN(    L+S2 ,    S1+JT ,    LP+S2 )
