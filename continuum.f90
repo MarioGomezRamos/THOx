@@ -400,7 +400,7 @@ c     ........................................................
 c ... Write WFS
       if (writewf) then
       write(50,400) jpi(jtot,partot), nchan,inc,energy !, ql(1:nchan)
-400   format("# Continuum WFS for Jp=",a5,"; Channels=",i2,
+400   format(5x,"# Continuum WFS for Jp=",a5,"; Channels=",i2,
      & " ;  Inc. chan.=",i2, ' Uniform Ecm=',l1)
       write(50,'(1x,i4,2x,2f8.4)') nr,dr,r0
       if (energy) then

@@ -80,7 +80,6 @@ c initialize -------------------------------------------------
 c     -----------------------------------------------------------
       rewind(kin); 
       read(kin,nml=xsections)
-       write(0,*)'reading xsections namelist'
 ! Commented nov/19     
 !      if ((.not.doublexs).and.(.not.triplexs)) return
 

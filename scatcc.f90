@@ -468,7 +468,7 @@ c ... Avoid pi jumps in phase-shifts
         written(500)=.true.
         if (ie.eq.1) then
         write(500,400) jpi(jtot,partot), nchan,inc,energy !, ql(1:nchan)
-400     format("# Continuum WFS for Jp=",a5,"; Channels=",i2,
+400     format(5x,"# Continuum WFS for Jp=",a5,"; Channels=",i2,
      & " ;  Inc. chan.=",i2, ' Uniform Ecm=',l1)
         write(500,'("#",1x,i5,2x,2f8.4)') nr,dr,r0
         if (energy) then
@@ -3949,7 +3949,7 @@ c
 !      enddo
 
       eph(:)=0
-      write(0,*)'matching3_eph: calling seigensystem'
+!      write(0,*)'matching3_eph: calling seigensystem'
       call SEigensystem(nopen,smat,nopen,evec, Umat,nopen, sort)
 
 !       call dsyev('v','l',nopen,smat,nopen,work1,work2,3*nopen,
