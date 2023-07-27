@@ -520,7 +520,7 @@ c
 !      allocate (saux(nopen,nopen),Umat(nopen,nopen),evec(nopen))
 !      saux(1:nopen,1:nopen)=smat(1:nopen,1:nopen)
       eph(:)=0
-      call SEigensystem(nopen,smat,nopen,evec, Umat,nopen, sort)
+      call SEigensystem(nopen,smat,nch,evec, Umat,nopen, sort)
 
       do ich=1,nopen
          if(abs(evec(ich)).gt.small) eph(ich)=(0.,-0.5)*LOG(evec(ich))
@@ -3950,7 +3950,9 @@ c
 
       eph(:)=0
 !      write(0,*)'matching3_eph: calling seigensystem'
-      call SEigensystem(nopen,smat,nopen,evec, Umat,nopen, sort)
+! change 3rd argument from open to nch
+!      call SEigensystem(nopen,smat,nopen,evec, Umat,nopen, sort)
+      call SEigensystem(nopen,smat,nch,evec, Umat,nopen, sort)
 
 !       call dsyev('v','l',nopen,smat,nopen,work1,work2,3*nopen,
 !     &              ifail)
@@ -6143,7 +6145,7 @@ c
 !      enddo
 
       eph(:)=0
-      call SEigensystem(nopen,smat,nopen,evec, Umat,nopen, sort)
+      call SEigensystem(nopen,smat,nch,evec, Umat,nopen, sort)
 
       do ich=1,nopen
          if(abs(evec(ich)).gt.small) eph(ich)=(0.,-0.5)*LOG(evec(ich))
