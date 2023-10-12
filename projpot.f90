@@ -28,7 +28,7 @@ c
        real*8:: alpha,fival
        parameter(alpha=0.)
        real*8 a13,r,rc,rabs,rcp,rcpabs,raux,aaux
-       real*8:: vcoul,ws,pt,gausspot,gausspotr2
+       real*8:: vcoul,ws,wssq,pt,gausspot,gausspotr2
        real*8:: vlsaux,wsso,gausder,dws,vllaux
        real*8:: vaux,vaux2,vssaux,sqwell
        real*8:: vcpaux,vdef(0:mmultipole)
@@ -185,6 +185,30 @@ c ------------------------------------------------------
      &           ' fm, aso=',f6.3,' fm ',/)
  124       format(7x,'o Spin-spin : Vss(l=0-3)=(',4f8.3,') MeV, Rss=',
      &          f6.3, ' fm, ass=',f6.3,' fm ',/)
+
+
+c ------------------------------------------------------
+        case(6)  ! WS squared
+c ------------------------------------------------------
+           write(*,*)'type=6 => Woods-Saxon squared'
+           write(potname,*) "Woods-Saxon squared"
+c ------------------------------------------------------          
+           write(*,119) potname, Vl0(0:3),r0*a13,a0
+!           if (abs(maxval(Vso(0:3))).gt.0)write(*,122)Vso(0:3),
+!     &      rso*A13,aso !MGR
+
+! 119       format(7x,'o ',a15,"V0(l=0-3)=(",4f8.3,') MeV, R0=',
+!     &           f6.3,' fm, ar=',f6.3,' fm ')
+
+! 120       format(7x,'o Central   : V0(l=0-3)=(',4f8.3,') MeV, R0=',
+!     &           f6.3,' fm, ar=',f6.3,' fm ')
+!     &           ' Rc=',f6.3,' fm ]')
+! 122       format(7x,'o Spin-orbit: Vso=(0:3)',4f8.3,' MeV, Rso=',f6.3, !MGR
+!     &           ' fm, aso=',f6.3,' fm ',/)
+! 124       format(7x,'o Spin-spin : Vss(l=0-3)=(',4f8.3,') MeV, Rss=',
+!     &          f6.3, ' fm, ass=',f6.3,' fm ',/)
+
+
 
 c ------------------------------------------------------
         case(2) !  Posch-Teller
@@ -478,6 +502,10 @@ c .. Square well
 c ... Linear              
            case(11) ! a*r^npow + a0 potential
               vaux=v0*r**npow+ a0   
+c .. WS squred (CENTRAL ONLY)
+           case(6)  ! WS squared
+	     if (abs(v0).gt.1e-6) vaux=wssq(r,v0,rabs,a0)
+
 
 
 	   end select
@@ -749,6 +777,23 @@ c *** Woods-Saxon (volume)
 	  write(0,*)'WS: a too small!'
 	endif
  	end function 
+
+c *** Woods-Saxon SQUARED (volume)
+	function wssq(r,v0,r0,a)
+	implicit none
+	real*8 r,v0,r0,a,wssq,aux,small
+        small=epsilon(small)
+        wssq=0d0
+        if (abs(v0).lt.1e-6) return
+	if (a>1e-6) then
+          aux=exp(-(r-r0)/a)
+          if (aux.lt.small) return
+	  wssq=v0/(1d0+1d0/aux)**2
+	else
+	  write(0,*)'WS Squared: a too small!'
+	endif
+ 	end function 
+
 
 c *** Square well potential
 	function sqwell(r,v0,r0)
