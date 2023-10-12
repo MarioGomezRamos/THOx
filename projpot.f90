@@ -191,7 +191,7 @@ c ------------------------------------------------------
         case(6)  ! WS squared
 c ------------------------------------------------------
            write(*,*)'type=6 => Woods-Saxon squared'
-           write(potname,*) "Woods-Saxon squared"
+           write(potname,*) "WS squared"
 c ------------------------------------------------------          
            write(*,119) potname, Vl0(0:3),r0*a13,a0
 !           if (abs(maxval(Vso(0:3))).gt.0)write(*,122)Vso(0:3),
