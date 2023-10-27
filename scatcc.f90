@@ -999,7 +999,7 @@ c Re-orthogonalize solution vectors
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin)
      & .and.(mod(ir-irmin,norto).eq.0)) then 
 !      if (orto.and.(r.le.rmorto).and.(mod(ir-irmin,norto).eq.0)) then 
-       if (verb.ge.2)write(*,'(5x,"-> orthogonalizing at r=",1f7.2)')r
+       if (verb.ge.4)write(*,'(5x,"-> orthogonalizing at r=",1f7.2)')r
 
         if (debug) then
         write(94,*)'|yp x yp| (before G-S) for ir,r',ir,r
@@ -1381,7 +1381,7 @@ c calculate and store Y=(1-T)W
 c Re-orthogonalize solution vectors
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin)
      & .and.(mod(ir-irmin,norto).eq.0)) then 
-      if (verb.ge.2)write(*,'(5x,"-> orthogonalizing at r=",1f7.2)')r
+      if (verb.ge.4)write(*,'(5x,"-> orthogonalizing at r=",1f7.2)')r
         if (debug) then
         write(94,*)'|yp x yp| (before G-S) for ir,r',ir,r
         do is=2,nch
@@ -2414,7 +2414,7 @@ c Re-orthogonalize solution vectors ....................................
       if (norto.gt.0) then
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin).and.(hort.gt.0)
      & .and.(mod(ir-irmin,norto).eq.0).and.(ir.lt.nr-10)) then 
-        if (verb.ge.2) 
+        if (verb.ge.4) 
      &   write(*,'(5x,"->orthogonalizing at ir,r=",i4,1f7.2)')ir,r
   
       if(1>2) then
@@ -5100,7 +5100,7 @@ c Re-orthogonalize solution vectors
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin)
      & .and.(mod(ir-irmin,norto).eq.0)) then 
 !      if (orto.and.(r.le.rmorto).and.(mod(ir-irmin,norto).eq.0)) then 
-       if (verb.ge.2) 
+       if (verb.ge.4) 
      &   write(*,'(5x,"-> orthogonalizing at r=",1f7.2)')r
 
         if (debug) then
@@ -5536,7 +5536,7 @@ c zm <- z0, wm <-w0
 c Re-orthogonalize solution vectors ....................................
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin).and.(hort.gt.0)
      & .and.(mod(ir-irmin,norto).eq.0).and.(ir.lt.nr-10)) then 
-      if (verb.ge.2) 
+      if (verb.ge.4) 
      &   write(*,'(5x,"->orthogonalizing at ir,r=",i4,1f7.2)')ir,r
   
        call cpu_time(ti)
@@ -5851,7 +5851,7 @@ c calculate and store Y=(1-T)W
 c Re-orthogonalize solution vectors
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin)
      & .and.(mod(ir-irmin,norto).eq.0)) then 
-        if (verb.ge.2) 
+        if (verb.ge.4) 
      &   write(*,*) 'orthogonalizing at ir,r=',ir,r
 
         if (debug) then

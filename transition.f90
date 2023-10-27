@@ -499,7 +499,7 @@ c subtract projectile-target monopole Coulomb
       xsumad=xsumad   +  xintad(iquad)*wquad(iquad)
       xsumnad=xsumnad + vadnorm(iquad)*wquad(iquad)
       !if (irad2.eq.1) write(0,*)iquad,vadnorm(iquad)
-      if (irad2.eq.1) write(0,*)iquad,xsumnad*0.5d0*radmax
+!      if (irad2.eq.1) write(0,*)iquad,xsumnad*0.5d0*radmax
       endif 
       
       enddo ! iquad
