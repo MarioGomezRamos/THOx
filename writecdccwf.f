@@ -123,7 +123,7 @@ c *** ------------------------------------------------------------
        
        nrank=0
        do ijpset=1,njpsets
-        nrank=jpiset(ijpset)%nex+nrank 
+        nrank=jpiset(jpsetvalue(ijpset))%nex+nrank 
        end do 
 C      if (ne /= nch) then 
 C       write(*,*) "error in channel recouping"
@@ -149,8 +149,8 @@ C      if(ich>ne .and. njpsets>1) cycle !!!!!!?????????? do not understand why I
 
 
 C      write(333,*)  "ich=",ich, "iex=",iex, "nst=",nst
-       if (iex>ne) cycle 
-       if (nst>=iex) cycle     
+C      if (iex>ne) cycle 
+C      if (nst>=iex) cycle     
        if (iex>nst) ie=iex-nst
 C      write(320,*) "inc=",inc,"ich=",ich,"ie=",ie,"iex=",iex,"nst=",nst
        
@@ -163,6 +163,8 @@ C      write(320,*) "inc=",inc,"ich=",ich,"ie=",ie,"iex=",iex,"nst=",nst
      +  .and.  nint(2.*jp) == nint(2.*incdcc%j2b(alphacdcc))
      +  .and. lam == incdcc%lam(alphacdcc)) exit
        end do
+       
+C      cycle 
 
 
        incdcc%n(alphacdcc)=nrank
