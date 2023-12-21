@@ -32,7 +32,7 @@
       do i=1,nfun
       ucwf(:,:)=0.
       read(20,*) energy
-      jpiset(iset)%exc(i)=energy
+!      jpiset(iset)%exc(i)=energy
       energ(iset,i)=energy
  
       write(*,'(5x,a,1f8.4,a)') '-> Ext. function with E=',energy, 
@@ -59,7 +59,7 @@ c interpolate in THOx grid
       enddo !ich
 !      write(99,*)r,real(r*wfc(iset,i,1,ir))
       enddo !ir
-      deallocate(ucwf)
+!      deallocate(ucwf)
       enddo !i
 
       
