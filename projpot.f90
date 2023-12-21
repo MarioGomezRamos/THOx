@@ -647,8 +647,9 @@ c Coupling (deformed) potential
         select case(cptype)
              case(0) ! no coupling
 !                       write(*,*)'No coupling cptype=',cptype
-             case(1) ! derivative formfactor
+             case(1,10) ! derivative formfactor
                 vcpaux=-delta*dws(r,v0,raux,aaux)  
+                if (cptype.eq.10) vcpaux=vcpaux*r/(r0*a13)  ! Hamamoto's convention
 
              case(2,3) ! Numerical projection on multipoles
 !             if (ir.eq.1)  
