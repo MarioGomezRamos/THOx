@@ -457,8 +457,8 @@ c ---------------------------------------------------------
 ! AMM: frad(j) should be conjugate!! (fixed Sept 16)  
 !      fprod=frad(m,ie1,iquad,i)*frad(n,ie2,iquad,j) ! i -> j = <j | V | i> 
       fprod=conjg(frad(n,ie2,iquad,j))*frad(m,ie1,iquad,i) ! i -> j = <j | V | i>
-      if (irad2.eq.1) 
-     & write(94,*) rquad(iquad),real(frad(m,ie1,iquad,i)), real(fprod)  
+!      if (irad2.eq.1) 
+!     & write(94,*) rquad(iquad),real(frad(m,ie1,iquad,i)), real(fprod)  
       if(l.eq.nq) then
       xintgn(iquad)=fprod*potQKn(iquad,irad2,nq,k)*xrad2(irad2)**l
 
