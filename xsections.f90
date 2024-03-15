@@ -144,7 +144,7 @@ c *** (zero target spin assumed here!)
       nmi    =2*jpgs+1
       nmfmax =2*maxval(jpiset(:)%jtot)+1
       allocate(famps0(nex,nth,nmi*nmfmax))
-      
+
       if (nex.lt.1) then
          write(*,*)'solvecc: nex<1!'; stop
       endif
@@ -923,8 +923,12 @@ c *** Overlaps between PS's and Scattering states  -----------------------------
       excore =jpiset(iset)%exc(inc) ! core energy
       ic     =jpiset(iset)%cindex(inc)
       if (ic.ne.icore) then
-         if (verb.ge.2)
-     &   write(*,'(4x,"-> skipping core state",i3)')ic 
+         if (ic.eq.abs(icore)) then
+         call solapread(gsolap(iset,:,inc,:),jpiset(iset)%partot,
+     & inc,nsetmax,ncont,jpiset(iset)%jtot,dec,emin+excore)
+         else if (verb.ge.2) then
+         write(*,'(4x,"-> skipping core state",i3)')ic 
+         endif
       cycle
       endif
       
@@ -979,6 +983,7 @@ c *** Overlaps between PS's and Scattering states  -----------------------------
       enddo ! n  (PS within this j/pi set)
       enddo ! inc  (incoming channel)
       enddo ! iset (j/pi set)
+      icore=abs(icore)
      
 c *** -------------- PRINT OVERLAPS FOR TESTING ----------------------------------
       if (verb.ge.3) then
@@ -3110,6 +3115,60 @@ c bilinear interpolation
 !      write(96,'(2i4,5e12.4/)')ixref,iyref,p1,p2,p3,p4,fint2db
       end
 
+c *** ------------------------------------------------------
+c ***  Read overlaps between PS's and scattering states
+c      Read from file g+.n with n=jtot-0.5 for partot>0
+c      and from g-.n for partot<0.
+c      This subroutine is called if icore<0
+c ***  ------------------------------------------------------
+      subroutine solapread(gsolap,partot,inc,nsetmax,ncont,jtot,dec,e0)
+      implicit none
+      integer:: partot,inc,nsetmax,ncont
+      real*8:: jtot, dec, e0
+      complex*16:: gsolap(nsetmax,ncont)
+      integer:: i, ie, ich
+      integer:: nk, nset
+      real*8:: eminr, emaxr, alpha, greal(inc), gimag(inc)
+      real*8, allocatable:: ein(:)
+      complex*16:: cfival
+      complex*16, allocatable:: gvec(:)
+      character*40 filename, line
 
+
+      alpha=0
+
+      if (partot.eq.1) then
+      write(filename,'("g+.",i0)') int(jtot-0.5) 
+      else 
+      write(filename,'("g-.",i0)') int(jtot-0.5) 
+      endif
+      write(*,*) 'Reading from ', filename
+      open(52,file=trim(filename))
+      read(52,'(a)') line
+      read(line,*) eminr, emaxr, nk, nset
+      
+      if (nset>nsetmax) then
+      write(*,*)'*ERROR* nset>nsetmax:',nset,'>',nsetmax
+      stop
+      endif
+      
+      allocate(ein(nk),gvec(nk))
+      
+      do i=1,nset
+      read(52,*) line
+      do ie=1,nk
+      read(52,*) ein(ie),(greal(ich),gimag(ich),ich=1,inc)
+      gvec(ie)=cmplx(greal(inc),gimag(inc))
+      end do !ie
+ 
+!    interpolate in THOx grid    
+      do ie=1,ncont
+      gsolap(i,ie)=cfival(e0+(ie-1)*dec,ein(:),gvec(:),nk,alpha)
+      enddo !ie
+      enddo !i
+
+      close(52)
+      return
+      end subroutine
 
 
