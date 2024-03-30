@@ -217,9 +217,9 @@ c1     tfac=(smate(ik,inc)-1.)/(0.,2.) ! two-body elastic t-matrix
 c1      if (tres) yfac=conjg(tfac)              ! Fresco choice
 !      if (tres) yfac=yfac*sin(psh_el(ik)*pi/180.) ! Alt. choice by AMM Sept 16
 
-      yfac=exp(iu*psh_el(ik)*pi/180.)*phc  ! NEW
-      tfac=(smate(ik,inc)-1.)/(0.,2.)  ! two-body elastic t-matrix 
-      if (tres)         yfac=tfac            ! Fresco recommendation for resonances
+      yfac=exp(iu*psh_el(ik)*pi/180.)*phc    
+      tfac=(smate(ik,inc)-1.)/(0.,2.)        ! two-body elastic t-matrix 
+      if (tres)         yfac=tfac*phc        ! Fresco recommendation for resonances
       if (bastype.eq.4) yfac=1.0             ! Real multichan wfs
 
       binset(iset)%pshel(ib,ik)=psh_el(ik)*pi/180.
@@ -313,7 +313,7 @@ c     ----------
       enddo
       deallocate(ccmat)
       ENDIF 
-!.........................................................................
+!..................... END BINCC FROM FRESCO.............................
 
 
       write(*,100) ib,ebin,ei,ef,nchan,inc,bnorm,rms
