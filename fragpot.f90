@@ -531,11 +531,11 @@ c add central part to fragment-target potential
               wcaux(ir)=fival(raux,rvaux,weaux,np,alpha)
              enddo!
 !!!
-            vfrag (1:nr,2)=vfrag (1:nr,2)+3.5449/sqrt(5.)*vcaux(1:nr)
-            vfragi(1:nr,2)=vfragi(1:nr,2)+3.5449/sqrt(5.)*wcaux(1:nr)
-
-!!           vfrag (1:nr,2)=vfrag (1:nr,2)-sqrt(4*pi)/sqrt(5.)*vcaux(1:nr)
-!!           vfragi(1:nr,2)=vfragi(1:nr,2)-sqrt(4*pi)/sqrt(5.)*wcaux(1:nr)
+! Numerical factors revised and discarded (April 2024)
+!            vfrag (1:nr,2)=vfrag (1:nr,2)+3.5449/sqrt(5.)*vcaux(1:nr)
+!            vfragi(1:nr,2)=vfragi(1:nr,2)+3.5449/sqrt(5.)*wcaux(1:nr)
+            vfrag (1:nr,2)=vfrag (1:nr,2) + vcaux(1:nr)
+            vfragi(1:nr,2)=vfragi(1:nr,2) + wcaux(1:nr)
 
          endif	   	   
 				
