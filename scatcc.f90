@@ -120,7 +120,7 @@ c *** Initialize some variables
       deladd=0.
       ci=cmplx(0.,1.)
       z12=zc*zv
-      wftype=1  !(1=scat. states; 2=real CC states)
+      wftype=1  !(1=scat. states; 2=real CC states 3=F(kr))
       debug=.false.
      
 c *** -------------------------
@@ -377,6 +377,36 @@ c ...................................................................
 !          endif
 
          ENDIF ! Choose integration method (Numerov / R-matrix)
+
+! Added July '24
+      case(3) ! Use free/Coulomb functions
+      do ich=1,nch
+      li=ql(ich) 
+      if (li.gt.10) stop'increase lmax in wfrange!'
+      tkch=ecm+ech(inc)-ech(ich) 
+      kch(ich)=sqrt(factor*abs(tkch))
+      eta(ich)=factor*z12*e2/kch(ich)/2.      
+      do ir=1,nr
+      krm=kch(ich)*rvec(ir)
+      if (krm.lt.1e-6) krm=1e-6
+      if (tkch.gt.0d0) then   ! open channel
+         write(*,*)'krm=',krm, 'rvec=',rvec(ir)
+        call coul90(krm,eta(ich),zero,li,f,g,fp,gp,0,IFAIL)
+!        ch=cmplx(g(li),f(li))  ! H^(+)
+!        wfc(ie,ich,ir)=(0.,0.5)*(conjg(ch)*kron(ich,inc)-smat(ich)*ch)
+        wfc(ie,ich,ir)=f(li)
+        if (ifail.ne.0) then 
+        write(*,*) 'coul90: ifail=',ifail; stop
+        endif
+      else                    ! closed channel
+       call whit(eta(ich),rvec(ir),kch(ich),tkch,li,f1,fp1,0)
+       ch = smat(ich)*f1(li+1)* (0.,.5) ! (i/2)*C*Whittaker
+       wfc(ie,ich,ir)=ch
+      endif
+
+      enddo !ir
+      enddo !chans
+
 
         case default
          write(*,*)'wfrange: wftype=',wftype,' not valid'
@@ -5569,6 +5599,12 @@ c Re-orthogonalize solution vectors ....................................
       endif !orto
 !........................................................................
 
+
+!!!!!!!!!!!!!!!!!!!!!!!!! TEST
+      if (0>1) then
+       write(91,'(5x,1f7.3,3x,50g14.5)') r,(y(1,ich,ir),ich=1,nch)
+      endif       
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !         DO 46 IT=1,NEQS
