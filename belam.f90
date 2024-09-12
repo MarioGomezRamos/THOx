@@ -4,7 +4,7 @@ c ** Calculates B(E;lambda) distributions using THO pseudostates
       use globals !, only: written,mu12,pi,verb
       use constants, only: hc,pi,amu,e2
       use hmatrix, only: hmatx
-      use potentials, only: delta,maxlamb
+      use potentials, only: maxlamb!,delta
       use sistema
       use wfs !, only: jc,parc,rvec,ql,qjc,qj,iord,cindex !,exc
       use channels
@@ -19,9 +19,9 @@ c      ------------------------------------------------------------------------
       integer, parameter:: igs=1
       integer:: jseti,ni
 c     --------------------------------------------------------------------------
-      real*8:: fival,res,res2,lambdar
-      real*8:: Elam,Elamcore,BEl,BElcore,matel,besum,rms
-      real*8:: Elamcorem,rotor
+      real*8:: fival,lambdar
+      real*8:: Elam,Elamcore,BEl,BElcore,matel,besum,rms,delta
+      real*8:: Elamcorem!,rotor
       real*8:: wid,qjcir,qjcr,cleb,sixj,coef
       real*8:: mec(maxcore,maxcore,maxlamb) 
       real*8:: econt,kcont,test,rme,geom,excore
@@ -46,7 +46,7 @@ c     --------------------------------------------------------------------------
       DATA PSIGN / '-','?','+' / 
 c     --------------------------------------------------------------------------  
       namelist /belambda/ uwfgsfile,lambda,BElcore,ifbel,rms,
-     &  coremodel,jset,emin,emax,nk,engs,jseti,ni
+     &  coremodel,jset,emin,emax,nk,engs,jseti,ni,delta
       namelist /coretrans/ic, icp, rme, qc  
 c     --------------------------------------------------------------------------
       writewf=.false.
@@ -58,6 +58,7 @@ c     --------------------------------------------------------------------------
       BElcore=0d0
       Elamcorem=0d0
       rms=0d0
+      delta=0d0
       engs=0d0
       coremodel=0
       nctrans=0
@@ -272,13 +273,12 @@ c     --------------------------------------------------------------------------
       if (BElcore.ne.0d0) then
         write(*,*)'  [Rotor model with BElcore=',BElcore,']'
 !        Elamcorem=sqrt(BElcore*(2.*qjci(n)+1d0)/(2.*qjc(m)+1.))
-        Elamcorem=sqrt(BElcore*(2.*jc(1)+1d0)/(2.*jc(2)+1.))
+         Elamcorem=sqrt(abs(BElcore)*(2.*jc(1)+1d0))!/(2.*jc(2)+1.))
 !         write(*,*)jc(1),jc(2)
-
+         Elamcorem=Elamcorem*BElcore/abs(BElcore) 
 !        Elamcorem=Elamcorem*delta/(abs(delta))                   !we have to add the other part of the sign yet (from the clebsch gordam)
-        write(*,*)'- M(Elambda)_core=',Elamcorem,'  from experimental 
-     &            B(Elambda)_core=',BElcore
-        write(*,*)'WARNING: Not still full implemented and tested'
+        write(*,'(3x,"[including core excitation with Mn=",
+     &   1f8.3," e.fm^lambda from experimental]")')  Elamcorem
       else
         if (rms.ne.0d0) then
         write(*,*)'  [rotor model with delta=',delta,']'
@@ -347,12 +347,8 @@ c--------------------------------------------
 !c Core reduced matrix element (model dependent) -------------------------------
         select case(coremodel)
         case(0) ! ----------->  rotor
-        if (rms.eq.0.) then
         rme=Elamcorem*cleb(qjcir,0d0,lambdar,0d0,qjcr,0d0)*    ! this is only for K=0, but this is the same. (old version)
      &sqrt((2*qjcir+1)/(2*qjcr+1))*(-1)**(2*lambda)
-        else
-        rme=rotor(qjcir,qjcr,0d0,lambdar,rms,delta,zc)    ! this is only for K=0, but this is the same.
-        endif
         
         case(1) !----------->  external M(E) 
         rme=mec(cindexi(n),cindex(m),lambda)
@@ -513,19 +509,15 @@ c------------------------------------------------
 !c Core reduced matrix element (model dependent)        
         select case(coremodel)
         case(0) ! ----------->  rotor
-        if (rms.eq.0d0) then
         rme=Elamcorem*cleb(qjcir,0d0,lambdar,0d0,qjcr,0d0)*    ! this is only for K=0, but this is the same. (old version)
      &      sqrt((2*qjcir+1)/(2*qjcr+1))*(-1)**(2*lambda)
-        else
-            rme=rotor(qjcir,qjcr,0d0,lambdar,rms,delta,zc)    ! this is only for K=0, but this is the same.
-        endif
         
         case(1) !----------->  external M(E) 
         rme=mec(cindexi(n),cindex(m),lambda)
         end select 
 
-        Elamcore=geom*resc*rme*sqrt(pi/2)*
-     &           (4*pi)/kcont
+!        Elamcore=geom*resc*rme*sqrt(pi/2)*
+!     &           (4*pi)/kcont
         mecc=geom*resc*rme*sqrt(pi/2)*
      &           (4*pi)/kcont
 !commented by AMM (2.1)
@@ -536,7 +528,7 @@ c------------------------------------------------
         write(99,'(4x,i3,"Core(C):",1f4.1,1i2,1f4.1,"->",
      & 1f4.1,1i2,1f4.1,6f9.3)') 
      & itran,qjcir,qli(n),qji(n),qjcr,ql(m),qj(m),
-     & geom,abs(resc),rme,Elamcore
+     & geom,abs(resc),rme,mecc
         endif
         Elamcore=0d0
 
