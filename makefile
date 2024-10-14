@@ -37,7 +37,7 @@ SRC=$(TOPDIR)
 
 .SUFFIXES: .c .o
 
-OBJ=modules.o coul90.o scatcc.o  channels.o writecdccwf.o  basis.o hdiag.o ho.o lst-amos.o utils.o \
+OBJ=modules.o coul90.o scatcc.o  channels.o writecdccwf.o  basis.o hdiag.o ho.o lst-amos.o utils.o cgbasis.o \
     pauli.o sort.o nag2.o whittaker.o  \
      continuum.o belam.o ham.o  transition_targdef.o\
         transition.o   clebsg.o  projpot.o fragpot.o \
@@ -54,6 +54,8 @@ thox.o:thox.f90 modules.f90
 	$(FC) $(FFLAGS) -c thox.f90
 ho.o:ho.f90 modules.f90
 	$(FC) $(FFLAGS) -c ho.f90
+cgbasis.o:cgbasis.f90 modules.f90
+	$(FC) $(FFLAGS) -c cgbasis.f90	
 lst-amos.o:lst-amos.f90 modules.f90
 	$(FC) $(FFLAGS) -c lst-amos.f90
 basis.o:basis.f90 modules.f90

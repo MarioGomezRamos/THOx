@@ -53,7 +53,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
       integer :: al
       CHARACTER*1 BLANK,PSIGN(3)
       character*40 filename
-      integer :: nset,nho, nchsp
+      integer :: nset,nho,nchsp
 
 !!! TEST 
       integer iset,inc,iexgs
@@ -217,7 +217,7 @@ c these variables could be used to replace qspl, qspj, qjc(nsp)
 
 
       select case(bastype)
-      case(0,1,7) ! HO, THO cTHO -----------------------------------------
+      case(0,1,3,7) ! HO, THO cTHO -----------------------------------------
 c *** Build and diagonalize s.p. Hamiltonian for each j/pi set
         if (bas2.eq.0) call hsp(nset,nchsp,nho)
 
@@ -228,16 +228,17 @@ c *** Vertex functions
       if (froverlaps>0)  call vertex(nset,froverlaps)        
 
 c *** Check orthonormality
-        if (checkort) call orthonorm
+        if (checkort) call orthonorm ! ham.f90
 
 c *** Overlap between THO and scattering wfs
         call solap
 c *** ------------------------------------------------------------
-      case(2,3,4) ! Bins   
+      case(2,4) ! Bins   
         call makebins(nset,nk,tres,ehat)
 
 c *** Vertex functions
       if (froverlaps>0)  call vertex(nset,froverlaps)
+	  
 
 c *** ------------------------------------------------------------
       case(5) ! External   
@@ -462,7 +463,7 @@ c
       integer::l,lmin,lmax,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
       real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
-      real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale
+      real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale,acg
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
       character*40 filewf
@@ -470,7 +471,7 @@ c
       namelist /grid/ ng, rmin,rmax,dr,rlast,rint
             
       namelist/jpset/ jtot,parity,l,j,lmin,lmax,
-     &                bastype,nfmax,exmin,exmax,
+     &                bastype,nfmax,exmin,exmax,acg, !Este ultimo para CG Basis
      &                nho,bosc,     ! HO
      &                gamma,mlst,   !THO Amos 
      &                nsp,  ! sp eigenvalues to keep for full diag
