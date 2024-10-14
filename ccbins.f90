@@ -299,7 +299,7 @@ c     ----------
        etap(ich)= 2*e2*zv*zc*mu12/hc**2  !=2 k eta 
       enddo      
       lmax=maxval(ql)
-      write(*,*)'bincc: nchan,inc,lmax,conv=',nchan,inc,lmax,conv
+!      write(*,*)'bincc: nchan,inc,lmax,conv=',nchan,inc,lmax,conv
       call BINCC2(Y,ccmat,nf,NCHAN,k2,il,conv,bphase,isc,ki,kf,nk,
      & etap,maxn-2,dr,pcon,tres,tdel,tkmat,tknrm,lmax+1,maxn,anc)
  

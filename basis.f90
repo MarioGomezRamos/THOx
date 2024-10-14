@@ -10,7 +10,7 @@ c     nchan={Ic,lsj} configurations
       logical fail3,tres,ehat,merge
       integer l,lmin,lmax,bastype,mlst
       real*8:: xl,j,jn,jcore,ex
-      real*8:: bosc,gamma
+      real*8:: bosc,gamma,acg
       real*8:: eta
       integer:: ichsp,ic,iset,nset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
@@ -36,7 +36,8 @@ c     nchan={Ic,lsj} configurations
      &                ehat,  ! (logical, default T) to use mean bin energies (otherwise midpoint), 
      &                filewf, ! external file for wfs
      &                wcut,   ! mininum weight per channel to be retained (default 1) 
-     &                vscale  ! scaling factor for v-core potential 
+     &                vscale, ! scaling factor for v-core potential
+     &                acg !CG	 
 !     &                realcc ! if TRUE, calculate real multichannel states instead of scat. states
 
 
@@ -48,6 +49,7 @@ c Initialize variables and assign default values
       gamma=0d0
       eta=0d0
       vscale=1.
+  	nho=0
 
       read(kin,nml=jpset) 
       nset=indjset(iset)
@@ -155,7 +157,7 @@ c deprecated variables
       if (nchan.gt.nchmax) nchmax=nchan
       write(*,*)'  '
 
-      call genbasis(bastype,nfmax,nho,bosc,
+      call genbasis(bastype,nfmax,nho,bosc,acg,
      & gamma,mlst,nsp,bas2,lmax)
 
       end subroutine
@@ -217,15 +219,15 @@ c
 c -----------------------------------------------
 c ** Choose basis and generate basis functions
 c -----------------------------------------------
-      subroutine genbasis(bastype,nfmax,nho,bosc,
+      subroutine genbasis(bastype,nfmax,nho,bosc,acg,
      & gamma,mlst,nsp,bas2,lmax)
-       use wfs,only : wftho,nr
+       use wfs,only : wftho,nr,rvec
        use globals
        use sistema
        use constants   
        implicit none
-       integer l,mlst,nfmax,bastype,nho,bas2,lmax,nsp
-       real*8 ::bosc,gamma,eta !the last one for ctho
+       integer l,mlst,nfmax,bastype,nho,bas2,lmax,nsp,n,i,unit_out
+       real*8 ::bosc,gamma,eta,acg 
 
  
 c *** THO basis
@@ -234,9 +236,17 @@ c *** THO basis
 c      ----------------------------------------------------
        case(0) !HO 
          write(*,*)' ** RADIAL BASIS **'
-         write(0,251) bosc,nho
+		 write(*,*)'TESTIIIIIIIIIIIIIIIIIIIIIIING HO'
+		 
+		 !Vamos a crear un archivo externo para que se impriman las funciones de la Base !!!Añadido 15/05/24
+		 
+         write(unit_out,251) bosc,nho
 251       format(" - HO basis with b=",1f5.2,2x,
-     &           "and N=",i3," states")
+     &           "and N=",i3," states")		
+	 
+		 open(unit_out, file='FuncionesBaseHO.dat', status='replace') !!!Añadido 15/05/24
+		 
+
 c        if (dr>eps) then
 c           nr=(rmax-rmin)/dr+1                             !!!! we may have problems with definition of nr !!!!!
 c        else
@@ -246,7 +256,59 @@ c        endif
        allocate(wftho(nho,0:lmax,nr))
        do l=0,lmax
        call hobasis(l,bosc,nho)
-       enddo
+	     ! Imprime las funciones de la base en el archivo externo
+		 !write(unit_out, '(A, 3X, A)') "R", "U(R)"
+	     !write(unit_out, '(A)') "----------"
+         do i = 1, nr
+            do n = 1, nho
+                ! Imprime r y u(r) en dos columnas separadas
+                write(unit_out, '(2E12.6, A)') rvec(i), wftho(n, l, i)
+			enddo
+         enddo
+	    enddo
+		
+		! Cierra el archivo
+		close(unit_out)
+	   
+c -------------------------------------------------------------	   
+	   ! Base Creada por Daniel Arjona:
+  
+       case(3) !Complex Gaussian Basis (CG)
+
+         write(*,*)' ** COMPLEX GAUSSIAN BASIS **'
+		 !write(*,*)'TESTIIIIIIIIIIIIIIIIIIIIIIING CGO - BASIS.F90'
+		 
+		 !Vamos a crear un archivo externo para que se impriman las funciones de la Base !!!Añadido 15/05/24
+		 
+		write(0,252) acg,nho 
+252       format(" - CG basis with acg=",1f5.2,2x,"and N=",i3," states")
+
+		 open(unit_out, file='FuncionesBaseCG.dat', status='replace') !!!Añadido 15/05/24
+		 
+         
+       
+
+       allocate(wftho(nho,0:lmax,nr))
+       do l=0,lmax
+       call cgbasis(l,acg,nho)
+	     ! Imprime las funciones de la base en el archivo externo
+		 !write(unit_out, '(A, 3X, A)') "R", "U(R)"
+	     !write(unit_out, '(A)') "----------"
+		 do n = 1, nho
+			do i = 1, nr
+            !do n = 1, nho
+                ! Imprime r y u(r) en dos columnas separadas
+                write(unit_out,*) rvec(i), wftho(n, l, i)
+			enddo
+			write(unit_out,*)'&'
+         enddo
+	    enddo
+		
+		! Cierra el archivo
+		close(unit_out)	   
+   
+
+
 c -------------------------------------------------------------
        case(1) ! THO 
         write(*,*)' ** RADIAL BASIS **'

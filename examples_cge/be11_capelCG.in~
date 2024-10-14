@@ -1,0 +1,112 @@
+# 11Be=10Be + n using WS potential
+# ---------------------------------------------------------------------------------------------
+ &SYSTEM  Zv=0. Av=1.0087   sn=0.5
+          Zc=4. Ac=10.013   /
+
+ &corestates spin=0.0 parity=+1 ex=0.0 /
+ &corestates /
+
+ &output wfout(1:3)=1 2 3  verb=3 solapout(:)=0  /
+
+ &GRID  ng=0 rmin=0.0 rmax=150.0 dr=0.1 rint=100 /
+
+
+# Capel
+ &POTENTIAL ptype=1 ap=1 at=0 
+           vl0(0:3)=-62.52 -39.76 -62.52 -39.74
+           r0=2.585    a0=0.6  
+           Vso=5.25    rso=2.585  aso=0.6 /
+  &potential ptype=0 /
+
+ &pauli n=0 /
+
+#Bound
+  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.84 bosc=1.6 nho=25 nsp=0 exmin=-1 exmax=0.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=0 /
+!  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.84 bosc=1.6 nho=20  nsp=0 exmin=-15 exmax=0.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /
+
+#Cont
+!  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.84 bosc=1.6 nho=6 nsp=0 exmin=-15 exmax=15.0 bas2=0 JTOT=1.5 PARITY=-1  lmax=1 /
+!  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.84 bosc=1.6 nho=6  nsp=0 exmin=0 exmax=50.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=1 /
+!  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.84 bosc=1.6 nho=6  nsp=0 exmin=0 exmax=15.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /
+   &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.84 bosc=1.6 nho=10 nsp=0 exmin=-15 exmax=15.0 bas2=0 JTOT=2.5 PARITY=+1  lmax=2 /
+  &JPSET /
+
+
+ &pauli /
+
+ &pauli n=1 l=0 j=0.5 wfname="wf_1s.dat" /
+
+ 
+  &SCATWF ifcont=t  emin=0.01 emax=5.01  nk=200 inc=1   writewf=t jset=2 / 
+
+  &belambda  ifbel=t uwfgsfile="" lambda=1 emin=0.02 emax=10 nk=200 jset=3 BElcore=0.0 /
+
+############################    REACTION       ####################################
+&reaction elab=702.076  namep='11Be' mp=11.027 namet='1H' mt=1.0078 zt=1 jt=0.0  /
+
+
+######################### COUPLING POTENTIALS FOR XCDCC ######################################
+# (if no basis sets have been defined, this section will be skipped)
+# ############################################################################################
+&trans rcc=2.353d0 writeFF=T skip=T /
+
+#Optional: kcmax, lamax
+&coupling qcmax=0   ncoul=0 lamax=2  / 
+
+&grid nquad=60  radmax=100.d0 rstep=0.2 rmax=60 rextrap=100 rvecin=0.d0 drvec=0.025d0 hin=0.1 /
+
+# Core-target (10Be+p) potential
+&corepotential ptype=1 ap=1 at=0
+               V0=-33.9d0 r0=2.353d0 a0=0.57d0 rc0=2.353d0
+               V0i=-18.3d0 r0i=2.353d0 a0i=0.5d0 /
+&corepotential ptype=0 &end
+
+## Valence-target (p-n) potential
+&valencepotential ptype=3 ap=1 at=0
+                  V0=-45.d0 a0=1.484d0 rc0=1.484d0 / 
+&valencepotential ptype=0 /
+
+
+
+#########################  SOLVE CC EQUATIONS ##############################
+
+# method=0 PC-numerov, 
+         1=ENA with 5 terms in Cosh[Sqrt[T]]
+         2=ENA with 5 terms in Cosh[Sqrt[T]], only diagonal 
+         3=Raynal
+         4=Modified Numerov used in Fresco
+         5=R-matrix with Lagrange mesh (P.Desc.)
+
+&numerov skip=T hcm=0.05 rmaxcc=100  hort=0 method=4 rcc=2.353d0   jtmin=0.5 jtmax=25.5 skip=T/  
+
+&xsections fileamp="fort.137" thmin=0.0 thmax=179. dth=0.5  doublexs=F triplexs=F icore=1 ner=200 ermin=0.01 ermax=55 jsets(1:4)=F F T T / itarg=1 /
+
+&framework sys='lab' idet=1 / atarget=1.0 
+&gridener Enlow=500.0 Enup=700.0 dEn=2.5  /      
+&gridthetac tcl=0.1 tcu=14.1 dtc=1.0 /
+&gridthetav tvl=0.1 tvu=50.1 dtv=1.0 /
+&gridphi phil=0.0 phiu=360.0 dphi=5.0 /
+
+
+# ---------------------------------------  END OF INPUT ---------------------------------------------------
+
+#############################################################################################################
+
+
+&JPSET bastype=1 mlst=4 acg =1.5 gamma=1.6 bosc=1.6 nho=6 nsp=0 exmin=-1 exmax=0 bas2=0 JTOT=0.5 PARITY=-1  lmax=2 /
+#Continuum
+  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.6 bosc=1.6 nho=6 nsp=0 exmin=0 exmax=10.0 bas2=0 JTOT=0.5 PARITY=1  lmax=2 /
+  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.6 bosc=1.6 nho=6 nsp=0 exmin=0 exmax=10.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=3 /
+  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.6 bosc=1.6 nho=6 nsp=0 exmin=0 exmax=10.0 bas2=0 JTOT=1.5 PARITY=-1  lmax=3 /
+  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.6 bosc=1.6 nho=6 nsp=0 exmin=0 exmax=10.0 bas2=0 JTOT=1.5 PARITY=+1  lmax=2 /
+  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.6 bosc=1.6 nho=15 nsp=0 exmin=0 exmax=10.0 bas2=0 JTOT=2.5 PARITY=+1  lmax=3 /
+  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.6 bosc=1.6 nho=15 nsp=0 exmin=0 exmax=10.0 bas2=0 JTOT=2.5 PARITY=-1  lmax=3 /
+  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.6 bosc=1.6 nho=15 nsp=0 exmin=0 exmax=10.0 bas2=0 JTOT=3.5 PARITY=-1  lmax=3 /
+  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.6 bosc=1.6 nho=15 nsp=0 exmin=0 exmax=10.0 bas2=0 JTOT=3.5 PARITY=+1  lmax=4 /
+  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.6 bosc=1.6 nho=15 nsp=0 exmin=0 exmax=10.0 bas2=0 JTOT=4.5 PARITY=+1  lmax=4 /
+  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.6 bosc=1.6 nho=15 nsp=0 exmin=0 exmax=10.0 bas2=0 JTOT=4.5 PARITY=-1  lmax=5 /
+  &JPSET /
+ &jpset / 
+
+
+
