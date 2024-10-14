@@ -9,7 +9,7 @@
 
  &output wfout(:)=0 xcdcc=F verb=1 solapout(:)=0   /
 
- &GRID  ng=0 rmin=0.0 rint=0 rmax=100.0 dr=0.05 rlast=100 /
+ &GRID  ng=0 rmin=0.0 rint=50 rmax=150.0 dr=0.05 rlast=150 /
 
 &potential ptype=5 ap=0 at=1 np=100 nv=4 cptype=5  Vso=6.0    rso=2.483  aso=0.65 pgfact(:)=1.0544 .9954 pfact(:)=1.0d0 -7.926654595 2.236 -7.926654595 / last jlm, order: cent0 trans cent2 reor
 &potential ptype=0 /
@@ -19,13 +19,13 @@
 
 
 #Bound
-  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=5 nsp=0 exmin=-1 exmax=0 bas2=0 JTOT=0.5 PARITY=1  lmax=3 /
+  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=30 nsp=0 exmin=-1 exmax=0 bas2=0 JTOT=0.5 PARITY=1  lmax=3 /
 !  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=5 nsp=0 exmin=-1 exmax=0 bas2=0 JTOT=0.5 PARITY=-1  lmax=3 /
 
 #Unbound
 !  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=5 nsp=0 exmin=0 exmax=10.01 bas2=0 JTOT=0.5 PARITY=1  lmax=3 wcut(1)=0.002 /
-!  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=5 nsp=0 exmin=0 exmax=10.01 bas2=0 JTOT=0.5 PARITY=-1  lmax=3 wcut(1)=0.002  /
-  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=5 nsp=0 exmin=0 exmax=10.01 bas2=0 JTOT=1.5 PARITY=-1  lmax=3 wcut(1)=0.002 /
+  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=20 nsp=0 exmin=0 exmax=20.01 bas2=0 JTOT=0.5 PARITY=-1  lmax=3 wcut(1)=0.002  /
+  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=20 nsp=0 exmin=0 exmax=20.01 bas2=0 JTOT=1.5 PARITY=-1  lmax=3 wcut(1)=0.002 /
 !  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=5 nsp=0 exmin=0 exmax=10.01 bas2=0 JTOT=1.5 PARITY=+1  lmax=3 wcut(1)=0.002 /
 !  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=12 nsp=0 exmin=0 exmax=10.01 bas2=0 JTOT=2.5 PARITY=+1  lmax=3 wcut(1)=0.002 /
 !  &JPSET bastype=1 mlst=4 gamma=1.8 bosc=1.6 nho=10 nsp=0 exmin=0 exmax=7.01 bas2=0 JTOT=2.5 PARITY=-1  lmax=3 wcut(1)=0.002 /
@@ -33,10 +33,12 @@
   &JPSET /
 
 
- &SCATWF ifcont=T  emin=0.02 emax=10.01  nk=300 ilout=1  pcon=0  inc=1 jset=2 /
+ &SCATWF ifcont=f emin=0.02 emax=10.01  nk=300 ilout=1  pcon=0  inc=1 jset=2 /
 
 
- &belambda  ifbel=F uwfgsfile="" lambda=1 jset=3 emin=0.01 emax=15 nk=200 /
+ &belambda  ifbel=T uwfgsfile="" lambda=1 jset=2 emin=0.01 emax=15 nk=200 /
+ &belambda  ifbel=T uwfgsfile="" lambda=1 jset=3 emin=0.01 emax=15 nk=200 /
+ &belambda  /
 
 
 ############################    REACTION       ####################################

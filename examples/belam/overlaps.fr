@@ -1,0 +1,492 @@
+#Single particle REAL wf & vertex for state 2  Chan=  1 E=  -0.50259 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 2  Chan=  2 E=  -0.50259 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 2  Chan=  3 E=  -0.50259 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 2  Chan=  1 E=   1.16301 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 2  Chan=  2 E=   1.16301 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 2  Chan=  3 E=   1.16301 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 2  Chan=  4 E=   1.16301 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 3  Chan=  1 E=   1.49828 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 3  Chan=  2 E=   1.49828 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 3  Chan=  3 E=   1.49828 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 3  Chan=  4 E=   1.49828 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 4  Chan=  1 E=   3.68859 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 4  Chan=  2 E=   3.68859 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 4  Chan=  3 E=   3.68859 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 4  Chan=  4 E=   3.68859 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 5  Chan=  1 E=   4.66076 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 5  Chan=  2 E=   4.66076 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 5  Chan=  3 E=   4.66076 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 5  Chan=  4 E=   4.66076 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 6  Chan=  1 E=   4.71672 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 6  Chan=  2 E=   4.71672 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 6  Chan=  3 E=   4.71672 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 6  Chan=  4 E=   4.71672 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 7  Chan=  1 E=   4.78045 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 7  Chan=  2 E=   4.78045 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 7  Chan=  3 E=   4.78045 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 7  Chan=  4 E=   4.78045 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 8  Chan=  1 E=   5.92477 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 8  Chan=  2 E=   5.92477 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 8  Chan=  3 E=   5.92477 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 8  Chan=  4 E=   5.92477 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 9  Chan=  1 E=   7.15826 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 9  Chan=  2 E=   7.15826 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 9  Chan=  3 E=   7.15826 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 9  Chan=  4 E=   7.15826 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state10  Chan=  1 E=   7.47274 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state10  Chan=  2 E=   7.47274 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state10  Chan=  3 E=   7.47274 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state10  Chan=  4 E=   7.47274 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state11  Chan=  1 E=   9.73890 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state11  Chan=  2 E=   9.73890 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state11  Chan=  3 E=   9.73890 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state11  Chan=  4 E=   9.73890 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state12  Chan=  1 E=  11.46561 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state12  Chan=  2 E=  11.46561 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state12  Chan=  3 E=  11.46561 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state12  Chan=  4 E=  11.46561 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state13  Chan=  1 E=  12.96397 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state13  Chan=  2 E=  12.96397 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state13  Chan=  3 E=  12.96397 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state13  Chan=  4 E=  12.96397 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state14  Chan=  1 E=  14.22698 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state14  Chan=  2 E=  14.22698 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state14  Chan=  3 E=  14.22698 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state14  Chan=  4 E=  14.22698 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state15  Chan=  1 E=  18.89962 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state15  Chan=  2 E=  18.89962 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state15  Chan=  3 E=  18.89962 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state15  Chan=  4 E=  18.89962 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state16  Chan=  1 E=  24.57849 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state16  Chan=  2 E=  24.57849 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state16  Chan=  3 E=  24.57849 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state16  Chan=  4 E=  24.57849 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 2  Chan=  1 E=   1.34069 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 2  Chan=  2 E=   1.34069 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 2  Chan=  3 E=   1.34069 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 2  Chan=  4 E=   1.34069 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 3  Chan=  1 E=   2.99630 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 3  Chan=  2 E=   2.99630 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 3  Chan=  3 E=   2.99630 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 3  Chan=  4 E=   2.99630 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 4  Chan=  1 E=   3.98048 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 4  Chan=  2 E=   3.98048 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 4  Chan=  3 E=   3.98048 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 4  Chan=  4 E=   3.98048 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 5  Chan=  1 E=   4.64069 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 5  Chan=  2 E=   4.64069 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 5  Chan=  3 E=   4.64069 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 5  Chan=  4 E=   4.64069 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 6  Chan=  1 E=   4.70985 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 6  Chan=  2 E=   4.70985 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 6  Chan=  3 E=   4.70985 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 6  Chan=  4 E=   4.70985 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 7  Chan=  1 E=   4.92101 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 7  Chan=  2 E=   4.92101 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 7  Chan=  3 E=   4.92101 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 7  Chan=  4 E=   4.92101 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 8  Chan=  1 E=   5.67715 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 8  Chan=  2 E=   5.67715 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 8  Chan=  3 E=   5.67715 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 8  Chan=  4 E=   5.67715 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 9  Chan=  1 E=   7.25950 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 9  Chan=  2 E=   7.25950 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 9  Chan=  3 E=   7.25950 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state 9  Chan=  4 E=   7.25950 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state10  Chan=  1 E=   8.13900 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state10  Chan=  2 E=   8.13900 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state10  Chan=  3 E=   8.13900 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state10  Chan=  4 E=   8.13900 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state11  Chan=  1 E=   8.90173 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state11  Chan=  2 E=   8.90173 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state11  Chan=  3 E=   8.90173 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state11  Chan=  4 E=   8.90173 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state12  Chan=  1 E=  10.93916 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state12  Chan=  2 E=  10.93916 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state12  Chan=  3 E=  10.93916 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state12  Chan=  4 E=  10.93916 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state13  Chan=  1 E=  12.82068 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state13  Chan=  2 E=  12.82068 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state13  Chan=  3 E=  12.82068 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state13  Chan=  4 E=  12.82068 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state14  Chan=  1 E=  16.98649 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state14  Chan=  2 E=  16.98649 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state14  Chan=  3 E=  16.98649 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state14  Chan=  4 E=  16.98649 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state15  Chan=  1 E=  19.00203 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state15  Chan=  2 E=  19.00203 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state15  Chan=  3 E=  19.00203 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state15  Chan=  4 E=  19.00203 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state16  Chan=  1 E=  24.31473 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state16  Chan=  2 E=  24.31473 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state16  Chan=  3 E=  24.31473 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
+#Single particle REAL wf & vertex for state16  Chan=  4 E=  24.31473 MeV
+           0   5.0000000000000003E-002   0.0000000000000000     
+
+
