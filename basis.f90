@@ -10,7 +10,7 @@ c     nchan={Ic,lsj} configurations
       logical fail3,tres,ehat,merge
       integer l,lmin,lmax,bastype,mlst
       real*8:: xl,j,jn,jcore,ex
-      real*8:: bosc,gamma,acg
+      real*8:: bosc,gamma,acg,r1
       real*8:: eta
       integer:: ichsp,ic,iset,nset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
@@ -37,7 +37,7 @@ c     nchan={Ic,lsj} configurations
      &                filewf, ! external file for wfs
      &                wcut,   ! mininum weight per channel to be retained (default 1) 
      &                vscale, ! scaling factor for v-core potential
-     &                acg !CG	 
+     &                acg,r1  !CG	 
 !     &                realcc ! if TRUE, calculate real multichannel states instead of scat. states
 
 
@@ -157,7 +157,7 @@ c deprecated variables
       if (nchan.gt.nchmax) nchmax=nchan
       write(*,*)'  '
 
-      call genbasis(bastype,nfmax,nho,bosc,acg,
+      call genbasis(bastype,nfmax,nho,bosc,acg,r1,
      & gamma,mlst,nsp,bas2,lmax)
 
       end subroutine
@@ -219,7 +219,7 @@ c
 c -----------------------------------------------
 c ** Choose basis and generate basis functions
 c -----------------------------------------------
-      subroutine genbasis(bastype,nfmax,nho,bosc,acg,
+      subroutine genbasis(bastype,nfmax,nho,bosc,acg,r1,
      & gamma,mlst,nsp,bas2,lmax)
        use wfs,only : wftho,nr,rvec
        use globals
@@ -227,7 +227,7 @@ c -----------------------------------------------
        use constants   
        implicit none
        integer l,mlst,nfmax,bastype,nho,bas2,lmax,nsp,n,i,unit_out
-       real*8 ::bosc,gamma,eta,acg 
+       real*8 ::bosc,gamma,eta,acg,r1 
 
  
 c *** THO basis
@@ -280,8 +280,9 @@ c -------------------------------------------------------------
 		 
 		 !Vamos a crear un archivo externo para que se impriman las funciones de la Base !!!Añadido 15/05/24
 		 
-		write(0,252) acg,nho 
-252       format(" - CG basis with acg=",1f5.2,2x,"and N=",i3," states")
+		write(0,252) acg,r1,nho 
+252       format(" - CG basis with acg,r1=",
+     & 2f5.2,2x,"and N=",i3," states")
 
 		 open(unit_out, file='FuncionesBaseCG.dat', status='replace') !!!Añadido 15/05/24
 		 
@@ -290,7 +291,7 @@ c -------------------------------------------------------------
 
        allocate(wftho(nho,0:lmax,nr))
        do l=0,lmax
-       call cgbasis(l,acg,nho)
+       call cgbasis(l,acg,r1,nho)
 	     ! Imprime las funciones de la base en el archivo externo
 		 !write(unit_out, '(A, 3X, A)') "R", "U(R)"
 	     !write(unit_out, '(A)') "----------"

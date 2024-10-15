@@ -463,7 +463,7 @@ c
       integer::l,lmin,lmax,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
       real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
-      real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale,acg
+      real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale,acg,r1
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
       character*40 filewf
@@ -471,7 +471,7 @@ c
       namelist /grid/ ng, rmin,rmax,dr,rlast,rint
             
       namelist/jpset/ jtot,parity,l,j,lmin,lmax,
-     &                bastype,nfmax,exmin,exmax,acg, !Este ultimo para CG Basis
+     &                bastype,nfmax,exmin,exmax,acg, r1, !Este ultimo para CG Basis
      &                nho,bosc,     ! HO
      &                gamma,mlst,   !THO Amos 
      &                nsp,  ! sp eigenvalues to keep for full diag

@@ -4,17 +4,20 @@
 		
 	!SUBRUTINA PRINCIPAL -  Obtendra los valores de las distintas funciones de onda en funcion de varios parametros
 	
-      subroutine cgbasis(l,acg,nho)
+      subroutine cgbasis(l,acg,r1,nho)
 	  
 		!DECLARACION DE VARIABLES:
 		
         use wfs, only: wftho,rmin,rmax,dr,rvec,nr !Revisar modulo wfs de Fortran
         implicit none
         integer:: nmin,ibas,jbas,nho,l,n,ir,kbout
-        real*8:: r,wf,acg,wf1,wf2,nhomitad,norm1,norm2
-		real*8,allocatable:: wfaux(:,:),faux(:),gaux(:)
-		real*8,allocatable:: norm(:,:)
-		real*8,allocatable:: eigv(:,:)
+        real*8:: r,wf,acg,r1,wf1,wf2,nhomitad,norm1,norm2
+!		real*8,allocatable:: wfaux(:,:),faux(:),gaux(:)
+!		real*8,allocatable:: norm(:,:)
+!		real*8,allocatable:: eigv(:,:)
+		real*8:: wfaux(nho,nr),faux(nr),gaux(nr)
+		real*8:: norm(nho,nho)
+		real*8:: eigv(nho,nho)
 		real*8 :: kk1
 		real*8 :: kk2
 		integer:: inousable
@@ -25,17 +28,17 @@
 		kbout=10
 		wf=1 
 		
-      if (allocated(wfaux)) deallocate(wfaux)
-      allocate(wfaux(nho,nr))
+!      if (allocated(wfaux)) deallocate(wfaux)
+!      allocate(wfaux(nho,nr))
 	  
-	  if (allocated(norm)) deallocate(norm)
-      allocate(norm(nho,nho))
+!	  if (allocated(norm)) deallocate(norm)
+!      allocate(norm(nho,nho))
 	  
-	  if (allocated(eigv)) deallocate(eigv)
-      allocate(eigv(nho,nho))
+!	  if (allocated(eigv)) deallocate(eigv)
+!      allocate(eigv(nho,nho))
 	  
-	  if (allocated(faux)) deallocate(faux,gaux)
-      allocate(faux(nr),gaux(nr))
+!	  if (allocated(faux)) deallocate(faux,gaux)
+!      allocate(faux(nr),gaux(nr))
 		
 		!BUCLE PRINCIPAL
 			!Iteramos sobre las funciones de onda. Calculamos el valor de la funcion de onda para diferentes valores de r y lo
@@ -54,21 +57,20 @@
             do ir=1,nr
 	        r=rvec(ir)        !Vector que almacena cada valor de r, es decir, cada punto del espacio.
 			  
-				call cg3d(n,l,r,acg,wf1,wf2)
-				wfaux(ibas,ir)=wf1
-				norm1=norm1+dr*(wf1*r)**2 !Para cada funcion de onda calculamos la norma
+		call cg3d(n,l,r,acg,r1,wf1,wf2)
+		wfaux(ibas,ir)=wf1
+		norm1=norm1+dr*(wf1*r)**2 !Para cada funcion de onda calculamos la norma
 	
-			enddo
-	    	   write(99,*)'&'		
-			ibas=ibas+1
-			do ir=1,nr
+	    enddo
+	    write(99,*)'&'		
+	    ibas=ibas+1
+	    do ir=1,nr
 	        r=rvec(ir)        
-					         
-				call cg3d(n,l,r,acg,wf1,wf2)
-				wfaux(ibas,ir)=wf2
-				norm2=norm2+dr*(wf2*r)**2
+		call cg3d(n,l,r,acg,r1,wf1,wf2)
+		wfaux(ibas,ir)=wf2
+		norm2=norm2+dr*(wf2*r)**2
 				
-			enddo     
+           enddo     
 	   write(99,*)'&'
            write(kbout,*)'#Norm=',norm1,norm2 !Asi podemos comprobar la normalizacion de las funciones de onda
            write(kbout,*)'&'
@@ -77,13 +79,13 @@
 
 	
 	do ibas=1,nho
-		do jbas=ibas,nho
+	do jbas=ibas,nho
 		faux(:) = wfaux(ibas,:)
 		gaux(:) = wfaux(jbas,:)
 		call normfun(faux,gaux,dr,rvec(1),nr,l,aux,kk1,kk2)
-				norm(ibas,jbas) = aux
-			if (ibas .ne. jbas) norm(jbas,ibas)=norm(ibas,jbas)
-		enddo
+		norm(ibas,jbas) = aux
+		if (ibas .ne. jbas) norm(jbas,ibas)=norm(ibas,jbas)
+	enddo
 	enddo
 	
 
@@ -91,15 +93,20 @@
 !SUBROUTINE HDIAG(H,N,NSMAX,IEGEN,U,NR). Me devuelve eigv (U) que sera una matriz nho,nho que contiene los coeficientes de los autovectores
 	call  HDIAG(norm,nho,nho,0,eigv,inousable) 
 	
-	
-        
+
+        write(0,*)'Norm eigenvalues:'
+	do ibas=1,nho
+	write(0,*)'ibas,eigenvalue=',ibas,norm(ibas,ibas)
+
+	enddo
+	      
 	do ibas=1,nho
 	faux=0
         do jbas=1,nho
-			do ir=1,nr
-			aux=1./sqrt(norm(ibas,ibas))
+	    do ir=1,nr
+	    aux=1./sqrt(norm(ibas,ibas))
             faux(ir)=faux(ir)+aux*eigv(ibas,jbas)*wfaux(jbas,ir)
-		   enddo
+	    enddo
         enddo
         wftho(ibas,l,:)=faux(:)
 	enddo	
@@ -109,8 +116,9 @@
 		faux(:) = wftho(ibas,l,:)
 		gaux(:) = wftho(jbas,l,:)
 		call normfun(faux,gaux,dr,rvec(1),nr,l,aux,kk1,kk2)
-				norm(ibas,jbas) = aux
-			if (ibas .ne. jbas) norm(jbas,ibas)=norm(ibas,jbas)
+		norm(ibas,jbas) = aux
+!		write(0,*)'ibas,jbas,sol=',ibas,jbas,aux
+		if (ibas .ne. jbas) norm(jbas,ibas)=norm(ibas,jbas)
 		enddo
 	enddo	
 	
@@ -127,14 +135,14 @@
 ! *** -------------------------------------------------
 !     Calculates CG wavefunctions (radial part) in 3D
 ! *** ------------------------------------------------
-      subroutine cg3d(n,l,r,acg,wf1,wf2)
+      subroutine cg3d(n,l,r,acg,r1,wf1,wf2)
         implicit none
         integer l,n
         real*8:: pi,r,norma,normCG,wf,acg,alfa,eta1,eta2,rn,v,wf1,wf2
 		real*8:: r1 !Luego lo meteremos como argumento
 		!complex*16 :: z1
 		
-		r1=1
+!		r1=1
 		pi=acos(-1d0)
 		!z1 = (0,1)
 		!z1 = dcmplx(0.d0, 1.d0)
