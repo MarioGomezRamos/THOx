@@ -1,5 +1,13 @@
-           2
- &States jp= 0.5 ptyp= 1 ep=  0.0000  cpot=  1
+           6
+ &States jp= 2.5 ptyp= 1 ep=  0.0000  cpot=  1
          jt= 0.0 ptyt= 0 et=  0.0000 /
- &States jp= 2.5 ptyp= 1 ep= 11.0002  cpot=  1
+ &States jp= 2.5 ptyp= 1 ep=  0.1062  cpot=  1
+         copyt= 1 /
+ &States jp= 2.5 ptyp= 1 ep=  1.4974  cpot=  1
+         copyt= 1 /
+ &States jp= 2.5 ptyp= 1 ep=  1.9817  cpot=  1
+         copyt= 1 /
+ &States jp= 2.5 ptyp= 1 ep=  7.4290  cpot=  1
+         copyt= 1 /
+ &States jp= 2.5 ptyp= 1 ep=  8.8852  cpot=  1
          copyt= 1 /

@@ -6,9 +6,9 @@
  &corestates spin=0.0 parity=+1 ex=0.0 /
  &corestates /
 
- &output wfout(1:3)=1 2 3  verb=3 solapout(:)=0  /
+ &output wfout(1:5)=1 2 3 4 5  verb=3 solapout(:)=0  /
 
- &GRID  ng=0 rmin=0.0 rmax=150.0 dr=0.1 rint=100 /
+ &GRID  ng=0 rmin=0.0 rmax=100.0 dr=0.1 rint=0 /
 
 
 # Capel
@@ -21,14 +21,14 @@
  &pauli n=0 /
 
 #Bound
-  &JPSET bastype=3 mlst=4 acg =1.2 gamma=1.84 bosc=1.6 nho=25 nsp=0 exmin=-1 exmax=0.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=0 /
-!  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.84 bosc=1.6 nho=20  nsp=0 exmin=-15 exmax=0.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /
+!  &JPSET bastype=3 mlst=4 acg =1.2 r1=1 gamma=1.84 bosc=1.6 nho=36 nsp=0 exmin=-1 exmax=0.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=0 /
+!  &JPSET bastype=3 mlst=4 acg =1.2  r1=1 gamma=1.84 bosc=1.6 nho=36  nsp=0 exmin=-15 exmax=0.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /
 
 #Cont
 !  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.84 bosc=1.6 nho=6 nsp=0 exmin=-15 exmax=15.0 bas2=0 JTOT=1.5 PARITY=-1  lmax=1 /
 !  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.84 bosc=1.6 nho=6  nsp=0 exmin=0 exmax=50.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=1 /
 !  &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.84 bosc=1.6 nho=6  nsp=0 exmin=0 exmax=15.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /
-   &JPSET bastype=3 mlst=4 acg =1.5 gamma=1.84 bosc=1.6 nho=10 nsp=0 exmin=-15 exmax=15.0 bas2=0 JTOT=2.5 PARITY=+1  lmax=2 /
+   &JPSET bastype=3 mlst=4 acg =2 r1=0.5 gamma=1.84 bosc=1.6 nho=14 nsp=0 exmin=-15 exmax=15.0 bas2=0 JTOT=2.5 PARITY=+1  lmax=2 /
   &JPSET /
 
 

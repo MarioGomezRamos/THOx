@@ -8,58 +8,39 @@
 	  
 		!DECLARACION DE VARIABLES:
 		
-        use wfs, only: wftho,rmin,rmax,dr,rvec,nr !Revisar modulo wfs de Fortran
+        use wfs, only: wftho,dr,rvec,nr !Revisar modulo wfs de Fortran
         implicit none
         integer:: nmin,ibas,jbas,nho,l,n,ir,kbout
         real*8:: r,wf,acg,r1,wf1,wf2,nhomitad,norm1,norm2
 !		real*8,allocatable:: wfaux(:,:),faux(:),gaux(:)
 !		real*8,allocatable:: norm(:,:)
 !		real*8,allocatable:: eigv(:,:)
-		real*8:: wfaux(nho,nr),faux(nr),gaux(nr)
-		real*8:: norm(nho,nho)
-		real*8:: eigv(nho,nho)
-		real*8 :: kk1
-		real*8 :: kk2
-		integer:: inousable
-		real*8:: aux
-		kk1 = 1
-		kk2 = 1
-		nhomitad = nho/2
-		kbout=10
-		wf=1 
-		
-!      if (allocated(wfaux)) deallocate(wfaux)
-!      allocate(wfaux(nho,nr))
-	  
-!	  if (allocated(norm)) deallocate(norm)
-!      allocate(norm(nho,nho))
-	  
-!	  if (allocated(eigv)) deallocate(eigv)
-!      allocate(eigv(nho,nho))
-	  
-!	  if (allocated(faux)) deallocate(faux,gaux)
-!      allocate(faux(nr),gaux(nr))
-		
-		!BUCLE PRINCIPAL
-			!Iteramos sobre las funciones de onda. Calculamos el valor de la funcion de onda para diferentes valores de r y lo
-			!almacenamos en la matriz wtho
-		
+	real*8:: wfaux(nho,nr),faux(nr),gaux(nr)
+	real*8:: norm(nho,nho)
+	real*8:: eigv(nho,nho)
+	real*8 :: kk1
+	real*8 :: kk2
+	integer:: inousable
+	real*8:: aux
+	logical:: debug=.false.
+	kk1 = 1
+	kk2 = 1
+	nhomitad = nho/2
+	kbout=10
+	wf=1 
         nmin=1
         ibas=0
-        do n=nmin,nhomitad !Como para cada n se calcularan dos funciones, moviendo desde 0:nho/2, obtendremos nho funciones, que es lo que buscamos.
+        do n=nmin,nhomitad 
            norm1=0
-		   norm2=0
-		   !norm=0
-		    
-			!Hacemos un doble bucle en r, uno para calcular wf1 y otro para wf2
-			
-			ibas=ibas+1       !ibas sera la varibale que nos diga que funcion de onda estamos llamando, de ahí que tenga que variar tras cada llamada
+	   norm2=0
+		    		
+    	ibas=ibas+1 
             do ir=1,nr
-	        r=rvec(ir)        !Vector que almacena cada valor de r, es decir, cada punto del espacio.
+	        r=rvec(ir)        
 			  
 		call cg3d(n,l,r,acg,r1,wf1,wf2)
 		wfaux(ibas,ir)=wf1
-		norm1=norm1+dr*(wf1*r)**2 !Para cada funcion de onda calculamos la norma
+		norm1=norm1+dr*(wf1*r)**2 
 	
 	    enddo
 	    write(99,*)'&'		
@@ -72,7 +53,7 @@
 				
            enddo     
 	   write(99,*)'&'
-           write(kbout,*)'#Norm=',norm1,norm2 !Asi podemos comprobar la normalizacion de las funciones de onda
+           write(kbout,*)'#Norm=',norm1,norm2 
            write(kbout,*)'&'
         enddo
 
@@ -94,9 +75,9 @@
 	call  HDIAG(norm,nho,nho,0,eigv,inousable) 
 	
 
-        write(0,*)'Norm eigenvalues:'
+        if (debug) write(0,*)'Norm eigenvalues:'
 	do ibas=1,nho
-	write(0,*)'ibas,eigenvalue=',ibas,norm(ibas,ibas)
+	if (debug) write(0,*)'ibas,eigenvalue=',ibas,norm(ibas,ibas)
 
 	enddo
 	      
