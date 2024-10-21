@@ -32,7 +32,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
       use constants
       use hmatrix
       use trace
-      use forbidden, only: npauli,eshift,hindrance
+!      use forbidden, only: hindrance
       use channels
       use wfs, only: nst
       use belambdamod, only: ifbel
@@ -42,22 +42,20 @@ c v2.6 AMM: calculation of core+valence eigenphases
       use writecdccwf
       implicit none
       logical ehat
-      integer :: parity,l,lmax,ic,iic,i,ir,ichsp,ncc,bastype,nk
+      integer :: lmax,i,ncc,bastype,nk
       real*8 eps
      
       parameter (eps=1e-6)
 
-      logical fail3,checkort,ifphase,dummy,tres,realcc
-      integer:: nfmax,mlst
-      real*8 ::  lambda,norm
-      integer :: al
+      logical checkort,ifphase,dummy,tres
+!      real*8 ::  lambda,norm
       CHARACTER*1 BLANK,PSIGN(3)
       character*40 filename
-      integer :: nset,nho,nchsp
+      integer :: nset,nho
 
 !!! TEST 
-      integer iset,inc,iexgs
-      real*8 ecm,c,c2,plm_nr
+      integer iset,inc,iexgs,nchsp
+!      real*8 ecm
 
 
 c Input namelists -------------------------
@@ -217,7 +215,7 @@ c these variables could be used to replace qspl, qspj, qjc(nsp)
 
 
       select case(bastype)
-      case(0,1,7) ! HO, THO cTHO -----------------------------------------
+      case(0,1,3,7) ! HO, THO cTHO -----------------------------------------
 c *** Build and diagonalize s.p. Hamiltonian for each j/pi set
         if (bas2.eq.0) call hsp(nset,nchsp,nho)
 
@@ -463,7 +461,7 @@ c
       integer::l,lmin,lmax,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
       real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
-      real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale,acg
+      real*8:: bosc,gamma,wcut(1:maxchan),vscale,r1,rnmax
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
       character*40 filewf
@@ -471,19 +469,22 @@ c
       namelist /grid/ ng, rmin,rmax,dr,rlast,rint
             
       namelist/jpset/ jtot,parity,l,j,lmin,lmax,
-     &                bastype,nfmax,exmin,exmax,acg, !Este ultimo para CG Basis
+     &                bastype,nfmax,exmin,exmax,
      &                nho,bosc,     ! HO
      &                gamma,mlst,   !THO Amos 
      &                nsp,  ! sp eigenvalues to keep for full diag
      &                bas2,
      &                nk, nbins,inc,tres,ehat,filewf,wcut,merge,
-     &                vscale
+     &                vscale,
+     &                r1,rnmax, ! CG Basis
 
       
       jpsets=0; inpsets=0
       maxl=0
       realwf=.true.
       merge=.false.
+      r1=0.0
+      rnmax=0.0
 
       write(*,*)'Pre-reading input to set dimensions'
 
@@ -497,6 +498,7 @@ c
       inc=1
       l=-1 ; j=-1; lmin=-1; lmax=-1;
       vscale=1;
+      r1=0.0; rnmax=0.0
       read(kin,nml=jpset) 
       if (bastype.lt.0) goto 350
       if (l.lt.0) l=0;

@@ -1,17 +1,17 @@
 ! *** ----------------------------------------------
 !     Build CG basis
 ! *** -----------------------------------------------
-		
+      	
 	!SUBRUTINA PRINCIPAL -  Obtendra los valores de las distintas funciones de onda en funcion de varios parametros
 	
-      subroutine cgbasis(l,acg,r1,nho)
+      subroutine cgbasis(l,r1,rnmax,nho)
 	  
 		!DECLARACION DE VARIABLES:
 		
         use wfs, only: wftho,dr,rvec,nr !Revisar modulo wfs de Fortran
         implicit none
         integer:: nmin,ibas,jbas,nho,l,n,ir,kbout
-        real*8:: r,wf,acg,r1,wf1,wf2,nhomitad,norm1,norm2
+        real*8:: r,wf,acg,r1,rnmax,wf1,wf2,nhomitad,norm1,norm2
 !		real*8,allocatable:: wfaux(:,:),faux(:),gaux(:)
 !		real*8,allocatable:: norm(:,:)
 !		real*8,allocatable:: eigv(:,:)
@@ -30,6 +30,18 @@
 	wf=1 
         nmin=1
         ibas=0
+        if (r1.lt.1e-6) then
+          write(*,*) 'rmin too small for Gaussian basis: rmin=',r1
+        endif
+
+        if (rnmax.lt.1e-6) then
+          write(*,*) 'rnmax too small for Gaussian basis: rnmax=',
+     &               rnmax
+        endif
+
+
+        acg=(rnmax/r1)**(1./nhomitad)
+        write(0,*)'cgbasis: acg=',acg
         do n=nmin,nhomitad 
            norm1=0
 	   norm2=0
@@ -120,22 +132,22 @@
         implicit none
         integer l,n
         real*8:: pi,r,norma,normCG,wf,acg,alfa,eta1,eta2,rn,v,wf1,wf2
-		real*8:: r1 !Luego lo meteremos como argumento
+		real*8:: r1,rmax
 		!complex*16 :: z1
 		
 !		r1=1
 		pi=acos(-1d0)
 		!z1 = (0,1)
 		!z1 = dcmplx(0.d0, 1.d0)
-		rn = r1*acg**(n-1) !¿Que valor debe tener acg?
+		rn = r1*acg**(n-1) 
 		if (rn.lt.1e-6) rn=1e-6
-		v = 1/(rn**2)
-		alfa = pi/2 
+		v = 1./(rn**2)
+		alfa = pi/2. 
 		!alfa = 0
 		!eta1 = (1+z1*alfa)*v
 		!eta2 = (1-z1*alfa)*v
 		
-        norma=normcg(n,l,v)
+              norma=normcg(n,l,v)
 		!write(*,*)n,r,acg,norma
 		
 
@@ -148,12 +160,7 @@
 		wf2=norma*r**(l)*(dexp(-v*r**(2)))*(sin(alfa*v*r**(2)))
 		
 		write(99,*)r,wf1,wf2
-		
-	    
-		
-		
-		
-		
+				
       end subroutine cg3d
  
 
@@ -164,12 +171,12 @@
       function normcg(n,l,v)
         use factorials, only: FACT,dlfac2
         implicit none
-        real*8:: pi,lnorm,acg,rn,v,r,normcg, param_1, param_2, param_numerador, param_denominador
-		real*8:: param_fact !lo he puesto aqui porque no me lo detectataba en la linea de arriba
+        real*8:: pi,acg,v,normcg, param_1, param_2 
+        real*8:: param_numerador, param_denominador,param_fact 
         integer:: n,l
-		REAL :: param_numerador
-		REAL :: param_denominador
-		real*8:: r1 !Luego lo meteremos como argumento
+!	REAL :: param_numerador
+!	REAL :: param_denominador
+	real*8:: r1 !Luego lo meteremos como argumento
 		
 		!r1=1
         pi=acos(-1d0)

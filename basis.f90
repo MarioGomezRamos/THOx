@@ -10,7 +10,7 @@ c     nchan={Ic,lsj} configurations
       logical fail3,tres,ehat,merge
       integer l,lmin,lmax,bastype,mlst
       real*8:: xl,j,jn,jcore,ex
-      real*8:: bosc,gamma,acg,r1
+      real*8:: bosc,gamma,r1,rnmax
       real*8:: eta
       integer:: ichsp,ic,iset,nset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
@@ -37,7 +37,7 @@ c     nchan={Ic,lsj} configurations
      &                filewf, ! external file for wfs
      &                wcut,   ! mininum weight per channel to be retained (default 1) 
      &                vscale, ! scaling factor for v-core potential
-     &                acg,r1  !CG	 
+     &                r1,rnmax  !CG	 
 !     &                realcc ! if TRUE, calculate real multichannel states instead of scat. states
 
 
@@ -49,14 +49,21 @@ c Initialize variables and assign default values
       gamma=0d0
       eta=0d0
       vscale=1.
-  	nho=0
+      nho=0 
+      r1=0; rnmax=0
 
       read(kin,nml=jpset) 
       nset=indjset(iset)
       if (l.lt.0) l=0;
       lmin=l;
       if (lmax.lt.lmin) lmax=lmin
-
+      
+      if ( (bastype.eq.3) .and. (-1)**nho.ne.1 ) then
+        nho=nho+1
+        write(*,*)' ** WARNING ** Gaussian basis needs even nho'
+        write(*,*)'Increasing by one unit so nho=',nho
+      endif 
+      
 c To be done!
 c      if (iset.eq.1) then
 c         prevset=1
@@ -157,7 +164,7 @@ c deprecated variables
       if (nchan.gt.nchmax) nchmax=nchan
       write(*,*)'  '
 
-      call genbasis(bastype,nfmax,nho,bosc,acg,r1,
+      call genbasis(bastype,nfmax,nho,bosc,r1,rnmax,
      & gamma,mlst,nsp,bas2,lmax)
 
       end subroutine
@@ -219,7 +226,7 @@ c
 c -----------------------------------------------
 c ** Choose basis and generate basis functions
 c -----------------------------------------------
-      subroutine genbasis(bastype,nfmax,nho,bosc,acg,r1,
+      subroutine genbasis(bastype,nfmax,nho,bosc,r1,rnmax,
      & gamma,mlst,nsp,bas2,lmax)
        use wfs,only : wftho,nr,rvec
        use globals
@@ -227,7 +234,7 @@ c -----------------------------------------------
        use constants   
        implicit none
        integer l,mlst,nfmax,bastype,nho,bas2,lmax,nsp,n,i,unit_out
-       real*8 ::bosc,gamma,eta,acg,r1 
+       real*8 ::bosc,gamma,eta,acg,r1,rnmax 
 
  
 c *** THO basis
@@ -271,42 +278,29 @@ c        endif
 		close(unit_out)
 	   
 c -------------------------------------------------------------	   
-	   ! Base Creada por Daniel Arjona:
+! Base Creada por Daniel Arjona:
   
        case(3) !Complex Gaussian Basis (CG)
 
-         write(*,*)' ** COMPLEX GAUSSIAN BASIS **'
-		 !write(*,*)'TESTIIIIIIIIIIIIIIIIIIIIIIING CGO - BASIS.F90'
-		 
-		 !Vamos a crear un archivo externo para que se impriman las funciones de la Base !!!Añadido 15/05/24
-		 
-		write(0,252) acg,r1,nho 
-252       format(" - CG basis with acg,r1=",
-     & 2f5.2,2x,"and N=",i3," states")
+        write(*,*)' ** COMPLEX GAUSSIAN BASIS **'		 
+        write(0,252) r1,rnmax,nho 
+252     format(" - CG basis with r1,rmax=",
+     & 2f8.3,2x,"and N=",i3," states")
 
-		 open(unit_out, file='FuncionesBaseCG.dat', status='replace') !!!Añadido 15/05/24
+	open(unit_out, file='FuncionesBaseCG.dat', status='replace') !!!Añadido 15/05/24
 		 
-         
-       
-
        allocate(wftho(nho,0:lmax,nr))
        do l=0,lmax
-       call cgbasis(l,acg,r1,nho)
-	     ! Imprime las funciones de la base en el archivo externo
-		 !write(unit_out, '(A, 3X, A)') "R", "U(R)"
-	     !write(unit_out, '(A)') "----------"
-		 do n = 1, nho
-			do i = 1, nr
-            !do n = 1, nho
-                ! Imprime r y u(r) en dos columnas separadas
-                write(unit_out,*) rvec(i), wftho(n, l, i)
-			enddo
-			write(unit_out,*)'&'
-         enddo
-	    enddo
+       call cgbasis(l,r1,rnmax,nho)
+        do n = 1, nho
+	do i = 1, nr
+        write(unit_out,*) rvec(i), wftho(n, l, i)
+        enddo
+	write(unit_out,*)'&'
+        enddo
+        enddo
 		
-		! Cierra el archivo
-		close(unit_out)	   
+        close(unit_out)	   
    
 
 
