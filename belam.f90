@@ -20,7 +20,7 @@ c      ------------------------------------------------------------------------
       integer:: jseti,ni
 c     --------------------------------------------------------------------------
       real*8:: fival,lambdar
-      real*8:: Elam,Elamcore,BEl,BElcore,matel,besum,rms,delta
+      real*8:: Elam,Elamcore,BEl,BElcore,matel,besum,rms,delta,apol
       real*8:: Elamcorem!,rotor
       real*8:: wid,qjcir,qjcr,cleb,sixj,coef
       real*8:: mec(maxcore,maxcore,maxlamb) 
@@ -43,12 +43,15 @@ c     --------------------------------------------------------------------------
       integer coremodel,qc,ic,icp,nctrans
       CHARACTER*1 PSIGN(3)
       character*5 jpi
+
+      
       DATA PSIGN / '-','?','+' / 
 c     --------------------------------------------------------------------------  
       namelist /belambda/ uwfgsfile,lambda,BElcore,ifbel,rms,
      &  coremodel,jset,emin,emax,nk,engs,jseti,ni,delta
       namelist /coretrans/ic, icp, rme, qc  
 c     --------------------------------------------------------------------------
+      pi=acos(-1.0)
       writewf=.false.
       ifcont=.false.
       call factorialgen(10)
@@ -265,6 +268,7 @@ c     --------------------------------------------------------------------------
       Elam=0d0
       BEl=0d0
       besum=0d0
+      apol=0.0
 !     BElcore=0d0
       Elamcore=0d0 ! we have to change this
 
@@ -415,6 +419,8 @@ c        written(95)=.true.
         write(95,490) edisc(i),BEl/wid,BEl,wid
 490     format(1x,f8.4,3f12.6)
         besum=besum+BEl
+!        write(99,*)'i,nex,edisc',i,nex,edisc(i)
+        apol = apol + (8.*pi/9.)*Bel/(edisc(i)-engs)   
         write(*,300)edisc(i),lambda,i,BEl,2*lambda
 300     format(4x,"Ex=",f8.4,"  B(E",i1,"; gs ->",i4,
      &")=",f8.4," e2.fm",i1)
@@ -426,6 +432,7 @@ c        written(95)=.true.
         write(*,*)'- From Pseudo-States:'
         write(*,'(30x,"Total BE=",1f10.6," e2.fm",i1)')besum,2*lambda
         write(*,*)'- From Sum Rule: (only for SP excitation!)'
+        write(*,'(1x,"- Polarizability=",1f10.6," fm^3")') apol
         call sumrule
         write(*,'(30x,"Total BE=",1f10.6," e2.fm",i1)')besr,2*lambda 
 !        write(*,*)"(** sum rule only intended for sp excitations)"
