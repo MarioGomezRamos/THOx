@@ -420,7 +420,7 @@ c        written(95)=.true.
 490     format(1x,f8.4,3f12.6)
         besum=besum+BEl
         write(99,*)'i,nex,edisc',i,nex,edisc(i),engs
-        apol = apol + (8.*pi/9.)*Bel/(edisc(i)-engs)   
+        apol = apol + e2*(8.*pi/9.)*Bel/(edisc(i)-engs)   
         write(*,300)edisc(i),lambda,i,BEl,2*lambda
 300     format(4x,"Ex=",f8.4,"  B(E",i1,"; gs ->",i4,
      &")=",f8.4," e2.fm",i1)
@@ -599,7 +599,7 @@ c < n | r^lambda | m >
         write(96,*) econt+excore,BEl,photoxs,capxs,sfactphoto,sfactcap,
      &  dbde(1,ik)
         besum=besum+BEl*hc**2*kcont/mu12*dk    !de=de/dk*dk
-        apol= apol +BEl*hc**2*kcont/mu12*dk/(econt-engs)*(8*pi/9.)
+        apol= apol +BEl*hc**2*kcont/mu12*dk/(econt-engs)*(8*pi/9.)*e2
         enddo ! ik
         write(*,'(3x, "For inc chan=",i3," B(El)=",1f8.3)') iil,besum
         write(96,*)'&'
