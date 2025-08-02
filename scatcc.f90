@@ -235,9 +235,9 @@ c *** Initialize R-matrix ----------------------------------
     4 continue
       enddo !ich
       enddo !ichp
-c      do ir=1,nbas*ns
-c        write(1,'(1f8.3,2x,50f12.8)')zrma(ir),cpot(ir,1,1)
-c      enddo
+      do ir=1,nbas*ns
+        write(1,'(1f8.3,2x,50f12.8)')zrma(ir),cpot(ir,1,1)
+      enddo
 c      do ir=1,nr
 c        write(2,'(1f8.3,2x,50f12.8)')rvec(ir),ccmat(1,1,ir)
 c      enddo      
@@ -346,18 +346,38 @@ c *** Scattering states with R-matrix solution ................
 
 c ... interpolate wfs from Lagrange to uniform grid
           do ich=1,nch
+           li=ql(ich) 
           if (kch(ich)>0.) then ! open channel -> get phase-shifts and S-matrix
           phase(ich)=(0.,-0.5)*LOG(cu(ich,inc)
      &               *sqrt(kch(inc)/kch(ich)))*180/pi        
           smat(ich)=cu(ich,inc)*sqrt(kch(inc)/kch(ich))
           endif
 c ... store wfs
+!          write(0,*)'nrint,zrma(nbas)=',nrint,zrma(nbas)
           do ir=1,nrint
           r=rvec(ir)
           if (r.lt.zrma(nbas)) then
              wfc(ie,ich,ir)=cfival(r,zrma,cf(:,ich,inc),nbas,alpha)
      &                      *0.5*(0.,1.)
-          endif                         
+          else     
+          
+          krm=kch(ich)*rvec(ir)
+          if (kch(ich).gt.0d0) then   ! open channel
+!          write(0,*)'krm,ich,li,eta,smat,inc',krm,ich,li,eta(ich),
+!     & smat(ich),inc
+          call coul90(krm,eta(ich),zero,li,f,g,fp,gp,0,IFAIL)
+          ch=cmplx(g(li),f(li))  ! H^(+)
+          wfc(ie,ich,ir)=(0.,0.5)*(conjg(ch)*kron(ich,inc)-smat(ich)*ch)
+          if (ifail.ne.0) then 
+          write(*,*) 'coul90: ifail=',ifail; stop
+          endif
+         else                    ! closed channel
+          call whit(eta(ich),rvec(ir),kch(ich),tkch,li,f1,fp1,0)
+         ch = smat(ich)*f1(li+1)* (0.,.5) ! (i/2)*C*Whittaker
+          wfc(ie,ich,ir)=ch
+         endif
+         endif ! r< zrma
+                            
           enddo !nrint
           enddo !nch
 
@@ -694,6 +714,7 @@ c     ----------------------------------------------------------
 c *** Initialize some variables & R-matrix
       nmax=nlag*ns
       rmax=rvcc(nr)
+!      write(0,*)'rmat: rmax=',rmax
       twf=.false.
       nvc(1)=inc 
       call rmat_ini(nlag,ns,rmax,zrma)
@@ -6081,6 +6102,7 @@ c     ----------------------------------------------------------
 c *** Initialize some variables & R-matrix
       nmax=nlag*ns
       rmax=rvcc(nr)
+      write(0,*)'Rmat: rmax=',rmax
       twf=.false.
       
       ninc=0
