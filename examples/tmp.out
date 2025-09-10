@@ -1,0 +1,96 @@
+**************************************************
+ ***        THOx+DCE+CC code: version 2.6        ***
+**************************************************
+
+ ***************** CONSTANTS **********************
+ * hbarc=197.32706 MeV.fm     e^2= 1.43997 MeV.fm *
+ * so, alpha= 1/137.03599       amu=931.4943 MeV  *
+ **************************************************
+   A real*8 is            8  bytes
+   A complex*16 is           16  bytes
+ Pre-reading input to set dimensions
+ 
+  Dimensions for memory allocation
+    o J/pi sets:           1  merged into           1
+    o Maximum internal l:           2
+ 
+  Pre-read finished
+ - COMPOSITE:
+     Core:    Ac= 10.0130  Zc=  4.00
+     Valence: Av=  1.0087  Zv=  0.00
+
+ - Reduced mass:  853.607 MeV/c2
+ - CORE states:
+     # 1: J/pi= 0.0+   Ex= 0.00 MeV
+     # 2: J/pi= 2.0+   Ex= 3.37 MeV
+
+  RADIAL GRID FOR INTERNAL WFS:
+ - Using uniform grid with 2401 points:  [ Rmin= 0.000   Rmax= 120.0  Step= 0.050 fm ]
+
+   ------------- Potential component: 1-------------
+
+ o Undeformed valence-core potential: 
+   COULOMB     : uniform charged sphere with Rc= 0.001 fm
+   NUCLEAR part: type=1 => Woods-Saxon
+       o  Woods-Saxon   V0(l=0-3)=( -54.400 -49.672 -54.400 -49.672) MeV, R0= 2.483 fm, ar= 0.650 fm 
+       o Spin-orbit: Vso=(0:3)   8.500   8.500   8.500   0.000 MeV, Rso= 2.483 fm, aso= 0.650 fm 
+
+ o Particle-core coupling:   [rotor model with lambda=           2 ]
+  => Deform central potential & project on P_{lambda}
+ (monopole potential will be also recalculated!)
+   [delta=   1.664 fm ]
+
+ --------------------------------------------------
+   
+  PAULI forbidden sp states:
+ => No states will be removed
+  
+
+
+ ******************************************
+      BASIS SET:  1 WITH TOTAL J/pi= 0.5+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  2]
+       S.p. configuration # 1 ( 0 0.5) 0.5
+       S.p. configuration # 2 ( 2 0.5) 1.5
+       S.p. configuration # 3 ( 2 0.5) 2.5
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 0 0.5) 0.5 Ex= 0.000 MeV with sp config #1 and core #1
+     Channel # 2 : Ic= 2.0 ( 2 0.5) 1.5 Ex= 3.368 MeV with sp config #2 and core #2
+     Channel # 3 : Ic= 2.0 ( 2 0.5) 2.5 Ex= 3.368 MeV with sp config #3 and core #2
+   
+  ** Exact bound wf ** 
+ Energy  0.49359119969323401       0.50000000000000000     
+
+
+     ******  PROJECTILE SCATTERING STATES ******
+ jset           3  not valid!
+
+
+
+ ** CALCULATION OF B(ELAM) **
+
+     => B(E) requested for set jset  2 but only  1 available!. Skipping
+
+
+     ******  REACTION CALCULATION ******
+
+     Projectile: Mass=  11.000 amu   Z=   4.0
+     Target:     Mass=  58.000 amu   Z=  58.0
+
+     Nb. of target states:  1
+     o state #  1   J/pi=0.0+    Ex= 0.000
+     [using transition subroutine for spin-zero target]
+
+     *********** COUPLING POTENTIALS  *********** 
+     [No coupling potentials requested ]
+
+
+     ******  CC SOLUTIONS ******
+     [No reaction calculation requested]
+
+  Angular step (dth) too small!

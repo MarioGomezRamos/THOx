@@ -1,16 +1,16 @@
 c 
 c *** Calculate valence/core configurations compatible with Jtot/pi
 c     nchan={Ic,lsj} configurations  
-      subroutine read_jpiset(iset,bastype,nk,tres,ehat,filewf)
+      subroutine read_jpiset(iset,bastype,nk,tres,ehat,filewf,nodes)
       use channels
       use globals,only: kin
       use wfs    ,only: exmin,exmax
       use potentials, only: vscale
       implicit none
       logical fail3,tres,ehat,merge
-      integer l,lmin,lmax,bastype,mlst
+      integer l,lmin,lmax,bastype,mlst,nodes
       real*8:: xl,j,jn,jcore,ex
-      real*8:: bosc,gamma
+      real*8:: bosc,gamma,r1,rnmax
       real*8:: eta
       integer:: ichsp,ic,iset,nset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc
@@ -36,7 +36,9 @@ c     nchan={Ic,lsj} configurations
      &                ehat,  ! (logical, default T) to use mean bin energies (otherwise midpoint), 
      &                filewf, ! external file for wfs
      &                wcut,   ! mininum weight per channel to be retained (default 1) 
-     &                vscale  ! scaling factor for v-core potential 
+     &                vscale, ! scaling factor for v-core potential
+     &                r1,rnmax,  !CG	
+     &                nodes  !Nodes for bound state 
 !     &                realcc ! if TRUE, calculate real multichannel states instead of scat. states
 
 
@@ -48,13 +50,28 @@ c Initialize variables and assign default values
       gamma=0d0
       eta=0d0
       vscale=1.
+      nho=0 
+      r1=0; rnmax=0
 
       read(kin,nml=jpset) 
       nset=indjset(iset)
       if (l.lt.0) l=0;
       lmin=l;
       if (lmax.lt.lmin) lmax=lmin
-
+      
+      if ( (bastype.eq.3) .and. (-1)**nho.ne.1 ) then
+        nho=nho+1
+        write(*,*)' ** WARNING ** Gaussian basis needs even nho'
+        write(*,*)'Increasing by one unit so nho=',nho
+      endif 
+      
+!MGR--------------------------------------------------------------------
+      if (bastype.eq.6) then
+      nbins=1
+      nho=1
+      endif      
+!------------------------------------------------------------------------
+      
 c To be done!
 c      if (iset.eq.1) then
 c         prevset=1
@@ -155,7 +172,7 @@ c deprecated variables
       if (nchan.gt.nchmax) nchmax=nchan
       write(*,*)'  '
 
-      call genbasis(bastype,nfmax,nho,bosc,
+      call genbasis(bastype,nfmax,nho,bosc,r1,rnmax,
      & gamma,mlst,nsp,bas2,lmax)
 
       end subroutine
@@ -217,15 +234,15 @@ c
 c -----------------------------------------------
 c ** Choose basis and generate basis functions
 c -----------------------------------------------
-      subroutine genbasis(bastype,nfmax,nho,bosc,
+      subroutine genbasis(bastype,nfmax,nho,bosc,r1,rnmax,
      & gamma,mlst,nsp,bas2,lmax)
-       use wfs,only : wftho,nr
+       use wfs,only : wftho,nr,rvec
        use globals
        use sistema
        use constants   
        implicit none
-       integer l,mlst,nfmax,bastype,nho,bas2,lmax,nsp
-       real*8 ::bosc,gamma,eta !the last one for ctho
+       integer l,mlst,nfmax,bastype,nho,bas2,lmax,nsp,n,i,unit_out
+       real*8 ::bosc,gamma,eta,acg,r1,rnmax 
 
  
 c *** THO basis
@@ -234,9 +251,17 @@ c *** THO basis
 c      ----------------------------------------------------
        case(0) !HO 
          write(*,*)' ** RADIAL BASIS **'
-         write(0,251) bosc,nho
+		 write(*,*)'TESTIIIIIIIIIIIIIIIIIIIIIIING HO'
+		 
+		 !Vamos a crear un archivo externo para que se impriman las funciones de la Base !!!Añadido 15/05/24
+		 
+         write(unit_out,251) bosc,nho
 251       format(" - HO basis with b=",1f5.2,2x,
-     &           "and N=",i3," states")
+     &           "and N=",i3," states")		
+	 
+		 open(unit_out, file='FuncionesBaseHO.dat', status='replace') !!!Añadido 15/05/24
+		 
+
 c        if (dr>eps) then
 c           nr=(rmax-rmin)/dr+1                             !!!! we may have problems with definition of nr !!!!!
 c        else
@@ -246,7 +271,47 @@ c        endif
        allocate(wftho(nho,0:lmax,nr))
        do l=0,lmax
        call hobasis(l,bosc,nho)
-       enddo
+	     ! Imprime las funciones de la base en el archivo externo
+		 !write(unit_out, '(A, 3X, A)') "R", "U(R)"
+	     !write(unit_out, '(A)') "----------"
+         do i = 1, nr
+            do n = 1, nho
+                ! Imprime r y u(r) en dos columnas separadas
+                write(unit_out, '(2E12.6, A)') rvec(i), wftho(n, l, i)
+			enddo
+         enddo
+	    enddo
+		
+		! Cierra el archivo
+		close(unit_out)
+	   
+c -------------------------------------------------------------	   
+! Base Creada por Daniel Arjona:
+  
+       case(3) !Complex Gaussian Basis (CG)
+
+        write(*,*)' ** COMPLEX GAUSSIAN BASIS **'		 
+        write(0,252) r1,rnmax,nho 
+252     format(" - CG basis with r1,rmax=",
+     & 2f8.3,2x,"and N=",i3," states")
+
+	open(unit_out, file='FuncionesBaseCG.dat', status='replace') !!!Añadido 15/05/24
+		 
+       allocate(wftho(nho,0:lmax,nr))
+       do l=0,lmax
+       call cgbasis(l,r1,rnmax,nho)
+        do n = 1, nho
+	do i = 1, nr
+        write(unit_out,*) rvec(i), wftho(n, l, i)
+        enddo
+	write(unit_out,*)'&'
+        enddo
+        enddo
+		
+        close(unit_out)	   
+   
+
+
 c -------------------------------------------------------------
        case(1) ! THO 
         write(*,*)' ** RADIAL BASIS **'
@@ -328,6 +393,10 @@ c -------------------------------------------------------------
 c -------------------------------------------------------------
        case(5) ! External 
        write(*,*)' ** External wfs ** '
+
+c -------------------------------------------------------------
+       case(6) ! Exact bound wf
+       write(*,*)' ** Exact bound wf ** '
 
 c -------------------------------------------------------------
        case default ! undefined bastype

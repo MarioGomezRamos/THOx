@@ -32,7 +32,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
       use constants
       use hmatrix
       use trace
-      use forbidden, only: npauli,eshift,hindrance
+!      use forbidden, only: hindrance
       use channels
       use wfs, only: nst
       use belambdamod, only: ifbel
@@ -42,22 +42,20 @@ c v2.6 AMM: calculation of core+valence eigenphases
       use writecdccwf
       implicit none
       logical ehat
-      integer :: parity,l,lmax,ic,iic,i,ir,ichsp,ncc,bastype,nk
+      integer :: lmax,i,ncc,bastype,nk
       real*8 eps
      
       parameter (eps=1e-6)
 
-      logical fail3,checkort,ifphase,dummy,tres,realcc
-      integer:: nfmax,mlst
-      real*8 ::  lambda,norm
-      integer :: al
+      logical checkort,ifphase,dummy,tres
+!      real*8 ::  lambda,norm
       CHARACTER*1 BLANK,PSIGN(3)
       character*40 filename
-      integer :: nset,nho, nchsp
+      integer :: nset,nho,nodes
 
 !!! TEST 
-      integer iset,inc,iexgs
-      real*8 ecm,c,c2,plm_nr
+      integer iset,inc,iexgs,nchsp
+!      real*8 ecm
 
 
 c Input namelists -------------------------
@@ -199,7 +197,7 @@ c Pauli-forbidden states to be removed
       nset=iset
 !      nset=indjset(iset)
 !      call read_jpiset(iset,bastype,nk,tres,ehat,filename)
-      call read_jpiset(nset,bastype,nk,tres,ehat,filename)
+      call read_jpiset(nset,bastype,nk,tres,ehat,filename,nodes)
 
       jtot    =jpiset(nset)%jtot
       partot  =jpiset(nset)%partot
@@ -217,7 +215,7 @@ c these variables could be used to replace qspl, qspj, qjc(nsp)
 
 
       select case(bastype)
-      case(0,1,7) ! HO, THO cTHO -----------------------------------------
+      case(0,1,3,7) ! HO, THO cTHO -----------------------------------------
 c *** Build and diagonalize s.p. Hamiltonian for each j/pi set
         if (bas2.eq.0) call hsp(nset,nchsp,nho)
 
@@ -228,20 +226,24 @@ c *** Vertex functions
       if (froverlaps>0)  call vertex(nset,froverlaps)        
 
 c *** Check orthonormality
-        if (checkort) call orthonorm
+        if (checkort) call orthonorm ! ham.f90
 
 c *** Overlap between THO and scattering wfs
         call solap
 c *** ------------------------------------------------------------
-      case(2,3,4) ! Bins   
+      case(2,4) ! Bins   
         call makebins(nset,nk,tres,ehat)
 
 c *** Vertex functions
       if (froverlaps>0)  call vertex(nset,froverlaps)
+	  
 
 c *** ------------------------------------------------------------
       case(5) ! External   
        call readwfs(filename,nset,nchan)
+
+      case(6) ! Eigcc   
+       call pre_eigcc(nset,nchan,nodes)
 
       end select 
       
@@ -462,9 +464,9 @@ c
       integer::l,lmin,lmax,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
       real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
-      real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale
+      real*8:: bosc,gamma,wcut(1:maxchan),vscale,r1,rnmax
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
-      integer:: nk,nbins,inc
+      integer:: nk,nbins,inc,nodes
       character*40 filewf
 
       namelist /grid/ ng, rmin,rmax,dr,rlast,rint
@@ -476,13 +478,16 @@ c
      &                nsp,  ! sp eigenvalues to keep for full diag
      &                bas2,
      &                nk, nbins,inc,tres,ehat,filewf,wcut,merge,
-     &                vscale
+     &                vscale,
+     &                r1,rnmax,nodes ! CG Basis
 
       
       jpsets=0; inpsets=0
       maxl=0
       realwf=.true.
       merge=.false.
+      r1=0.0
+      rnmax=0.0
 
       write(*,*)'Pre-reading input to set dimensions'
 
@@ -496,6 +501,7 @@ c
       inc=1
       l=-1 ; j=-1; lmin=-1; lmax=-1;
       vscale=1;
+      r1=0.0; rnmax=0.0
       read(kin,nml=jpset) 
       if (bastype.lt.0) goto 350
       if (l.lt.0) l=0;

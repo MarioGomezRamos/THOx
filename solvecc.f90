@@ -221,7 +221,7 @@ c *** Channel energy
         kcmf=sqrt(2*mupt*ecmf)/hc
       else 
         kcmf=sqrt(-2*mupt*ecmf)/hc
-        write(*,*)'State',iex,' closed for Ecm=',Ecmi
+!        write(*,*)'State',iex,' closed for Ecm=',Ecmi
       endif
 !MGR
       jlpmin=abs(jtot-jtarg)
@@ -472,6 +472,9 @@ c ... Compute integrated cross sections
        do inc=1,nch
        if (.not. incvec(inc)) cycle
         do ich=1,nch
+          ecmf=ecmi-jptset(icc)%exc(ich)-jptset(icc)%ext(ich)          
+!          write(*,*)'ich,ecmf=',ich,ecmf
+          if (ecmf<0) cycle
           kcmf  = jptset(icc)%kcm(ich)
           smat=smats(icc,inc,ich)*sqrt(kcmf/kcmi)  ! velocity factor
           factor=10*(pi/kcmi**2)*(2.*jtot+1)/(2*jpgs+1)/(2*jtgs+1)
