@@ -51,7 +51,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
 !      real*8 ::  lambda,norm
       CHARACTER*1 BLANK,PSIGN(3)
       character*40 filename
-      integer :: nset,nho
+      integer :: nset,nho,nodes
 
 !!! TEST 
       integer iset,inc,iexgs,nchsp
@@ -197,7 +197,7 @@ c Pauli-forbidden states to be removed
       nset=iset
 !      nset=indjset(iset)
 !      call read_jpiset(iset,bastype,nk,tres,ehat,filename)
-      call read_jpiset(nset,bastype,nk,tres,ehat,filename)
+      call read_jpiset(nset,bastype,nk,tres,ehat,filename,nodes)
 
       jtot    =jpiset(nset)%jtot
       partot  =jpiset(nset)%partot
@@ -241,6 +241,9 @@ c *** Vertex functions
 c *** ------------------------------------------------------------
       case(5) ! External   
        call readwfs(filename,nset,nchan)
+
+      case(6) ! Eigcc   
+       call pre_eigcc(nset,nchan,nodes)
 
       end select 
       
@@ -463,7 +466,7 @@ c
       real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
       real*8:: bosc,gamma,wcut(1:maxchan),vscale,r1,rnmax
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
-      integer:: nk,nbins,inc
+      integer:: nk,nbins,inc,nodes
       character*40 filewf
 
       namelist /grid/ ng, rmin,rmax,dr,rlast,rint
@@ -476,7 +479,7 @@ c
      &                bas2,
      &                nk, nbins,inc,tres,ehat,filewf,wcut,merge,
      &                vscale,
-     &                r1,rnmax ! CG Basis
+     &                r1,rnmax,nodes ! CG Basis
 
       
       jpsets=0; inpsets=0

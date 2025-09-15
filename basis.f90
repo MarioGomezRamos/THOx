@@ -1,14 +1,14 @@
 c 
 c *** Calculate valence/core configurations compatible with Jtot/pi
 c     nchan={Ic,lsj} configurations  
-      subroutine read_jpiset(iset,bastype,nk,tres,ehat,filewf)
+      subroutine read_jpiset(iset,bastype,nk,tres,ehat,filewf,nodes)
       use channels
       use globals,only: kin
       use wfs    ,only: exmin,exmax
       use potentials, only: vscale
       implicit none
       logical fail3,tres,ehat,merge
-      integer l,lmin,lmax,bastype,mlst
+      integer l,lmin,lmax,bastype,mlst,nodes
       real*8:: xl,j,jn,jcore,ex
       real*8:: bosc,gamma,r1,rnmax
       real*8:: eta
@@ -37,7 +37,8 @@ c     nchan={Ic,lsj} configurations
      &                filewf, ! external file for wfs
      &                wcut,   ! mininum weight per channel to be retained (default 1) 
      &                vscale, ! scaling factor for v-core potential
-     &                r1,rnmax  !CG	 
+     &                r1,rnmax,  !CG	
+     &                nodes  !Nodes for bound state 
 !     &                realcc ! if TRUE, calculate real multichannel states instead of scat. states
 
 
@@ -64,6 +65,12 @@ c Initialize variables and assign default values
         write(*,*)'Increasing by one unit so nho=',nho
       endif 
       
+!MGR--------------------------------------------------------------------
+      if (bastype.eq.6) then
+      nbins=1
+      nho=1
+      endif      
+!------------------------------------------------------------------------
 c To be done!
 c      if (iset.eq.1) then
 c         prevset=1
@@ -385,6 +392,10 @@ c -------------------------------------------------------------
 c -------------------------------------------------------------
        case(5) ! External 
        write(*,*)' ** External wfs ** '
+
+c -------------------------------------------------------------
+       case(6) ! Exact bound wf
+       write(*,*)' ** Exact bound wf ** '
 
 c -------------------------------------------------------------
        case default ! undefined bastype

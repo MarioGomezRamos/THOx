@@ -1,0 +1,45 @@
+          22
+ &States jp= 1.5 ptyp=-1 ep=  0.0000  cpot=  1
+         jt= 0.0 ptyt= 0 et=  0.0000 /
+ &States jp= 1.5 ptyp=-1 ep=  1.7918  cpot=  1
+         copyt= 1 /
+ &States jp= 1.5 ptyp=-1 ep=  2.0383  cpot=  1
+         copyt= 1 /
+ &States jp= 1.5 ptyp=-1 ep=  2.4301  cpot=  1
+         copyt= 1 /
+ &States jp= 1.5 ptyp=-1 ep=  2.9910  cpot=  1
+         copyt= 1 /
+ &States jp= 1.5 ptyp=-1 ep=  3.7544  cpot=  1
+         copyt= 1 /
+ &States jp= 1.5 ptyp=-1 ep=  4.7680  cpot=  1
+         copyt= 1 /
+ &States jp= 1.5 ptyp=-1 ep=  6.1027  cpot=  1
+         copyt= 1 /
+ &States jp= 1.5 ptyp=-1 ep=  7.8606  cpot=  1
+         copyt= 1 /
+ &States jp= 1.5 ptyp=-1 ep= 10.1979  cpot=  1
+         copyt= 1 /
+ &States jp= 1.5 ptyp=-1 ep= 13.3482  cpot=  1
+         copyt= 1 /
+ &States jp= 0.5 ptyp=-1 ep=  1.7898  cpot=  1
+         copyt= 1 /
+ &States jp= 0.5 ptyp=-1 ep=  2.0218  cpot=  1
+         copyt= 1 /
+ &States jp= 0.5 ptyp=-1 ep=  2.3615  cpot=  1
+         copyt= 1 /
+ &States jp= 0.5 ptyp=-1 ep=  2.7902  cpot=  1
+         copyt= 1 /
+ &States jp= 0.5 ptyp=-1 ep=  3.3277  cpot=  1
+         copyt= 1 /
+ &States jp= 0.5 ptyp=-1 ep=  4.0660  cpot=  1
+         copyt= 1 /
+ &States jp= 0.5 ptyp=-1 ep=  5.0784  cpot=  1
+         copyt= 1 /
+ &States jp= 0.5 ptyp=-1 ep=  6.4335  cpot=  1
+         copyt= 1 /
+ &States jp= 0.5 ptyp=-1 ep=  8.2298  cpot=  1
+         copyt= 1 /
+ &States jp= 0.5 ptyp=-1 ep= 10.6273  cpot=  1
+         copyt= 1 /
+ &States jp= 0.5 ptyp=-1 ep= 13.8656  cpot=  1
+         copyt= 1 /

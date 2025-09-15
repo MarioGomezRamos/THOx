@@ -41,8 +41,8 @@ OBJ=modules.o coul90.o scatcc.o  channels.o writecdccwf.o  basis.o hdiag.o ho.o 
     pauli.o sort.o nag2.o whittaker.o  \
      continuum.o belam.o ham.o  transition_targdef.o\
         transition.o   clebsg.o  projpot.o fragpot.o \
-        rmatel.o solvecc.o lapack.o  rmatrix.o ccbins.o xsections.o \
-	bincc2.o ceigen.o readwf.o  thox.o
+        rmatel.o solvecc.o lapack.o  rmatrix.o ccbins.o xsections.o  \
+	bincc2.o ceigen.o readwf.o  thox.o eigcc.o
 #coulfg4.f 
 all: $(OBJ)
 	$(FC) -o thox $(OBJ) $(LFLAGS) $(PARALLEL)  
@@ -120,6 +120,8 @@ channels.o:channels.f
 	$(FC) $(FFLAGS) -c channels.f
 writecdccwf.o:writecdccwf.f
 	$(FC) $(FFLAGS) -c writecdccwf.f
+eigcc.o:eigcc.f modules.f90
+	$(FC) $(FFLAGS1) -c eigcc.f
 
 install: all
 #%if BINDIR

@@ -1,0 +1,188 @@
+**************************************************
+ ***        THOx+DCE+CC code: version 2.6        ***
+**************************************************
+
+ ***************** CONSTANTS **********************
+ * hbarc=197.32706 MeV.fm     e^2= 1.43997 MeV.fm *
+ * so, alpha= 1/137.03599       amu=931.4943 MeV  *
+ **************************************************
+   A real*8 is            8  bytes
+   A complex*16 is           16  bytes
+ Pre-reading input to set dimensions
+ 
+  Dimensions for memory allocation
+    o J/pi sets:           2  merged into           2
+    o Maximum internal l:           2
+ 
+  Pre-read finished
+ - COMPOSITE:
+     Core:    Ac=  8.0000  Zc=  4.00
+     Valence: Av=  1.0087  Zv=  0.00
+
+ - Reduced mass:  834.392 MeV/c2
+ - CORE states:
+     # 1: J/pi= 0.0+   Ex= 0.00 MeV
+
+  RADIAL GRID FOR INTERNAL WFS:
+ - Using uniform grid with 1501 points:  [ Rmin= 0.000   Rmax= 150.0  Step= 0.100 fm ]
+
+   ------------- Potential component: 1-------------
+
+ o Undeformed valence-core potential: 
+   COULOMB     : uniform charged sphere with Rc= 0.002 fm
+   NUCLEAR part: type=1 => Woods-Saxon
+       o  Woods-Saxon   V0(l=0-3)=( -62.520 -38.900 -62.520 -39.740) MeV, R0= 2.600 fm, ar= 0.650 fm 
+ --------------------------------------------------
+   
+  PAULI forbidden sp states:
+ => No states will be removed
+  
+
+
+ ******************************************
+      BASIS SET:  1 WITH TOTAL J/pi= 1.5-
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  1]
+       S.p. configuration # 1 ( 1 0.5) 1.5
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 1 0.5) 1.5 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** RADIAL BASIS **
+ - THO basis with m= 4  b= 1.60  fm, gamma= 1.840 and N= 20 states
+  [bas2=0 => Use Hsp eigenstates to diagonalize       full H]
+
+
+     SINGLE-PARTICLE eigenstates:
+
+  o S.p. configuration # 1 =>p1.5
+     # 1  ex=   -1.6601  Norm=  1.0000 rms=  3.9094
+     # 2  ex=    0.1209  Norm=  1.0000 rms= 38.3487
+     # 3  ex=    0.3674  Norm=  1.0000 rms= 36.4033
+     # 4  ex=    0.7590  Norm=  1.0000 rms= 35.0634
+     # 5  ex=    1.3194  Norm=  1.0000 rms= 33.5060
+     # 6  ex=    2.0820  Norm=  1.0000 rms= 31.6486
+     # 7  ex=    3.0942  Norm=  1.0000 rms= 29.5261
+     # 8  ex=    4.4266  Norm=  1.0000 rms= 27.1938
+     # 9  ex=    6.1807  Norm=  1.0000 rms= 24.7222
+     #10  ex=    8.5125  Norm=  1.0000 rms= 22.1795
+       (further eigenstates not printed)
+
+
+
+ o Building full Hamiltonian matrix ( 20x 20):.  
+
+
+     *** EIGENVALUES of full Hamiltonian *** 
+
+     [  0 out of  20 eigenvalues retained ]
+
+
+ ******************************************
+      BASIS SET:  2 WITH TOTAL J/pi= 2.5+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  2]
+       S.p. configuration # 1 ( 2 0.5) 2.5
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 2 0.5) 2.5 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** RADIAL BASIS **
+ - THO basis with m= 4  b= 1.60  fm, gamma= 1.840 and N= 40 states
+  [bas2=0 => Use Hsp eigenstates to diagonalize       full H]
+
+
+     SINGLE-PARTICLE eigenstates:
+
+  o S.p. configuration # 1 =>d2.5
+     # 1  ex=    0.0499  Norm=  1.0000 rms= 82.4259
+     # 2  ex=    0.1248  Norm=  1.0000 rms= 75.7584
+     # 3  ex=    0.2306  Norm=  1.0000 rms= 73.0775
+     # 4  ex=    0.3686  Norm=  1.0000 rms= 71.2917
+     # 5  ex=    0.5406  Norm=  1.0000 rms= 69.7223
+     # 6  ex=    0.7482  Norm=  1.0000 rms= 68.1420
+     # 7  ex=    0.9939  Norm=  1.0000 rms= 66.4447
+     # 8  ex=    1.2795  Norm=  1.0000 rms= 64.5446
+     # 9  ex=    1.6064  Norm=  1.0000 rms= 62.2940
+     #10  ex=    1.9715  Norm=  1.0000 rms= 59.2905
+       (further eigenstates not printed)
+
+
+
+ o Building full Hamiltonian matrix ( 40x 40):.  
+
+
+     *** EIGENVALUES of full Hamiltonian *** 
+     #  1    0.0499  [  1.00000]    rms= 82.4259
+     #  2    0.1248  [  1.00000]    rms= 75.7584
+     #  3    0.2306  [  1.00000]    rms= 73.0775
+     #  4    0.3686  [  1.00000]    rms= 71.2917
+     #  5    0.5406  [  1.00000]    rms= 69.7223
+     #  6    0.7482  [  1.00000]    rms= 68.1420
+     #  7    0.9939  [  1.00000]    rms= 66.4447
+     #  8    1.2795  [  1.00000]    rms= 64.5446
+     #  9    1.6064  [  1.00000]    rms= 62.2940
+     # 10    1.9715  [  1.00000]    rms= 59.2905
+     # 11    2.3586  [  1.00000]    rms= 54.6332
+     # 12    2.7406  [  1.00000]    rms= 50.3265
+     # 13    3.1658  [  1.00000]    rms= 51.5800
+     # 14    3.7051  [  1.00000]    rms= 52.3563
+     # 15    4.3578  [  1.00000]    rms= 51.2080
+     # 16    5.1207  [  1.00000]    rms= 49.2697
+     # 17    6.0032  [  1.00000]    rms= 47.0062
+     # 18    7.0221  [  1.00000]    rms= 44.5835
+     # 19    8.2002  [  1.00000]    rms= 42.0748
+     # 20    9.5669  [  1.00000]    rms= 39.5224
+     # 21   11.1598  [  1.00000]    rms= 36.9560
+     # 22   13.0267  [  1.00000]    rms= 34.4007
+
+     [ 22 out of  40 eigenvalues retained ]
+
+
+     ******  PROJECTILE SCATTERING STATES ******
+     # Continuum WFS for Jp=2.5+ ; Channels= 1 ;  Inc. chan.= 1 Uniform Ecm=F
+
+
+
+
+ ** CALCULATION OF B(ELAM) **
+
+     => B(E) requested for set jset  3 but only  2 available!. Skipping
+
+
+     ******  REACTION CALCULATION ******
+
+     Projectile: Mass=  11.027 amu   Z=   4.0
+     Target:     Mass=   1.008 amu   Z=   1.0
+
+     Nb. of target states:  1
+     o state #  1   J/pi=0.0+    Ex= 0.000
+     [using transition subroutine for spin-zero target]
+
+     *********** COUPLING POTENTIALS  *********** 
+     [No coupling potentials requested ]
+
+
+     ******  CC SOLUTIONS ******
+     [No reaction calculation requested]
+
+
+  The following files have been created:
+  40: Valence-core potentials.                 45: Phase-shifts.                           
+  46: Eigenphases.                             60: wfs of Hsp eigenstates.                 
+  70: Full H matrix for each channel block.    72: Orthog. matrix for each channel block.  
+  74: Full Hamiltonian.                        76: Single-particle Hamiltonians.           
+  78: Channel decomposition of eigenfunctions. 79: List of full H matrix eigenvalues.      
+ 101: Channel WFs of H eigenvalues.           102: Channel WFs of H eigenvalues.           
+ 103: Channel WFs of H eigenvalues.           137: Scattering amplitudes.                  
+ 200: .                                       300: All diff. x-sections.                   
+ 500: Continuum WFS from SCATWF namelist.     
+ 
+ Timings:
+  Matching :   1.7920000000006819E-003  secs
