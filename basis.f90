@@ -71,7 +71,6 @@ c Initialize variables and assign default values
       nho=1
       endif      
 !------------------------------------------------------------------------
-      
 c To be done!
 c      if (iset.eq.1) then
 c         prevset=1
