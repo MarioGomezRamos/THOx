@@ -367,5 +367,16 @@ c--------------------------------------------------------------------------B(Ela
         integer,allocatable:: qli(:),cindexi(:)
       end module belambdamod
 
-
+      module bmlambdamod
+       character*40 :: uwfgsfile
+        logical ifbml
+        integer:: lambda,ncni,partoti,incni
+        real*8,allocatable::qjci(:),qji(:),qlir(:),r(:)
+!        real*8,allocatable:: ugs2(:,:)
+        real*8,allocatable::dbde(:,:)
+        complex*16,allocatable::ugs(:,:) 
+        complex*16,allocatable:: mml(:,:)
+        real*8:: zeff,besr,jtoti,sni,eneri
+        integer,allocatable:: qli(:),cindexi(:)
+      end module bmlambdamod
  
