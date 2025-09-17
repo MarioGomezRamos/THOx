@@ -479,6 +479,10 @@ c------------------------------------------------
      &             wfscat(:,:,:),smate,psh,writewf)
          wfscat(:,:,:)=sqrt(2./pi)*wfscat(:,:,:) ! set norm to delta(k-k')
 
+         write(96,*)'#E                               B(El)                   
+     &   xs(photodis)                 xs(cap)                  S_fact_pd  
+     &                  S_fact_cap             B(El)'
+
       do ik=1,nk
          Elamcont=zero
          Elamcore=0d0

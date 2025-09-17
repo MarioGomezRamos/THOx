@@ -258,6 +258,9 @@ c *** Continuum WFS (scatwf namelist)
 
 c *** B(E;lambda)      
       call belam ! (kin,jtot,partot)
+      
+c *** B(M;lambda)      
+      call bmlam ! (kin,jtot,partot)      
 
 c *** Phase-shifts
 !      if (ifphase) call phase

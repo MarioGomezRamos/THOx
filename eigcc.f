@@ -87,7 +87,9 @@ c *** ----------------------------------------------
       write(*,*) 'Energy',ener,egs
       
       do ich=1,nchan
-      wfc(nset,1,ich,1:maxn-1)=y(1:maxn-1,ich)
+      do ir=1,maxn-1
+      wfc(nset,1,ich,ir)=y(ir,ich)/((ir-1d0)*dr+1e-10)
+      enddo
       enddo
       deallocate(ccmat)
       
