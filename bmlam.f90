@@ -850,7 +850,8 @@ c-----------------------------------------------------------------------------
           endif
         enddo
        else
-        print *, "File nuclear_moments.csv not foung g set to 0"
+        print *, "File nuclear_moments.csv not found, g set to 0, look 
+     &   in folder gfactors"
         gyro=0d0
        endif
        
