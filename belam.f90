@@ -433,7 +433,7 @@ c        written(95)=.true.
         write(*,'(30x,"Total BE=",1f10.6," e2.fm",i1)')besum,2*lambda
         write(*,*)'- From Sum Rule: (only for SP excitation!)'
         write(*,'(1x,"- Polarizability=",1f10.6," fm^3")') apol
-        call sumrule
+        call sumrule(qlr)
         write(*,'(30x,"Total BE=",1f10.6," e2.fm",i1)')besr,2*lambda 
 !        write(*,*)"(** sum rule only intended for sp excitations)"
 
@@ -700,7 +700,7 @@ c-----------------------------------------------------------------------------
 500      end 
 
 
-        subroutine sumrule
+        subroutine sumrule(qlr)
         use constants, only: pi
         use sistema
         use wfs, only: dr,nr,rvec
@@ -709,7 +709,7 @@ c-----------------------------------------------------------------------------
         implicit none
         integer:: n,m,c,q
         real*8:: cr,matel,threej,lambdar
-        real*8:: cleb,qr,sum3j
+        real*8:: cleb,qr,sum3j,qlr(nchan)
         complex*16::faux(nr),res
         logical:: fail3
 
@@ -718,39 +718,29 @@ c-----------------------------------------------------------------------------
         lambdar=1d0*lambda
         besr=0d0
 	do n=1,ncni
-          do m=1,ncni
-           if ((qjci(n).eq.qjci(m)).and.(cindexi(n).eq.cindexi(m))) then             !qjci is needed if cindexi takes into account only repeated Jpi
+          do m=1,nchan
+           if ((cindexi(n).eq.cindex(m))) then             !qjci is needed if cindexi takes into account only repeated Jpi
 !           if (cindexi(n).eq.cindexi(m)) then                                    
-           do c=0,2*lambda
-           cr=1d0*c
-           if (.not.fail3(qji(n),cr,qji(m))) then
-              if (.not.fail3(qlir(n),cr,qlir(m))) then            
-              faux(1:nr)=rvec(1:nr)**(2*lambda)*ugs(1:nr,n)*ugs(1:nr,m) 
+!           if (.not.fail3(qji(n),,qji(m))) then
+!              if (.not.fail3(qlir(n),cr,qlir(m))) then            
+              faux(1:nr)=rvec(1:nr)**(2*lambda)*ugs(1:nr,n)*ugs(1:nr,n) 
               call simc(faux,res,1,nr,dr,nr)
-                 
+!              write(*,*) 'rms',sqrt(res)
+
 !              besr=besr+matel(cr,sn,qjci(m),jtoti,qji(n),
 !     &qlir(n),jtoti,qji(m),qlir(m))*res*sqrt(2*cr+1)*
 !     &threej(lambdar,lambdar,cr,0d0,0d0,0d0)**2
 !     &*cleb(jtoti,jtoti,cr,0d0,jtoti,jtoti)
 
-          sum3j=0d0
-          do q=-c,c
-            qr=1d0*q
-            sum3j=sum3j+
-     &threej(lambdar,lambdar,cr,-qr,qr,0d0)*(-1)**q
-          enddo
-              besr=besr+matel(cr,sn,qjci(m),jtoti,qji(n),          !calculating sum over q
-     &qlir(n),jtoti,qji(m),qlir(m))*res*sqrt(2*cr+1)*
-     &threej(lambdar,lambdar,cr,0d0,0d0,0d0)*(-1)**(2*c)*
-     &sum3j*cleb(jtoti,jtoti,cr,0d0,jtoti,jtoti)
-
-              endif
-           endif
-           enddo
+              besr=besr+(matel(lambdar,sn,qjci(n),jtoti,qji(n),          !calculating sum over q
+     &qlir(n),jtot,qj(m),qlr(m)))**2*res
+!             write(*,*) 'Lambda',cr,besr
+!              endif
+!           endif
            endif
           enddo
         enddo
-        besr=besr*(2*lambda+1)/sqrt(4*pi)*(2*jtot+1)/(2*jtoti+1)
+        besr=besr*(2*jtot+1)/(2*jtoti+1)
         besr=besr*zeff**2
 
 

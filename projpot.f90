@@ -73,6 +73,7 @@ c
        delta=0d0
        beta=0d0
        cptype=0
+       reid93=.false.
        ncomp=0 !number of potential components
        laminc(:)=.false.
 
@@ -120,6 +121,7 @@ c
        read(kin,nml=potential)
        A13=Ap**.33333333 + At**.33333333
        rabs=r0*a13
+       if (ptype.eq.8) reid93=.true.
        if (delta.eq.0d0) delta=beta*rabs
 
        if (ptype.eq.0) then
@@ -266,7 +268,10 @@ c ------------------------------------------------------
 154        format(3x,i5,' points & ',i3,' potentials')
            write(*,*)'- +WS s.o. with parametres:'
            write(*,122) Vso,rso*A13, aso
-
+c ------------------------------------------------------
+        case(8) !  Reid93
+c ------------------------------------------------------
+           write(*,*)'Reid93 potential, ONLY for deuteron!!!!'
 
 c ------------------------------------------------------
         case(10) !  Externally read

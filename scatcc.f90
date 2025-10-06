@@ -225,7 +225,7 @@ c *** Initialize R-matrix ----------------------------------
       phc=(0d0,1d0)**(ql(ichp)-ql(ich))
       jci= qjc(ich)
       jcf= qjc(ichp) 
-      ph2=(-1)**NINT((JCI-JCF - ABS(JCI-JCF))/2.)
+!      ph2=(-1)**NINT((JCI-JCF - ABS(JCI-JCF))/2.)
       faux(1:nr)=ccmat(ich,ichp,1:nr)
       do 4 ir=1,nbas*ns
       r=zrma(ir)

@@ -50,8 +50,8 @@ c AMM: final??
  
       if(lambdac.gt.(K+lambda).or.lambdac.lt.abs(K-lambda).or.
      .(-1)**nint(dble(K)+dble(lambda)+xlambdac).ne.1) return
-      if(xKc.eq.0.d0.and.(-1)**nint(dble(nQ)+xI1+xI2).ne.1) return
-      if((nq.eq.0).and.(xI1.ne.xI2)) return
+      if(nint(xKc).eq.0.and.(-1)**nint(dble(nQ)+xI1+xI2).ne.1) return
+      if((nq.eq.0).and.(abs(xI1-xI2).gt.0.2d0)) return
 
       xfac=(-1.d0)**nint(xj2+xl1+xl2+s1+dble(nQ))
      .*Qg**2*xKg*xj1g*xj2g*xl1g*xl2g

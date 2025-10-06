@@ -1,0 +1,90 @@
+**************************************************
+ ***        THOx+DCE+CC code: version 2.6        ***
+**************************************************
+
+ ***************** CONSTANTS **********************
+ * hbarc=197.32706 MeV.fm     e^2= 1.43997 MeV.fm *
+ * so, alpha= 1/137.03599       amu=931.4943 MeV  *
+ **************************************************
+   A real*8 is            8  bytes
+   A complex*16 is           16  bytes
+ Pre-reading input to set dimensions
+ 
+  Dimensions for memory allocation
+    o J/pi sets:           1  merged into           1
+    o Maximum internal l:           2
+ 
+  Pre-read finished
+ - COMPOSITE:
+     Core:    Ac=  1.0078  Zc=  1.00
+     Valence: Av=  1.0087  Zv=  0.00
+
+ - Reduced mass:  469.589 MeV/c2
+ - CORE states:
+ Changing kband=0 to kband=0.5
+     # 1: J/pi= 0.5+   Ex= 0.00 MeV
+
+  RADIAL GRID FOR INTERNAL WFS:
+ - Using uniform grid with 2001 points:  [ Rmin= 0.000   Rmax= 100.0  Step= 0.050 fm ]
+
+   ------------- Potential component: 1-------------
+
+ o Undeformed valence-core potential: 
+   COULOMB     : uniform charged sphere with Rc= 0.001 fm
+   NUCLEAR part: Reid93 potential, ONLY for deuteron!!!!
+ --------------------------------------------------
+   
+  PAULI forbidden sp states:
+ => No states will be removed
+  
+
+
+ ******************************************
+      BASIS SET:  1 WITH TOTAL J/pi= 1.0+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  2]
+       S.p. configuration # 1 ( 0 0.5) 0.5
+       S.p. configuration # 2 ( 2 0.5) 1.5
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.5 ( 0 0.5) 0.5 Ex= 0.000 MeV with sp config #1 and core #1
+     Channel # 2 : Ic= 0.5 ( 2 0.5) 1.5 Ex= 0.000 MeV with sp config #2 and core #1
+   
+  ** Exact bound wf ** 
+ Energy:   2.2200000000000002     
+ Energy:   2.2287979446404647     
+ Channel           1 (l,s,j,I,J)           0  0.50000000000000000       0.50000000000000000       0.50000000000000000        1.0000000000000000      Norm:  0.94294178401292106     
+ Channel           2 (l,s,j,I,J)           2  0.50000000000000000        1.5000000000000000       0.50000000000000000        1.0000000000000000      Norm:   5.7058215880389201E-002
+ Total norm:  0.99999999989331023     
+ sqrt(rms):   3.9362081598751728     
+ Energy:   2.2287979446404647      from   2.2200000000000002     
+
+
+     ******  PROJECTILE SCATTERING STATES ******
+
+
+     ******  REACTION CALCULATION ******
+
+     Projectile: Mass=   2.014 amu   Z=   1.0
+     Target:     Mass=  12.000 amu   Z=   6.0
+
+     Nb. of target states:  1
+     o state #  1   J/pi=0.0+    Ex= 0.000
+     [using transition subroutine for spin-zero target]
+
+     *********** COUPLING POTENTIALS  *********** 
+     [No coupling potentials requested ]
+
+
+     ******  CC SOLUTIONS ******
+     [No reaction calculation requested]
+
+
+  The following files have been created:
+  40: Valence-core potentials.                137: Scattering amplitudes.                  
+ 200: .                                       300: All diff. x-sections.                   
+ 
+ Timings:

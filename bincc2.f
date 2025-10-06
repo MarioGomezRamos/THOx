@@ -24,6 +24,7 @@
 !      COMPLEX*16 FORMF(MAXN,NF)  ! Commented by AMoro
       complex*16 ccmat(m,m,maxn)  ! Added by AMoro
       complex*16 Y(NMAX+1,M),W(NMAX+1,M),WY
+      complex*16 deltai
       REAL*8 ETA,KJ,CF(LMX1),CG(LMX1),CFP(1),CGP(1),KEIG,ETAP(M)
       parameter(nhsp=4)
       real radhsp(nhsp),phres(nhsp)
@@ -32,7 +33,8 @@
       integer ko   !(AMoro: replaces module drier)
       real*8:: fpmax
       complex*16 smat(m),test
-      real*8:: psh(m),pshlast(m),pshadd(m)
+      real*8:: pshlast(m),pshadd(m)
+      complex*16 psh(m) 
 !       parameter(fpmax=1e246)
        ko=6
        pi=acos(-1d0)
@@ -282,14 +284,14 @@ C
        X = (0.,-.5) * LOG(MAT(j+M,NP))
        DELTAI = RADEG * X
 	if(IK>1) then
-           if(deltai<delast-90) deladd=deladd+180
-           if(deltai>delast+90) deladd=deladd-180
+           if(dble(deltai)<delast-90) deladd=deladd+180
+           if(dble(deltai)>delast+90) deladd=deladd-180
 !           if (abs(deltaiadd)>1e-3) write(*,*)kp/conv,'del=',deltaiadd
 	endif
        deltai = deltai + deladd
 	pshlast(j)=deltai       
        endif
-       psh(j)=deltai
+       psh(j)=(0.,-.5) * LOG(MAT(j+M,NP))
       enddo
 !      BE = (K2(IL) + KP-K2(J))/CONV
       write(45,500) kp/conv,(psh(j),j=1,m) ! AMM
@@ -306,17 +308,17 @@ c
       X = (0.,-.5) * LOG(MAT(IN+M,NP))
       DELTAI = RADEG * X
       endif
-      WY = DELTAI
+      WY = dble(DELTAI)
 	 if(IK>1) then
-           if(deltai<deltalast-90) deltaiadd=deltaiadd+180
-           if(deltai>deltalast+90) deltaiadd=deltaiadd-180
+           if(dble(deltai)<deltalast-90) deltaiadd=deltaiadd+180
+           if(dble(deltai)>deltalast+90) deltaiadd=deltaiadd-180
 	 endif
-          deltalast=deltai
+          deltalast=dble(deltai)
           deltai = deltai + deltaiadd
 	
       BPHASE(IK) = DELTAI/RADEG
       IF(PCON.GE.3)  WRITE(KO,999) IK,IN,K,KP/conv,
-     X   MAT(il+M,NP), DELTAI,-sqfpi*tmati / conv
+     X   MAT(il+M,NP), dble(DELTAI),-sqfpi*tmati / conv
 
       YFAC = 1.0
         IF(TDEL) YFAC = EXP(-CI*BPHASE(IK))

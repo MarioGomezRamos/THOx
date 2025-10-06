@@ -1,5 +1,5 @@
 ****PRE_EIGCC************************************************************
-      subroutine pre_eigcc(nset,nchan,nodes)
+      subroutine pre_eigcc(nset,nchan,nodes,changepot)
       use globals, only: mu12,egs,kin,written,verb
       use constants
       use sistema
@@ -7,7 +7,7 @@
       use channels, only:jtot,sn,partot,nchmax,ql,cindex,qj,qjc,jpiset,
      &  jpsets
       use parameters, only: maxchan,maxeset
-      use potentials, only: ccmat
+      use potentials, only: ccmat,vcl
       use xcdcc, only: binset,realwf
       use nmrv, only : nopen
       implicit none
@@ -38,10 +38,15 @@ c  bincc variables (Fresco)
       real*8:: fmscal
       complex*16:: ccoup(maxchan,maxchan,nr)
       
-      integer maxiter,ifail,nods
-      real*8 eps
+      integer maxiter,ifail
+      real*8 eps,theta,p
+      real*8 norm,aux
+      real*8,allocatable::integrand(:)
+      logical changepot
 c  end bincc 
 c *** ----------------------------------------------
+      
+      
        fconv=hc**2/2/mu12 ! E=fconv*k^2
       
       pcon=2;maxiter=300;eps=1e-5
@@ -54,6 +59,17 @@ c *** ----------------------------------------------
 
       inc     =jpiset(nset)%inc
       nchan   =jpiset(nset)%nchan
+
+      ener=egs
+      conv=1/fconv 
+      
+      if (changepot) then
+        theta=0d0
+        p=1e-2
+      else
+        theta=conv
+        p=ener
+      endif
       
        call coefmat(nset,nchan)
        ccmat(:,:,:)=-ccmat(:,:,:)
@@ -73,22 +89,56 @@ c *** ----------------------------------------------
         allocate(energ(jpsets,maxeset))
       endif
       
+      if (.not. changepot) then
       do ich=1,nchan
       k2(ich)=k2(ich)-conv*egs
       enddo
+      endif
       
-      ener=egs
+
       
-      call EIGCC(y,CCMAT,ETAP,1d0,nr-1,K2,conv,ener,nr,inc,NODES,nr,dr   
-     &  ,nchan,PCON,2*nchan+1,maxiter,EPS,IFAIL,lmax+1)
+      call EIGCC(y,CCMAT,ETAP,1d0,nr-1,K2,theta,p,nr,inc,NODES,nr,dr   
+     & ,nchan,PCON,2*nchan+1,maxiter,EPS,IFAIL,lmax+1,vcl(ql(inc),1:nr))
       
       
       energ(nset,1)=-ener
-      write(*,*) 'Energy',ener,egs
+      
+      norm=0
+      rms=0
+      allocate(integrand(1:maxn-1))
+      do ich=1,nchan
+      do ir=1,maxn-1
+        integrand(ir)=abs(y(ir,ich))**2
+      enddo
+      call sim(integrand,aux,1,maxn-1,dr,maxn-1)
+      write(*,*)'Channel',ich,'(l,s,j,I,J)',ql(ich),sn,qj(ich),qjc(ich),
+     & jtot,'Norm:',aux
+      norm=norm+aux
+      do ir=1,maxn-1
+        integrand(ir)=((ir-1d0)*dr)**2*abs(y(ir,ich))**2
+      enddo
+      call sim(integrand,aux,1,maxn-1,dr,maxn-1)
+      rms=rms+aux
+      enddo
+      
+      write(*,*)'Total norm:',norm
+      
+      write(*,*) 'sqrt(rms):', sqrt(rms/norm)
+      
+      if (changepot) then
+      write(*,*) 'Central potential in channel',inc,'rescaled by',
+     & 1d0-p/conv
+      write(*,*) 'Rescaling not applied to other channels!!!!'
+      write(*,*) 'Energy',egs
+      else
+      write(*,*) 'Energy:',p,'from',egs
+      endif
+      
       
       do ich=1,nchan
       do ir=1,maxn-1
       wfc(nset,1,ich,ir)=y(ir,ich)/((ir-1d0)*dr+1e-10)
+      if (ir.eq.1 .and. ql(ich).ne.0) wfc(nset,1,ich,ir)=0
       enddo
       enddo
       deallocate(ccmat)
@@ -137,7 +187,7 @@ c *** ----------------------------------------------
         r=rmin+dr*dble(ir-1)
        enddo !ir
              
-        do ir=1,np
+        do ir=2,np
         r=rmin+dr*dble(ir-1)
         if (r> rlast) cycle
 !        write(100+i,'(1f8.3,2x,10g14.6)') r,(r*wfeig(i,m,ir),m=1,nchan)   
@@ -172,7 +222,7 @@ c *** ----------------------------------------------
 
 *****EIGCC**************************************************************
       SUBROUTINE EIGCC(PSI,CCMAT,ETAP,AB,MR,KAP2,THETA,P,
-     &  MAXN,MC,NODES,NP,H,M,PCON,MM2,MAXC,EPS,IFAIL,LMX1)
+     &  MAXN,MC,NODES,NP,H,M,PCON,MM2,MAXC,EPS,IFAIL,LMX1,pot)
 		use factorials
 c! AMoro ---------------------
 !     	use io
@@ -190,6 +240,7 @@ c!	use drier
       complex*16 CENT(M),ZI(M,M),ZM(M,M),ZP(M,M)
      &             ,COUT(M),COUTP(M),COUPL(M,M)
       REAL*8 ETA,K,WL(LMX1),WLD(LMX1)
+      real*8 pot(maxn)
       LOGICAL SING
 C
       ko=6
@@ -230,7 +281,12 @@ C     IF(NP.GT.MAXN.OR.NR.GT.MM2) STOP 101
 22    I=I-1
 !      write(778,*) I,dble(CCMAT(MC,MC,I))
       UDIAG = -KAP2(MC) - THETA*P
-23    UDIAG = UDIAG + CCMAT(MC,MC,I)
+      UDIAG = UDIAG + CCMAT(MC,MC,I)
+      if (abs(theta).lt.1e-5) then
+      !changing potential
+      UDIAG = UDIAG +P*pot(I)
+      endif
+
       DEN = -CENT(MC)/((I-1)*H)**2 + UDIAG
          IF(DEL.LT.DEN) THEN
             DEL = DEN
@@ -245,7 +301,12 @@ C     IF(NP.GT.MAXN.OR.NR.GT.MM2) STOP 101
       IF(COUNT.EQ.1 .AND. PCON.GE.7)
      &WRITE(*,*)MC,Ql(MC),K,ETA,RN+H,COUTP(MC),RN,COUT(MC),MAM,MAP
      &             ,CENT(MC)
-103   DO 30 J=1,M
+103   if (abs(theta).gt. 1e-5) then
+      write(*,*) 'Energy:',p
+      else
+      write(*,*) 'p= 2mu/hbar2*(V-Vmod)',p
+      endif
+      DO 30 J=1,M
       DO 25 IT=1,M
       ZM(IT,J) = 0.0
 25    ZI(IT,J) = 0.0
@@ -267,6 +328,10 @@ C      outer integration,  zi from np to map
        DO 45 L=1,M
          C = 0.0
             T = CCMAT(L,J,II)
+            if (abs(theta).lt.1e-5 .and. L.eq.mc .and. j.eq.mc) then
+!            if (ii.eq.11) write(*,*)'P',p,pot(II),ii,t
+             T= T+P*pot(II)
+            endif
          C = C + T 
 425      CONTINUE
          IF(L.EQ.J) C = C - KAP2(J) - THETA * P
@@ -379,34 +444,43 @@ C 91     IF(PSI(I,MC)*PSI(I-1,MC).LT.0.) NCO = NCO + 1
        DEN = 0.0
        DO  96 J=1,M
        DO  96 L=1,M
+       if (abs(theta).lt.1e-5) then
+!       write(*,*) 'np',np
        DO 92 IMAX=NP,1,-1
-92          IF(ABS(CCMAT(L,J,IMAX)).GT.SMALLR .AND.
+!            write(*,*) imax   ,pot(imax), PSI(IMAX,L)  
+92          IF(ABS(pot(imax)).GT.SMALLR .AND.
      X         ABS(PSI(IMAX,L)).GT.SMALLQ) GO TO 925
 925         DO  93 I=2,IMAX
 !            write(778,*) I,dble(CCMAT(J,L,I))
-93          DEN = DEN + dble(PSI(I,J))*dble(CCMAT(J,L,I))*dble(PSI(I,L))
+        if (j.eq.mc .and. l.eq.mc) then
+!           write(*,*)'i,j',i,j,pot(i),psi(i,j)
+           DEN = DEN + dble(PSI(I,J))*pot(i)*dble(PSI(I,L))
+        endif
+93      continue
+!        write(*,*) den,imax  ,smallr,smallq ,pot(imax+1), PSI(IMAX+2,L)    
 !         write(778,*)
 !         write(778,*)
+       endif
          IF(THETA.EQ.0.0 .OR. J.NE.L) GO TO 96
          DO 95 I=2,NP
 95       DEN = DEN - dble(PSI(I,J))*THETA*dble(PSI(I,L))
 96    CONTINUE
-       DEL =(dble(DEROUT) - dble(DERIN)) / abs(PSI(MAP,MC))
+       DEL =(dble(DEROUT) - dble(DERIN)) / dble(PSI(MAP,MC))
        IF(PCON.GE.3) WRITE(KO,217) P,DEL,NCO,MAM
 C 217    format(e14.6,e15.3,i6)
   217    FORMAT(1X,F13.6,F15.8,2I6)
        POLD = P
        IF(COUNT.GT.MAXC) GO TO 210
-       IF(abs(P).lt.1d-4) GO TO 210
+       IF(abs(P).lt.1d-4 .and. abs(theta).gt.1e-5) GO TO 210
 !       write(*,*) 'NCO',NCO,'NODES',NODES
        IF(NCO.NE.NODES) GO TO 6
        IF(ABS(DEL).LT.EPS) GO TO 7
          IF(DEN.EQ.0.0) GO TO 220
        Q =DEL * abs(PSI(MAP,MC))**2 / (DEN * H)
- !      write(*,*) 'Q',q,p
-       IF(P.LT.Q) Q=P
-       IF(P.LT.-Q) Q = -0.5*P
-       P = P+Q
+!       write(*,*) 'Q',q,p
+       IF(P.LT.Q.and. abs(theta).gt. 1e-5) Q=P
+       IF(P.LT.-Q.and. abs(theta).gt. 1e-5) Q = -0.5*P
+       P = P-Q
        BC = 1
        Q = 2*Q
 99     IF(THETA.NE.0.0) GO TO 102
@@ -423,7 +497,7 @@ C 217    format(e14.6,e15.3,i6)
       P = PP*CC + P
       GO TO 99
 61    Q = 0.5*Q
-      P = P - 0.5*Q
+      P = P + 0.5*Q
       GO TO 99
 7     Q = 0.0
       DO 700 J=1,M

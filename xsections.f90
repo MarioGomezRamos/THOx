@@ -14,6 +14,7 @@ c *** --------------------------------------------------------------
       use wfs,      only: nr,dr,energ,rvec,wfr
       implicit none
       logical :: doublexs,triplexs,phixs,jsets(maxsets),kinset(maxsets)
+      logical :: alphaxs
 c     ---------------------------------------------------------
       integer, parameter :: klog=99
       integer   , parameter:: kamp=136, kxs=300,kfam=137,
@@ -59,7 +60,7 @@ c PLM
 
       namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,phixs,jsets,
      &                    ermin,ermax,ner,icore,thcut,
-     &                    triplexs,rel
+     &                    triplexs,rel,alphaxs!GR
 
 c initialize -------------------------------------------------
       written(kamp)=.false.
@@ -598,10 +599,16 @@ c Simple ds/de for bins
 
       
 c Double x-sections 
-1000  if ((doublexs).or.(triplexs)) then
+1000  if ((doublexs).or.(triplexs).or.(alphaxs)) then
 !       write(0,*)'calling d2sigma:'
+        if(.not. alphaxs) then
         call d2sigma(nth,dth,thmin,thcut,ermin,ermax,ner,
      &                 icore,jsets,fileamp,doublexs,triplexs,phixs)
+        else
+        write(*,*) 'Computing angle alpha'
+        call d2sigma_alpha_1d(nth,dth,thmin,thcut,ermin,ermax,ner,
+     &                 icore,jsets,fileamp,doublexs,triplexs,phixs)
+        endif
       endif
       if (allocated(famps0)) deallocate(famps0)
       end subroutine
@@ -962,7 +969,7 @@ c *** Overlaps between PS's and Scattering states  -----------------------------
       ecv=emin+(iecv-1)*dec
       erel(iecv)=ecv
       if (ecv.lt.eps) ecv=eps
-      kcv=sqrt(2.d0*mucv*ecv)/hc    
+!      kcv=sqrt(2.d0*mucv*ecv)/hc    
       sumr=0
       caux=0.
       do ich=1,nchan ! sum in final channels
@@ -2124,6 +2131,7 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
       min=1
       max=nxy(i)
       num=nxy(i)/2
+      if(num .lt.1) num=1
 55    if(max-min.lt.4) goto 70
       if(xyt(i,num)-xyb(i)) 60,82,61
 60    min=num

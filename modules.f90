@@ -301,6 +301,7 @@ c Scattering states of core+valence system
          integer::cptype,lpot
          integer, parameter:: maxlamb=6
          logical:: laminc(0:maxlamb)
+         logical:: reid93
          real*8,allocatable,target::vcl(:,:)
          real*8,allocatable::vls(:,:),vss(:,:),vll(:,:),vlsc(:,:) !MGR
          real*8,allocatable::vtran(:,:,:,:,:)

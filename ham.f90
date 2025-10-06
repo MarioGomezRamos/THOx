@@ -314,7 +314,7 @@ c *** ---------------------------------------------------
       use sistema
       use potentials, only: vls,vlsc,vss,vcl,vcou,vlcoup,
      &lpot,vll,vtran,cptype,maxlamb,  
-     &lambda,pcmodel,laminc,vscale ! v2.1          
+     &lambda,pcmodel,laminc,vscale,reid93 ! v2.1          
       use constants
       use channels
       use wfs
@@ -343,6 +343,9 @@ c *** ---------------------------------------------------
       logical:: ifren=.false.
       real*8 :: ki,kf,kband
       real*8 :: allp2 !!!! TEST
+      character*3  reidname !MGR
+      character*1 reidj
+      real*8 :: reidpot(2,2),auxreid
          
       ichn=spindex(nchani)
       ichm=spindex(nchanf)
@@ -490,18 +493,109 @@ c Diagonal term
            else ! bas2.ne.0
              knm=fact*d1wfn*d1wfm           !kinetic energy term
      &           + fact*xl*(xl+1d0)/r/r*un*um  !centrifugal term
+             if (.not. reid93) then !MGR
              vnm= (
      &  vcou(i)        ! central Coulomb  
      &  + vcl(li,i)    ! central 
      &  + als*vls(li,i)   ! for ptype 5 it would sum vls anyway   MGR  l-dependence   
      &  + all*vll(li,i)   ! l.l term    MGR l-dependence
-     &  )*un*um ! 
+     &  )*un*um !
+           endif 
            endif  
            vnm=vnm + exc(nchani)*un*um  ! rotational energy of the core
 
            endif
 
 c Non-diagonal
+          if (reid93) then !MGR
+             
+             vnm=0d0
+             write(reidj,'(i1)') nint(jtot)
+             reidname(3:3)=reidj
+!             if(i.eq.1) write(*,*) 'Reid93 J', reidname(3:3)
+!             write(0,*) 'Reid93 J',reidname(3:3),reidj,nint(jtot)
+             if (abs(li-nint(jtot)).ne. 0) then !only S=1
+             reidname(1:2)='3C'     
+             if (nint(jtot).eq.0) reidname(1:2)='3P'       
+             call rreid93(r,reidname,'PN',reidpot)
+              if (li.gt.lf) then
+              vnm=reidpot(2,1)*un*um
+!              if(i.eq.i) write(*,*) 'Reid93 ', reidname,'l',li,lf,vnm  
+              else if (li.lt.lf) then
+              vnm=reidpot(1,2)*un*um
+!              if(i.eq.i) write(*,*) 'Reid93 ', reidname,'l',li,lf,vnm  
+              else !li.eq.lf
+               if (li.lt.nint(jtot) .or. nint(jtot).eq.0) then
+               vnm=reidpot(1,1)*un*um
+!               if(i.eq.i) write(*,*) 'Reid93 ', reidname,'l',li,lf,vnm  
+               else
+               vnm=reidpot(2,2)*un*um
+!               if(i.eq.i) write(*,*) 'Reid93 ', reidname,'l',li,lf,vnm  
+               endif
+              endif
+             else if (li.eq.nint(jtot) .and. lf.eq.nint(jtot)) then !S=0 and S=1
+             select case(li)
+             case(0)
+             reidname(1:2)='1S'
+             case(1)
+             reidname(1:2)='1P'
+             case(2)
+             reidname(1:2)='1D'
+             case(3)
+             reidname(1:2)='1F'
+             case(4)
+             reidname(1:2)='1G'
+             case(5)
+             reidname(1:2)='1H'
+             case(6)
+             reidname(1:2)='1I'
+             case(7)
+             reidname(1:2)='1K'
+             case(8)
+             reidname(1:2)='1L'
+             end select
+             call rreid93(r,reidname,'PN',reidpot)
+             !S=0
+             vnm=sqrt((2d0*ji+1d0)*(2d0*jf+1d0))*                       &
+     &       (-1d0)**(jf-ji)/2d0/(2d0*li+1d0)*reidpot(1,1) !Factors are Racah with S=0
+             !S=1
+             select case(li)
+             case(1)
+             reidname(1:2)='3P'
+             case(2)
+             reidname(1:2)='3D'
+             case(3)
+             reidname(1:2)='3F'
+             case(4)
+             reidname(1:2)='3G'
+             case(5)
+             reidname(1:2)='3H'
+             case(6)
+             reidname(1:2)='3I'
+             case(7)
+             reidname(1:2)='3K'
+             case(8)
+             reidname(1:2)='3L'
+             end select
+             call rreid93(r,reidname,'PN',reidpot) 
+              if (ji.gt.(jtot+0d0)) then !First racah
+              auxreid=(-1d0)**(li+ji+0.5d0)/2d0*sqrt((li+1.5d0-ji)*      &
+     &        (li+ji-0.5d0)/ji) !Racah from table 9.1 Varshalovich
+              else
+              auxreid=(-1d0)**(li+ji+1.5d0)/2d0*sqrt((-li+1.5d0+ji)*      &
+     &        (li+ji+2.5d0)/(ji+1d0))
+              endif
+              if (jf.gt.(jtot+0d0)) then !Second racah
+              auxreid=auxreid*(-1d0)**(lf+jf+0.5d0)                         &
+     &        /2d0*sqrt((lf+1.5d0-jf)*(lf+jf-0.5d0)/jf) !Racah from table 9.1 Varshalovich
+              else
+              auxreid=auxreid*(-1d0)**(lf+jf+1.5d0)                        &
+     & /2d0*sqrt((-lf+1.5d0+jf)*(lf+jf+2.5d0)/(jf+1d0))
+              endif
+              vnm=vnm+auxreid*reidpot(1,1)*un*um
+             
+             endif
+          else
            vnm=vnm  
      &  + (alsc*vlsc(li,i)        ! core spin-orbit MGR l-dependence     
      &  + sum(acoup(:)*vcp(:))    ! particle-core coupling
@@ -511,6 +605,7 @@ c Non-diagonal
 !       if (i.eq.1) write(*,*)'spin.spin included! ass=',ass,vss(li,i)
              vnm=vnm + ass*vss(li,i)*un*um  ! spin-spin 
        endif
+          endif
 
 
 !old particle core

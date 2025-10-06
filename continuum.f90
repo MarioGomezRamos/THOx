@@ -16,7 +16,7 @@ c -------------------------------------------------------------------------
       use sistema
       use globals
       use potentials, only:ccmat,vtran,vlcoup,laminc,lpot,pcmodel,kband,
-     &                     cptype,maxlamb,vcou,vss,vcl,vls,vlsc,vll 
+     &                   cptype,maxlamb,vcou,vss,vcl,vls,vlsc,vll,reid93 
       use constants
       use forbidden ! added in v2.2f
       implicit none
@@ -36,6 +36,10 @@ c     Pauli blocking
       integer:: lp,np
       real*8:: jp,vscale
       real*8,allocatable:: wfpau(:)       
+
+      character*3  reidname !MGR
+      character*1 reidj
+      real*8 :: reidpot(2,2),auxreid,vnm,r
 c     -----------------------------------------------------------------------
 !      big=huge(big)   
 !      small=epsilon(small)
@@ -173,7 +177,7 @@ c matrix element of Y(theta)
 c spin.spin term 
 !      ass= coefss(li,sn,ji,jci,lf,sn,jf,jcf,jtot)
 
-    
+      if (.not. reid93) then !MGR
       do ir=1, nr
 	 select case (lpot)
            case (0) ! mininum li,lf
@@ -193,7 +197,108 @@ c spin.spin term
          faux(ir)=faux(ir) + vcp*allp !!!+ ass*vss(ir)
 !         write(225,*)ir,vcp*allp,faux(ir)
        enddo ! ir
+       endif
        enddo !il
+      
+
+      if (reid93) then !MGR
+      do ir=1, nr     
+      r=rvec(ir)
+        if (r.lt.1e-9) r=1e-9 
+             vnm=0d0
+             write(reidj,'(i1)') nint(jtot)
+             reidname(3:3)=reidj
+!             if(i.eq.1) write(*,*) 'Reid93 J', reidname(3:3)
+!             write(0,*) 'Reid93 J',reidname(3:3),reidj,nint(jtot)
+             if (abs(li-nint(jtot)).ne. 0) then !only S=1
+             reidname(1:2)='3C'    
+             if (nint(jtot).eq.0) reidname(1:2)='3P' 
+!            if (ir.eq.1)  write(0,*) 'Reid93 J', reidname(1:3)   
+             call rreid93(r,reidname,'PN',reidpot) 
+              if (li.gt.lf) then
+              vnm=reidpot(2,1)
+!              if(i.eq.i) write(*,*) 'Reid93 ', reidname,'l',li,lf,vnm  
+              else if (li.lt.lf) then
+              vnm=reidpot(1,2)
+!              if(i.eq.i) write(*,*) 'Reid93 ', reidname,'l',li,lf,vnm  
+              else !li.eq.lf
+               if (li.lt.nint(jtot) .or. nint(jtot).eq.0) then
+               vnm=reidpot(1,1)
+!               if(i.eq.i) write(*,*) 'Reid93 ', reidname,'l',li,lf,vnm  
+               else
+               vnm=reidpot(2,2)
+!               if(i.eq.i) write(*,*) 'Reid93 ', reidname,'l',li,lf,vnm  
+               endif
+              endif
+             else if (li.eq.nint(jtot) .and. lf.eq.nint(jtot)) then !S=0 and S=1
+             select case(li)
+             case(0)
+             reidname(1:2)='1S'
+             case(1)
+             reidname(1:2)='1P'
+             case(2)
+             reidname(1:2)='1D'
+             case(3)
+             reidname(1:2)='1F'
+             case(4)
+             reidname(1:2)='1G'
+             case(5)
+             reidname(1:2)='1H'
+             case(6)
+             reidname(1:2)='1I'
+             case(7)
+             reidname(1:2)='1K'
+             case(8)
+             reidname(1:2)='1L'
+             end select
+!             if (ir.eq.1)  write(0,*) 'Reid93 J', reidname(1:3)  
+             call rreid93(r,reidname,'PN',reidpot)
+             !S=0
+             vnm=sqrt((2d0*ji+1d0)*(2d0*jf+1d0))*                       &
+     &       (-1d0)**(jf-ji)/2d0/(2d0*li+1d0)*reidpot(1,1) !Factors are Racah with S=0
+             !S=1
+             select case(li)
+             case(0)
+             reidname(1:2)='3S'
+             cycle
+             case(1)
+             reidname(1:2)='3P'
+             case(2)
+             reidname(1:2)='3D'
+             case(3)
+             reidname(1:2)='3F'
+             case(4)
+             reidname(1:2)='3G'
+             case(5)
+             reidname(1:2)='3H'
+             case(6)
+             reidname(1:2)='3I'
+             case(7)
+             reidname(1:2)='3K'
+             case(8)
+             reidname(1:2)='3L'
+             end select
+!            if (ir.eq.1)  write(0,*) 'Reid93 J', reidname(1:3) 
+             call rreid93(r,reidname,'PN',reidpot) 
+              if (ji.gt.(jtot+0d0)) then !First racah
+              auxreid=(-1d0)**(li+ji+0.5d0)/2d0*sqrt((li+1.5d0-ji)*      &
+     &        (li+ji-0.5d0)/ji) !Racah from table 9.1 Varshalovich
+              else
+              auxreid=(-1d0)**(li+ji+1.5d0)/2d0*sqrt((-li+1.5d0+ji)*      &
+     &        (li+ji+2.5d0)/(ji+1d0))
+              endif
+              if (jf.gt.(jtot+0d0)) then !Second racah
+              auxreid=auxreid*(-1d0)**(lf+jf+0.5d0)                         &
+     &        /2d0*sqrt((lf+1.5d0-jf)*(lf+jf-0.5d0)/jf) !Racah from table 9.1 Varshalovich
+              else
+              auxreid=auxreid*(-1d0)**(lf+jf+1.5d0)                            &
+     & /2d0*sqrt((-lf+1.5d0+jf)*(lf+jf+2.5d0)/(jf+1d0))
+              endif
+              vnm=vnm+auxreid*reidpot(1,1)
+             endif
+             ccmat(nchani,nchanf,ir)=cmplx(vnm,zero)*conv
+          enddo   
+          endif
 
 ! For external coupling potentials
         if (cptype.eq.5) then
@@ -251,10 +356,12 @@ c spin.spin term
 
 ! For "scatcc"    
 ! v2.1 I have changed the sign of ccmat so they have their physical sign
+      if (.not.reid93) then
       do ir=1,nr
        if (abs(faux(ir)).lt.small) faux(ir)=0.0
        ccmat(nchani,nchanf,ir)=cmplx(faux(ir),zero)*conv
        enddo
+      endif
      
 
 !       ccmat(nchani,nchanf,1:nr)=cmplx(faux(1:nr)*conv 

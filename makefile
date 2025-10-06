@@ -40,8 +40,8 @@ SRC=$(TOPDIR)
 OBJ=modules.o coul90.o scatcc.o  channels.o writecdccwf.o  basis.o hdiag.o ho.o lst-amos.o utils.o cgbasis.o \
     pauli.o sort.o nag2.o whittaker.o  \
      continuum.o belam.o bmlam.o ham.o  transition_targdef.o\
-        transition.o   clebsg.o  projpot.o fragpot.o \
-        rmatel.o solvecc.o lapack.o  rmatrix.o ccbins.o xsections.o  \
+        transition.o   clebsg.o  projpot.o fragpot.o xsections_alpha_1d.o \
+        rmatel.o solvecc.o lapack.o  rmatrix.o ccbins.o xsections.o xsections_alpha.o rsc.o\
 	bincc2.o ceigen.o readwf.o  thox.o eigcc.o
 #coulfg4.f 
 all: $(OBJ)
@@ -106,6 +106,10 @@ solvecc.o:solvecc.f90 modules.f90
 	$(FC) $(FFLAGS) -c solvecc.f90
 xsections.o:xsections.f90
 	$(FC) $(FFLAGS) $(PARALLEL) -c  xsections.f90
+xsections_alpha.o:xsections_alpha.f90
+	$(FC) $(FFLAGS) $(PARALLEL) -c  xsections_alpha.f90
+xsections_alpha_1d.o:xsections_alpha_1d.f90
+	$(FC) $(FFLAGS) $(PARALLEL) -c  xsections_alpha_1d.f90
 lapack.o:lapack.f 
 	$(FC) $(FFLAGS) -c lapack.f
 dsyev-lapack.o:dsyev-lapack.f 
@@ -124,6 +128,8 @@ writecdccwf.o:writecdccwf.f
 	$(FC) $(FFLAGS) -c writecdccwf.f
 eigcc.o:eigcc.f modules.f90
 	$(FC) $(FFLAGS1) -c eigcc.f
+rsc.o:rsc.f90
+	$(FC) $(FFLAGS) -c rsc.f90
 
 install: all
 #%if BINDIR

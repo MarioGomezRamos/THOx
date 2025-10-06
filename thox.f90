@@ -37,6 +37,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
       use wfs, only: nst
       use belambdamod, only: ifbel
       use memory
+      use potentials, only: reid93
 ! added by JLei 
       use cdccchannels
       use writecdccwf
@@ -52,6 +53,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
       CHARACTER*1 BLANK,PSIGN(3)
       character*40 filename
       integer :: nset,nho,nodes
+      logical :: changepot
 
 !!! TEST 
       integer iset,inc,iexgs,nchsp
@@ -197,7 +199,8 @@ c Pauli-forbidden states to be removed
       nset=iset
 !      nset=indjset(iset)
 !      call read_jpiset(iset,bastype,nk,tres,ehat,filename)
-      call read_jpiset(nset,bastype,nk,tres,ehat,filename,nodes)
+      call read_jpiset(nset,bastype,nk,tres,ehat,filename,nodes,
+     & changepot)
 
       jtot    =jpiset(nset)%jtot
       partot  =jpiset(nset)%partot
@@ -243,7 +246,7 @@ c *** ------------------------------------------------------------
        call readwfs(filename,nset,nchan)
 
       case(6) ! Eigcc   
-       call pre_eigcc(nset,nchan,nodes)
+       call pre_eigcc(nset,nchan,nodes,changepot)
 
       end select 
       
@@ -278,10 +281,14 @@ C *** Capture x-sections and S-factors (unfinished)
 !!!      if (ifbel) call capture(jtot,partot)
 
 
+!Make sure Reid93 potential is not used for target potentials
+      
+
 c *** Define reaction (projectile, target, energy)
       call partition()
 
 c *** Coupling potentials (includes DCE routines)
+      reid93=.false.
       if (.not. targdef) then
       write(*,'(5x,a)') 
      & '[using transition subroutine for spin-zero target]'
@@ -467,9 +474,10 @@ c
       integer::l,lmin,lmax,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
       real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
-      real*8:: bosc,gamma,wcut(1:maxchan),vscale,r1,rnmax
+      real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale,r1,rnmax
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc,nodes
+      logical changepot
       character*40 filewf
 
       namelist /grid/ ng, rmin,rmax,dr,rlast,rint
@@ -482,7 +490,7 @@ c
      &                bas2,
      &                nk, nbins,inc,tres,ehat,filewf,wcut,merge,
      &                vscale,
-     &                r1,rnmax,nodes ! CG Basis
+     &                r1,rnmax,nodes,changepot ! CG Basis
 
       
       jpsets=0; inpsets=0
@@ -597,6 +605,10 @@ c ***
        if (ex<-99) goto 100
        nce=nce+1   
        if (parity.eq.0) parity=+1
+       if (abs(spin-nint(spin)).gt.0.2d0 .and. kband.eq.0) then
+       write(*,*) 'Changing kband=0 to kband=0.5'
+       kband=0.5d0
+       endif
 c backward compatibility (deprecated)
        jc(nce)=spin
        parc(nce)=parity

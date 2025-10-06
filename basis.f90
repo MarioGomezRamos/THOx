@@ -1,7 +1,8 @@
 c 
 c *** Calculate valence/core configurations compatible with Jtot/pi
 c     nchan={Ic,lsj} configurations  
-      subroutine read_jpiset(iset,bastype,nk,tres,ehat,filewf,nodes)
+      subroutine read_jpiset(iset,bastype,nk,tres,ehat,filewf,nodes,
+     & changepot)
       use channels
       use globals,only: kin
       use wfs    ,only: exmin,exmax
@@ -18,6 +19,7 @@ c     nchan={Ic,lsj} configurations
       CHARACTER*1 BLANK,PSIGN(3)      
       character*40 filewf
       real*8 :: wcut(maxchan) !,vscale
+      logical changepot
       DATA PSIGN / '-','?','+' /, BLANK / ' ' /
 
 
@@ -38,7 +40,7 @@ c     nchan={Ic,lsj} configurations
      &                wcut,   ! mininum weight per channel to be retained (default 1) 
      &                vscale, ! scaling factor for v-core potential
      &                r1,rnmax,  !CG	
-     &                nodes  !Nodes for bound state 
+     &                nodes,changepot  !Nodes for bound state,change energy or potential 
 !     &                realcc ! if TRUE, calculate real multichannel states instead of scat. states
 
 
@@ -52,6 +54,7 @@ c Initialize variables and assign default values
       vscale=1.
       nho=0 
       r1=0; rnmax=0
+      changepot=.false.
 
       read(kin,nml=jpset) 
       nset=indjset(iset)

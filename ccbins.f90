@@ -289,7 +289,7 @@ c     ----------
           maxn=nr
       endif
 
-      call coefmat(nchan)
+      call coefmat(iset,nchan)
       ccmat(:,:,:)=-ccmat(:,:,:)  ! needed for bincc2 convention
       do ich=1,nchan
        ql(ich)    =jpiset(iset)%lsp(ich)  
@@ -305,12 +305,49 @@ c     ----------
  
       do ik=1,nk
       k=ki+(ik-1)*ddk
+      
+      
       write(450,'(1f6.3,2x,10f12.5)')fconv*k**2,bphase(ik)*180./pi
-      enddo
-
+      enddo !iki
+      
       do ich=1,nchan
-      wfc(iset,ib,ich,1:maxn-1)=y(1:maxn-1,ich)
+!      nullify(wfbin)
+!      wfbin=> wfc(iset,ib,ich,:)
+      
+!      wfbin=0
+      yint=0.
+      do ik=1,nk
+      k=ki+(ik-1)*ddk
+      factor=1/fconv
+      eta=factor*zc*zv*e2/k/2.    
+      call coulph(eta,cph,li)
+      phc=exp(iu*cph(li)) 
+      yfac=exp(iu*bphase(ik))*phc
+      tfac=(smate(ik,inc)-1.)/(0.,2.)        ! two-body elastic t-matrix 
+      if (tres)         yfac=tfac*phc
+      binset(iset)%pshel(ib,ik)=bphase(ik)
+      binset(iset)%wk(ib,ik)=yfac
+      if ((ik.eq.1).or.(ik.eq.nk-1)) then 
+          raux=ddk/2.0
+      else 
+          raux=ddk
+      endif
+!      wfbin(:)= wfbin(:) 
+!     &        + bcoef*yfac*conjg(wfcont(ik,ich,:))*raux
+
+      YINT = YINT + ABS(YFAC)**2 * raux
+      faux(ik)=abs(yfac)**2
+      enddo ! ik
+      enddo !ich
+      
+      
+      do ich=1,nchan
+      wfc(iset,ib,ich,1:maxn-1)=conjg(y(1:maxn-1,ich))
       enddo
+      
+      binset(iset)%wk(ib,:)=binset(iset)%wk(ib,:)/sqrt(yint) ! AMM Sept 16
+      
+      
       deallocate(ccmat)
       ENDIF 
 !..................... END BINCC FROM FRESCO.............................
