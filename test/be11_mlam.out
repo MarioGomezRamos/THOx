@@ -1,0 +1,250 @@
+**************************************************
+ ***        THOx+DCE+CC code: version 2.6        ***
+**************************************************
+
+ ***************** CONSTANTS **********************
+ * hbarc=197.32706 MeV.fm     e^2= 1.43997 MeV.fm *
+ * so, alpha= 1/137.03599       amu=931.4943 MeV  *
+ **************************************************
+   A real*8 is            8  bytes
+   A complex*16 is           16  bytes
+ Pre-reading input to set dimensions
+ 
+  Dimensions for memory allocation
+    o J/pi sets:           2  merged into           2
+    o Maximum internal l:           2
+ 
+  Pre-read finished
+ - COMPOSITE:
+     Core:    Ac= 10.0130  Zc=  4.00
+     Valence: Av=  1.0087  Zv=  0.00
+
+ - Reduced mass:  853.607 MeV/c2
+ - CORE states:
+     # 1: J/pi= 0.0+   Ex= 0.00 MeV
+
+  RADIAL GRID FOR INTERNAL WFS:
+ - Using uniform grid with 1501 points:  [ Rmin= 0.000   Rmax= 150.0  Step= 0.100 fm ]
+
+   ------------- Potential component: 1-------------
+
+ o Undeformed valence-core potential: 
+   COULOMB     : uniform charged sphere with Rc= 0.001 fm
+   NUCLEAR part: type=1 => Woods-Saxon
+       o  Woods-Saxon   V0(l=0-3)=( -62.520 -39.760 -62.520 -39.740) MeV, R0= 2.585 fm, ar= 0.600 fm 
+       o Spin-orbit: Vso=(0:3)   5.250   5.250   5.250   5.250 MeV, Rso= 2.585 fm, aso= 0.600 fm 
+
+ --------------------------------------------------
+   
+  PAULI forbidden sp states:
+ => No states will be removed
+  
+
+
+ ******************************************
+      BASIS SET:  1 WITH TOTAL J/pi= 0.5+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  0]
+       S.p. configuration # 1 ( 0 0.5) 0.5
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 0 0.5) 0.5 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** Exact bound wf ** 
+ Energy:  0.50000000000000000     
+ Energy:  0.50507935555621231     
+ Channel           1 (l,s,j,I,J)           0  0.50000000000000000       0.50000000000000000        0.0000000000000000       0.50000000000000000      Norm:  0.99999999959312091     
+ Total norm:  0.99999999959312091     
+ sqrt(rms):   6.9863879958773900     
+ Energy:  0.50507935555621231      from  0.50000000000000000     
+
+
+ ******************************************
+      BASIS SET:  2 WITH TOTAL J/pi= 2.5+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  2]
+       S.p. configuration # 1 ( 2 0.5) 2.5
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 2 0.5) 2.5 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** RADIAL BASIS **
+ - THO basis with m= 4  b= 1.60  fm, gamma= 1.840 and N= 40 states
+  [bas2=0 => Use Hsp eigenstates to diagonalize       full H]
+
+
+     SINGLE-PARTICLE eigenstates:
+
+  o S.p. configuration # 1 =>d2.5
+     # 1  ex=    0.0487  Norm=  1.0000 rms= 82.4257
+     # 2  ex=    0.1219  Norm=  1.0000 rms= 75.7561
+     # 3  ex=    0.2254  Norm=  1.0000 rms= 73.0678
+     # 4  ex=    0.3602  Norm=  1.0000 rms= 71.2590
+     # 5  ex=    0.5279  Norm=  1.0000 rms= 69.6196
+     # 6  ex=    0.7295  Norm=  1.0000 rms= 67.7932
+     # 7  ex=    0.9628  Norm=  1.0000 rms= 64.8335
+     # 8  ex=    1.1935  Norm=  1.0000 rms= 51.8579
+     # 9  ex=    1.3503  Norm=  1.0000 rms= 50.3301
+     #10  ex=    1.6279  Norm=  1.0000 rms= 61.0501
+       (further eigenstates not printed)
+
+
+
+ o Building full Hamiltonian matrix ( 40x 40):.  
+
+
+     *** EIGENVALUES of full Hamiltonian *** 
+     #  1    0.0487  [  1.00000]    rms= 82.4257
+     #  2    0.1219  [  1.00000]    rms= 75.7561
+     #  3    0.2254  [  1.00000]    rms= 73.0678
+     #  4    0.3602  [  1.00000]    rms= 71.2590
+     #  5    0.5279  [  1.00000]    rms= 69.6196
+     #  6    0.7295  [  1.00000]    rms= 67.7932
+     #  7    0.9628  [  1.00000]    rms= 64.8335
+     #  8    1.1935  [  1.00000]    rms= 51.8579
+     #  9    1.3503  [  1.00000]    rms= 50.3301
+     # 10    1.6279  [  1.00000]    rms= 61.0501
+     # 11    2.0000  [  1.00000]    rms= 60.6716
+     # 12    2.4358  [  1.00000]    rms= 58.9781
+     # 13    2.9374  [  1.00000]    rms= 56.9458
+     # 14    3.5124  [  1.00000]    rms= 54.7398
+     # 15    4.1705  [  1.00000]    rms= 52.4131
+     # 16    4.9243  [  1.00000]    rms= 49.9935
+     # 17    5.7889  [  1.00000]    rms= 47.5016
+     # 18    6.7832  [  1.00000]    rms= 44.9559
+     # 19    7.9305  [  1.00000]    rms= 42.3742
+     # 20    9.2599  [  1.00000]    rms= 39.7746
+     # 21   10.8080  [  1.00000]    rms= 37.1756
+     # 22   12.6214  [  1.00000]    rms= 34.5960
+     # 23   14.7599  [  1.00000]    rms= 32.0551
+
+     [ 23 out of  40 eigenvalues retained ]
+
+
+     ******  PROJECTILE SCATTERING STATES ******
+     # Continuum WFS for Jp=2.5+ ; Channels= 1 ;  Inc. chan.= 1 Uniform Ecm=F
+
+
+
+
+ ** CALCULATION OF B(ELAM) **
+
+- Calculating B(E2; gs->n)
+   Effective charge=   0.0335
+
+  Initial state:
+     Jset=  1   J/pi=0.5+    Nb. chans: 1   Energy:  -0.500MeV
+     [ Norm=   1.00000]
+  Final states:
+     Jset=  2   J/pi=2.5+    Nb. chans: 1   Nb. states: 23
+     [Final set has 0 bound states ]
+
+    Ex=  0.0487  B(E2; gs ->   1)=  0.0101 e2.fm4
+    Ex=  0.1219  B(E2; gs ->   2)=  0.0718 e2.fm4
+    Ex=  0.2254  B(E2; gs ->   3)=  0.1812 e2.fm4
+    Ex=  0.3602  B(E2; gs ->   4)=  0.2729 e2.fm4
+    Ex=  0.5279  B(E2; gs ->   5)=  0.3082 e2.fm4
+    Ex=  0.7295  B(E2; gs ->   6)=  0.2990 e2.fm4
+    Ex=  0.9628  B(E2; gs ->   7)=  0.2775 e2.fm4
+    Ex=  1.1935  B(E2; gs ->   8)=  0.2156 e2.fm4
+    Ex=  1.3503  B(E2; gs ->   9)=  0.0010 e2.fm4
+    Ex=  1.6279  B(E2; gs ->  10)=  0.0500 e2.fm4
+    Ex=  2.0000  B(E2; gs ->  11)=  0.0548 e2.fm4
+    Ex=  2.4358  B(E2; gs ->  12)=  0.0444 e2.fm4
+    Ex=  2.9374  B(E2; gs ->  13)=  0.0335 e2.fm4
+    Ex=  3.5124  B(E2; gs ->  14)=  0.0247 e2.fm4
+    Ex=  4.1705  B(E2; gs ->  15)=  0.0180 e2.fm4
+    Ex=  4.9243  B(E2; gs ->  16)=  0.0131 e2.fm4
+    Ex=  5.7889  B(E2; gs ->  17)=  0.0096 e2.fm4
+    Ex=  6.7832  B(E2; gs ->  18)=  0.0070 e2.fm4
+    Ex=  7.9305  B(E2; gs ->  19)=  0.0051 e2.fm4
+    Ex=  9.2599  B(E2; gs ->  20)=  0.0038 e2.fm4
+    Ex= 10.8080  B(E2; gs ->  21)=  0.0027 e2.fm4
+    Ex= 12.6214  B(E2; gs ->  22)=  0.0020 e2.fm4
+    Ex= 14.7599  B(E2; gs ->  23)=  0.0014 e2.fm4
+ - From Pseudo-States:
+                              Total BE=  1.907498 e2.fm4
+ - From Sum Rule: (only for SP excitation!)
+ - Polarizability=  6.627551 fm^3
+                              Total BE=  1.910325 e2.fm4
+ Computation of B(Elambda) from scattering states:
+   For inc chan=  1 B(El)=   1.901
+ - From Continuum wfs:
+                              Total BE=  1.901257 e^2 fm^4
+                              Polarizability=  6.624761 fm^3
+ Getting g-factor for valence from Stone table
+ https://www.nndc.bnl.gov/nndc/stone_moments             /nuclear-moments.pdf
+ g-factor for valence set to:  -3.8260850906372070     
+
+
+
+ ** CALCULATION OF B(MLAM) **
+
+- Calculating B(M3; gs->n)
+   Effective charge=   0.0003mu_N
+
+  Initial state:
+     Jset=  1   J/pi=0.5+    Nb. chans: 1   Energy:  -0.500MeV
+     [ Norm=   1.00000]
+  Final states:
+     Jset=  2   J/pi=2.5+    Nb. chans: 1   Nb. states: 23
+     [Final set has 0 bound states ]
+
+    Ex=  0.0487  B(M3; gs ->   1)= 52.3352 e2.fm6
+    Ex=  0.1219  B(M3; gs ->   2)=371.9517 e2.fm6
+    Ex=  0.2254  B(M3; gs ->   3)=938.8953 e2.fm6
+    Ex=  0.3602  B(M3; gs ->   4)=******** e2.fm6
+    Ex=  0.5279  B(M3; gs ->   5)=******** e2.fm6
+    Ex=  0.7295  B(M3; gs ->   6)=******** e2.fm6
+    Ex=  0.9628  B(M3; gs ->   7)=******** e2.fm6
+    Ex=  1.1935  B(M3; gs ->   8)=******** e2.fm6
+    Ex=  1.3503  B(M3; gs ->   9)=  5.3227 e2.fm6
+    Ex=  1.6279  B(M3; gs ->  10)=259.1726 e2.fm6
+    Ex=  2.0000  B(M3; gs ->  11)=284.2236 e2.fm6
+    Ex=  2.4358  B(M3; gs ->  12)=230.1579 e2.fm6
+    Ex=  2.9374  B(M3; gs ->  13)=173.5953 e2.fm6
+    Ex=  3.5124  B(M3; gs ->  14)=127.8439 e2.fm6
+    Ex=  4.1705  B(M3; gs ->  15)= 93.3143 e2.fm6
+    Ex=  4.9243  B(M3; gs ->  16)= 68.0117 e2.fm6
+    Ex=  5.7889  B(M3; gs ->  17)= 49.6044 e2.fm6
+    Ex=  6.7832  B(M3; gs ->  18)= 36.2700 e2.fm6
+    Ex=  7.9305  B(M3; gs ->  19)= 26.5566 e2.fm6
+    Ex=  9.2599  B(M3; gs ->  20)= 19.4637 e2.fm6
+    Ex= 10.8080  B(M3; gs ->  21)= 14.2336 e2.fm6
+    Ex= 12.6214  B(M3; gs ->  22)= 10.3618 e2.fm6
+    Ex= 14.7599  B(M3; gs ->  23)=  7.4660 e2.fm6
+ - From Pseudo-States:
+                              Total BM=********** e2.fm6
+ Computation of B(Mlambda) from scattering states:
+   For inc chan=  1 B(Ml)=9852.709
+ - From Continuum wfs:
+                              Total BM=********** e^2 fm^6
+
+
+     ******  REACTION CALCULATION ******
+
+     Projectile: Mass=  11.027 amu   Z=   4.0
+     Target:     Mass=   1.008 amu   Z=   1.0
+
+     Nb. of target states:  1
+     o state #  1   J/pi=0.0+    Ex= 0.000
+     [using transition subroutine for spin-zero target]
+
+     *********** COUPLING POTENTIALS  *********** 
+     [No coupling potentials requested ]
+
+
+     ******  CC SOLUTIONS ******
+     [No reaction calculation requested]
+
+
+
+   ** DOUBLE DIFFERENTIAL CROSS SECTIONS **
+
+    Reading f-amps from file fort.137            
