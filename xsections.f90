@@ -33,7 +33,8 @@ c     ------------------------------------------------------------
       real*8  :: kcmi,kcmf,exc,vi,vf,tkch
       real*8  :: ecmi,ecmf,etai,etaf,mupt,ermin,ermax
       real*8  :: excore,ei,ef,ki,kf
-      real*8  :: thmin,thmax,thcut,dth,cth,sth,s2,th,thrad
+      real*8  :: thmin,thmax,thcut,thcut_min,thcut_max,dth
+      real*8  :: cth,sth,s2,th,thrad
       real*8, allocatable :: pl(:,:),delci(:),delcf(:)
       real*8  :: rm,rmp,rmlp,lri,lrf
       real*8  :: factor, r1,r2,delif
@@ -60,6 +61,7 @@ c PLM
 
       namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,phixs,jsets,
      &                    ermin,ermax,ner,icore,thcut,
+     &                    thcut_min,thcut_max,
      &                    triplexs,rel,alphaxs!GR
 
 c initialize -------------------------------------------------
@@ -70,7 +72,7 @@ c initialize -------------------------------------------------
 !      written(ksj)=.false.
       written(kxs+1:kxs+min(nex,9))=.true.
       pi=acos(-1d0)
-      thmin=0; thmax=0; dth=0; thcut=0
+      thmin=0; thmax=0; dth=0; thcut=0;thcut_min=0;thcut_max=0
       doublexs=.false. ; triplexs=.false. ; phixs=.false.
       rel=.false.
       ermin=-1; ermax=-1
@@ -94,6 +96,8 @@ c     -----------------------------------------------------------
         write(*,*)'thmax<thmin!; Aborting'; stop
       endif
       if (thcut.lt.1e-6) thcut=thmax 
+      if (thcut_min.lt.1e-6) thcut_min=thmin
+      if (thcut_max.lt.1e-6) thcut_max=thmax
 
       if (ner.eq.0) then
          write(*,*)'NER=0!!';
@@ -602,7 +606,7 @@ c Double x-sections
 1000  if ((doublexs).or.(triplexs).or.(alphaxs)) then
 !       write(0,*)'calling d2sigma:'
         if(.not. alphaxs) then
-        call d2sigma(nth,dth,thmin,thcut,ermin,ermax,ner,
+        call d2sigma(nth,dth,thmin,thcut_min,thcut_max,ermin,ermax,ner,
      &                 icore,jsets,fileamp,doublexs,triplexs,phixs)
         else
         write(*,*) 'Computing angle alpha'
@@ -620,8 +624,8 @@ c Double x-sections
 c ----------------------------------------------------------------
 c Double differential x-sections dsigma/dEx dW  (NEW VERSION) 
 c ----------------------------------------------------------------
-      subroutine d2sigma(nth,dth,thmin,thcut,emin,emax,ncont,
-     &                   icore,jsets,fileamp,doublexs,triplexs,phixs)
+      subroutine d2sigma(nth,dth,thmin,thcut_min,thcut_max,emin,emax,
+     &              ncont,icore,jsets,fileamp,doublexs,triplexs,phixs)
       use xcdcc,    only: elab,jpch,nex,exch,parch,famps0,binset,rel
       use channels, only: jpiset,jpsets,nchmax,sn,qnc
       use sistema
@@ -650,7 +654,8 @@ c     -----------------------------------------------------------------------
 c     -------------------------------------------------------------------------
       real*8:: kpt,kcv,krel,dkrdk,wbin
       real*8:: ji,jf,jci,jcf,raux,xsaux,jac,jpi,jpf,jtarg
-      real*8:: ecmi,ecmf,kcmi,kcmf,excore,th,thmin,dth,thcut
+      real*8:: ecmi,ecmf,kcmi,kcmf,excore
+      real*8:: th,thmin,dth,thcut,thcut_min,thcut_max
       real*8:: dec,ebind,ecv,ethr,emin,emax,exc
       real*8:: facK,mv,mc,mucv,mupt,f2t,xstot,sumr
       real*8,allocatable::dsdew(:,:),dsdew_b(:,:,:)
@@ -888,7 +893,8 @@ c ----------------------------------------------------------------------
 c Print ds/dE for bins !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       if (any(jpiset(1:jpsets)%nho>0)) then
       open(92,file='dsde_bin.xs')
-      write(*,*)' ds/dE for bins sets: thcut=',thcut
+      write(*,*)' ds/dE for bins sets: thcut(min,max)=',
+     &          thcut_min,thcut_max
       do iset=1,jpsets
       if(jpiset(iset)%nho>0) cycle ! not bins (PS)
       nex=jpiset(iset)%nex
@@ -899,7 +905,8 @@ c Print ds/dE for bins !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	  do ith=1,nth
       raux=0.
       th = thmin + dth*(ith-1)
-      if (th.gt.thcut) cycle      
+      if (th.gt.thcut_max) cycle      
+      if (th.lt.thcut_min) cycle      
       xsaux=xsaux + dsdew_b(iset,n,ith)*2*pi*sin(th*pi/180.)*dth*pi/180.   
       enddo !ith
       write(92,*) exc,xsaux,iex
@@ -1132,6 +1139,7 @@ c Integrate in ENERGY, to get dsigma/dOmega for core state ICORE
       do ith=1,nth
       raux=0.
       th = thmin + dth*(ith-1)
+      if ((th.lt.thcut_min).or.(th.gt.thcut_max)) cycle
       write(91,'(a,1f8.4)') '#thcm=',th
       do iecv=1,ncont
       ecv=emin+(iecv-1)*dec
@@ -1155,7 +1163,8 @@ c Integrate in ANGLE, to get dsigma/dE  for core state ICORE
       raux=0.
       do ith=1,nth
       th = thmin + dth*(ith-1)
-      if (th.gt.thcut) cycle
+      if (th.gt.thcut_max) cycle
+      if (th.lt.thcut_min) cycle
       raux=raux + 2*pi*dsdew(iecv,ith)*
      &     sin(th*pi/180.)*dth*pi/180.   
       enddo !iecv
@@ -2279,6 +2288,7 @@ c     ------------------------------------------------------------
       real*8  :: factor, r1,r2,delif,yffc
       real*8  :: xsruth,xs,xstot,xsj,xr,xrj,sigex(nex),xsaux
       real*8  :: sigtex(ntex+1),sigextex(nex,ntex+1)
+      real*8  :: thcut_min, thcut_max
 c     -----------------------------------------------------------
       complex*16, parameter:: zz=cmplx(0.,1.)
       complex*16,allocatable:: ampl(:,:,:,:,:),fam(:,:,:,:,:)
@@ -2300,7 +2310,8 @@ c PLM
 
       namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,jsets,
      &                    ermin,ermax,ner,icore,itarg,
-     &                    triplexs,rel
+     &                    triplexs,rel,
+     &                    thcut_min,thcut_max
 
 c initialize -------------------------------------------------
       written(kamp)=.false.
