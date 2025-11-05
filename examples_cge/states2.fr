@@ -1,19 +1,11 @@
-           9
+           5
  &States jp= 2.5 ptyp= 1 ep=  0.0000  cpot=  1
          jt= 0.0 ptyt= 0 et=  0.0000 /
- &States jp= 2.5 ptyp= 1 ep=  0.4669  cpot=  1
+ &States jp= 2.5 ptyp= 1 ep=  0.7620  cpot=  1
          copyt= 1 /
- &States jp= 2.5 ptyp= 1 ep=  1.0349  cpot=  1
+ &States jp= 2.5 ptyp= 1 ep=  3.5972  cpot=  1
          copyt= 1 /
- &States jp= 2.5 ptyp= 1 ep=  2.1911  cpot=  1
+ &States jp= 2.5 ptyp= 1 ep=  7.6840  cpot=  1
          copyt= 1 /
- &States jp= 2.5 ptyp= 1 ep=  3.5827  cpot=  1
-         copyt= 1 /
- &States jp= 2.5 ptyp= 1 ep=  5.2310  cpot=  1
-         copyt= 1 /
- &States jp= 2.5 ptyp= 1 ep=  7.1631  cpot=  1
-         copyt= 1 /
- &States jp= 2.5 ptyp= 1 ep=  9.4517  cpot=  1
-         copyt= 1 /
- &States jp= 2.5 ptyp= 1 ep= 12.1725  cpot=  1
+ &States jp= 2.5 ptyp= 1 ep= 12.9554  cpot=  1
          copyt= 1 /
