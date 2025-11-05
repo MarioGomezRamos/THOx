@@ -5487,6 +5487,11 @@ c
      &  minval(rturnv(:)), maxval(rturnv(:)), rmin      
       endif
 
+!Displace rturnv by cutr MGR
+      do ich=1,nch
+            rturnv(ich)=rturnv(ich)-abs(cutr)
+      enddo
+
       if (irmin.lt.2) write(*,*)'** ERWIN: wrong irmin=',irmin
  
 c Start radial integration
@@ -5495,7 +5500,7 @@ c Start radial integration
       im=ir-1  ! r-h
       i0=ir    ! r
       ip=ir+1  ! r+h
-      if (r.lt.1e-6) r=1e-6
+      if (r.lt.1e-10) r=1e-10
 
 c kinetic energy part
 c Fresco: SMAT(ich) = -LL1(K)*RI2 + (-ECM(ich) + C) * H
@@ -5505,7 +5510,12 @@ c Fresco: SMAT(ich) = -LL1(K)*RI2 + (-ECM(ich) + C) * H
      &          + kch2(ich)             ! energy
      &        - conv*vcoup(ich,ich,ir)) ! potential
       enddo
-    
+
+!Correct for rturnv MGR
+      do ich=1,nch
+      if (r.lt.rturnv(ich)) s(ich)=0d0
+      enddo
+
       do is=1,nch
       do ich=1,nch      
       y0(ich,is)= z0(ich,is)*
@@ -5517,6 +5527,12 @@ c Fresco: SMAT(ich) = -LL1(K)*RI2 + (-ECM(ich) + C) * H
       do is=1,nch
       w0(is,is)=(ONEC - S(is) * (R12 - S(is)*(ENA2 + S(is)*ENA3)))
       enddo 
+
+!Correct for rturnv MGR
+      do ich=1,nch
+      if (r.lt.rturnv(ich))w0(ich,ich)=ONEC
+      enddo
+
 !      y0=matmul(w0,z0)
 
 c non-diagonal part of V matrix 
@@ -5524,6 +5540,20 @@ c non-diagonal part of V matrix
       do ich=1,nch
          coupl(ich,ich)=0d0
       enddo 
+
+!  Correct for rturnv MGR
+      do ich=1,nch
+      do is=1,nch
+         if (r.lt.rturnv(ich).or. r.lt.rturnv(is)) then
+         coupl(ich,is)=0d0
+         if (ich.eq.is) then
+            y0(ich,ich)=1e-10
+         else
+            y0(ich,is)=0d0
+         endif
+         endif
+      enddo
+      enddo
 
       w0=w0-r12*coupl
       
