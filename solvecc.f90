@@ -8,6 +8,7 @@ c *** ---------------------------------------------------
      &            jtmin,jtmax,rvcc,rmaxcc,nrcc,method,
      &            jump,jbord,wfcdcc
       use nmrv,only: hort,rmort,vcoup
+      use rmat_hp_mod, only: solver_type
       use sistema
       use globals, only: kin,debug,verb
       use constants, only: hc,amu,pi,e2
@@ -27,7 +28,7 @@ c     ----------------------------------------------------------------
       integer:: i,iex,iexgs,ir,nfacmax,ncc,itex,part,ijlp !MGR
       integer:: l,lmin,lmax,icc,pargs,ijp,parp,partot,ninc
       integer:: ich,nch,icalc,nsets,ijt,njt,nchmax,inc,ijump,iblock
-      integer:: nlag,ns ! R-matrix
+      integer:: nlag,ns,solvertype ! R-matrix
 c     ----------------------------------------------------------------
       real*8 :: jtot,jp,jt,jtotmax,jblock
 c *** Variables for CC (move to a module?) 
@@ -54,7 +55,7 @@ c     ---------------------------------------------------------------
       namelist /numerov/ method,
      &         hcm,rmaxcc,rcc,hort,rmort,
      &         jtmin,jtmax,jump,jbord,skip,
-     &         nlag,ns ! R-matrix
+     &         nlag,ns,solvertype ! R-matrix
 c     ---------------------------------------------------------------
 
 
@@ -81,8 +82,9 @@ c ... Numerov specifications
       hort  =0
       hcm   =0
       rmort =0
-      nlag  =0; ns=0
+      nlag  =0; ns=1; solvertype=3
       read(kin,nml=numerov)
+      solver_type = solvertype  ! pass to HPRMAT module
 
       if ((jtmin.lt.0).or.(skip)) then
         write(*,'(5x,"[No reaction calculation requested]",/)')
@@ -113,7 +115,9 @@ c ... Numerov specifications
       case(4)
        write(numethod,'(a60)')"Modified ENA (fresco)"
       case(5)
-       write(numethod,'(a60)')"R-matrix solution"
+       write(numethod,'(a60)')"R-matrix solution (Pierre)"
+      case(6)
+       write(numethod,'(a60)')"R-matrix solution (HPRMAT)"
       end select 
       write(*,350) adjustl(numethod),hcm,rmaxcc
       if (abs(hort).gt.0) then
@@ -665,6 +669,7 @@ c -----------------------------------------------------
 
       case(5)     ! R-matrix method (P. Desc. subroutine)
         write(0,*)'calling scchcc_rmat'
+        write(*,*) '=== R-matrix parameters: nlag=',nlag,' ns=',ns
         call schcc_rmat(nch,ecm,zp*zt,inc,ql,factor,hcm,
      &  rstart,nr,wf,phase,smat,info,nlag,ns)
 
@@ -764,9 +769,12 @@ c -----------------------------------------------------
      &  rstart,nr,wf,phase,smat,method,info,einc,icc)
 
       case(5)     ! R-matrix method (P. Desc. subroutine)
-!      write (0,*) 'R-matrix not properly implemented STOP'
-!      STOP
+        write(*,*) '=== R-matrix_MGR parameters: nlag=',nlag,' ns=',ns
         call schcc_rmat_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
+     &  rstart,nr,wf,phase,smat,info,nlag,ns,einc,icc)
+
+      case(6)     ! R-matrix method (HPRMAT high-performance)
+        call schcc_rmat_hp_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
      &  rstart,nr,wf,phase,smat,info,nlag,ns,einc,icc)
 
       case default

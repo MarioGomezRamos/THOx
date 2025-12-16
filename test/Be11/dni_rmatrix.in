@@ -1,0 +1,65 @@
+# d+12C CDCC - Test R-matrix (method=6 HPRMAT)
+# Simple test case to compare R-matrix vs Numerov
+# ---------------------------------------------------------------------------------------------
+ &SYSTEM  Zv=0. Av=1.0087   sn=0.5
+          Zc=1. Ac=1.0078  egs=2.22/
+
+ &corestates spin=0.5 parity=+1 ex=0.0 /
+ &corestates /
+
+ &output wfout(:)=1   xcdcc=F verb=3 /
+
+ &GRID  rmin=0.0 rmax=100.0 dr=0.05 rlast=100 /
+
+# p-n potential (Woods-Saxon)
+ &POTENTIAL ptype=1 ap=1 at=0
+   vl0(0:2)=-72.15 -72.15 -72.15
+   r0=1.25   a0=0.65  /
+  &potential ptype=0 /
+
+ &pauli n=0 /
+
+# Bound state
+  &JPSET bastype=1 mlst=4 gamma=1.5 bosc=1.6 nho=20 nsp=0 exmin=-5 exmax=0 bas2=0 JTOT=1.0 PARITY=1 lmax=2 /
+# Continuum bins (for absorption test)
+  &JPSET JTOT=1.0 PARITY=+1 bastype=2 exmin=0.02 exmax=5.0 nk=50 nbins=3 lmax=2 inc=1 tres=F /
+ &JPSET /
+
+ &SCATWF ifcont=f  emin=0.01 emax=10.01  nk=100 inc=1 jset=2  /
+ &belambda  ifbel=f uwfgsfile="" lambda=1 nk=100 emin=0.1 emax=20 jset=2 /
+ &bmlambda /
+
+############################    REACTION       ####################################
+&reaction elab=56   namep='d' mp=2.014 mt=12 namet='12C' zt=6 jt=0.0 /
+
+######################### COUPLING POTENTIALS FOR (X)CDCC ####################################
+&TRANS skip=F  rcc=4.614  writeff=F   /
+
+&coupling qcmax=0  ncoul=0  lamax=2 /
+
+&grid nquad=100  radmax=100.d0 rstep=0.1 rmax=100 rextrap=0 rvecin=0.1d0 drvec=0.025d0 hin=0.1 /
+
+# Core-target (p+12C): with STRONG absorption
+&corepotential ptype=1 ap=0 at=12  rc0=1.3
+                  V0=-53.29 r0=1.124  a0=0.57  V0i=-50 r0i=1.17 a0i=0.675 /
+&corepotential ptype=0 /
+
+## Valence-target (n-12C): with STRONG absorption
+&valencepotential ptype=1  ap=0 at=12  rc0=1.3
+              V0=-52.25 r0=1.124  a0=0.57  V0i=-50 r0i=1.17 a0i=0.75 /
+&valencepotential ptype=0 /
+
+######################### SOLVE CC EQUATIONS ##############################
+# method=6: R-matrix HPRMAT
+# ns=10, nlag=40 (found to give |S|~1 in Be11 test)
+&numerov hcm=0.05 rmaxcc=100  hort=5 method=6 jtmin=0 jtmax=10 skip=F ns=10 nlag=40 solvertype=1 /
+
+######################### CROSS SECTIONS ##############################
+&xsections fileamp="fort.137" thmin=0 thmax=180 dth=1
+           doublexs=F triplexs=F icore=1 /
+
+&framework sys='lab' idet=1 /
+&gridener Enlow=0.0 Enup=44.8 dEn=0.8 /
+&gridthetac tcl=0.0 tcu=180  dtc=1.0 /
+&gridthetav tvl=0.0 tvu=180  dtv=1.0  /
+&gridphi phil=0.0 phiu=360 dphi=2.0 /

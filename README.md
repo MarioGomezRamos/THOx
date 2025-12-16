@@ -109,7 +109,7 @@ Core+valence central and deformed (coupling) potentials:
  - inc: for multichannel states, index of incoming channel
  - jset: index of JPSET to specify the angular momentum and spin of the scattering states to be computed
  - method: integration method (see NUMEROV namelist before)
- - ns,nbas: for R-matrix method (method=5) number intervals and number of basis function per interval (defaults: ns=1, ns=50)
+ - ns,nbas: for R-matrix method (method=5,6) number of sectors and number of basis functions per sector (defaults: ns=1, nbas=50)
 
 
 ### BELAMBDA namelist: ifbel, uwfgsfile, lambda, jset, emin, emax, nk. 
@@ -183,17 +183,30 @@ Core+valence central and deformed (coupling) potentials:
 - rextrap: if rextrap>rmax, coupling potentials will be extrapolated for rmax < R < rextrap assuming a Coulomb formfactor
 - rvecin, drvec, hin
 
-### NUMEROV namelist: hcm, rmaxcc, hort, method, jtmin, jtmax, skip
+### NUMEROV namelist: hcm, rmaxcc, hort, method, jtmin, jtmax, skip, nlag, ns, solvertype
   - skip (T/F): if true, skips this section
   - method: method of solution of the CC equations. Available options are:
-    * 0= PC-numerov, 
+    * 0= PC-numerov,
     * 1= ENA with 5 terms in Cosh[Sqrt[T]]
-    * 2= ENA with 5 terms in Cosh[Sqrt[T]], only diagonal 
+    * 2= ENA with 5 terms in Cosh[Sqrt[T]], only diagonal
     * 3= Raynal
-    * 4= Modified Numerov used in Fresco         
+    * 4= Modified Numerov used in Fresco
+    * 5= R-matrix method (Pierre's implementation)
+    * 6= R-matrix method (HPRMAT high-performance implementation)
    - hcm: radial step for projectile-target coordinate for solving the CC equations
    - jtmin, jtmax: min, max total angular momentum for solving the CC equations
    - hort: if nonzero, uses a stabilization procedure of the CC equations (see long text description)
+
+#### R-matrix parameters (for method=5,6):
+**Note:** For method=6 (HPRMAT), run `./setup.sh` before compiling to configure dependencies.
+
+   - nlag: number of Gauss-Legendre quadrature points per sector (default=0, uses internal default)
+   - ns: number of R-matrix propagation sectors (default=1)
+   - solvertype: solver type for HPRMAT method=6 only (default=3):
+     * 1= LAPACK double precision (DGESV)
+     * 2= LAPACK single precision with iterative refinement
+     * 3= OpenMP parallel solver (recommended)
+     * 4= GPU solver (requires CUDA, see setup.sh)
    
    
 ### XSECTIONS namelist:  fileamp, thmin, thmax, dth, thcut, doublexs, triplexs, phixs, icore, ner, ermin, ermax, jsets(:), itarg 
@@ -221,6 +234,35 @@ Core+valence central and deformed (coupling) potentials:
 ### GRIDTHETAV namelist: tvl, tvu, dtv
  - Theta angle grid of valence particle
  
-### GRIDPHI namelist: phil, phiu, dphi  
- - Phi angle grid. Computed cross sections assume that phi=0 for the core. 
+### GRIDPHI namelist: phil, phiu, dphi
+ - Phi angle grid. Computed cross sections assume that phi=0 for the core.
+
+## Compilation
+
+### Basic compilation (CPU only)
+```bash
+make clean
+make
+```
+
+### GPU-accelerated compilation (HPRMAT method=6)
+For GPU acceleration with CUDA, run the setup script first:
+```bash
+./setup.sh
+make clean
+make
+```
+
+The setup script will:
+- Detect CUDA installation and GPU architecture
+- Check for OpenBLAS (required) and auto-install if missing
+- Generate `hprmat.inc` with appropriate compiler flags
+
+### Requirements
+- Fortran compiler (gfortran or ifort)
+- OpenBLAS (required for LAPACK functions)
+- CUDA toolkit (optional, for GPU acceleration)
+
+On macOS, OpenBLAS will be automatically installed via Homebrew if not found.
+On Linux, OpenBLAS will be automatically installed via apt-get if not found.
  

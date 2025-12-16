@@ -1,0 +1,34 @@
+# Object files
+*.o
+*.mod
+
+# Executables
+thox
+examples/thox
+test/thox
+
+# Fortran output files
+fort.*
+*/fort.*
+
+# Output files
+*.out
+*.xs
+*.fr
+*.dat
+
+# Backup files
+*~
+*.bak
+
+# macOS
+.DS_Store
+
+# Build artifacts
+*.a
+*.so
+*.dylib
+
+# Editor files
+*.swp
+*.swo

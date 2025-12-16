@@ -712,8 +712,11 @@ c     -----------------------------------------------------------
 c     ----------------------------------------------------------
 !      call cpu_time(start)
 c *** Initialize some variables & R-matrix
+      write(*,*) '=== schcc_rmat received: nlag=',nlag,' ns=',ns
       nmax=nlag*ns
+      write(*,*) '=== nmax=nlag*ns=',nmax
       rmax=rvcc(nr)
+      write(*,*) '=== rmax=',rmax,' nr=',nr
 !      write(0,*)'rmat: rmax=',rmax
       twf=.false.
       nvc(1)=inc 
@@ -742,13 +745,14 @@ c *** Interpolation of coupling matrix in Lagrange mesh
       enddo !ichp
       deallocate(vcoup) ! not needed any more ?????????????
 
-! TEST
-!      do ir=1,nmax
-!        write(1,'(1f8.3,2x,50f12.8)')zrma(ir),cpot(ir,1,1)
-!      enddo
-!      do ir=1,nr
-!        write(2,'(1f8.3,2x,50f12.8)')rvec(ir),ccmat(1,1,ir)
-!      enddo 
+! TEST - print cpot for R-matrix
+      write(*,*) '=== R-matrix cpot (first 10 points, channel 1,1) ==='
+      do ir=1,min(10,nmax)
+        write(*,'(a,i4,a,f8.3,a,2f12.6)')' ir=',ir,' r=',zrma(ir),
+     &   ' cpot=',real(cpot(ir,1,1)),aimag(cpot(ir,1,1))
+      enddo
+      write(*,*) '=================================================='
+
       call rmatrix(nch,ql,kch,eta,rmax,nlag,ns,cpot,cu,nmax,nch,
      &             nopen,twf,cf,nmax,nch,ninc,nvc,0,cpnl)
      
@@ -5493,10 +5497,13 @@ c
       enddo
 
       if (irmin.lt.2) write(*,*)'** ERWIN: wrong irmin=',irmin
- 
+
+! TEST - print S-matrix for Numerov (MGR version)
+      write(*,*) '=== Numerov will calculate S-matrix ==='
+
 c Start radial integration
       do ir=irmin,nr
-      r=rvec(ir) ! (ir-1)*h    
+      r=rvec(ir) ! (ir-1)*h
       im=ir-1  ! r-h
       i0=ir    ! r
       ip=ir+1  ! r+h
@@ -5683,8 +5690,12 @@ c
       if (incvec(ich)) then
       inc=ich
       call matching3(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,info) ! gauss5 + 2 points
+! DEBUG - print S-matrix from Numerov
+      write(*,'(a,i2,a,2f10.5,a,f10.6)')
+     &  ' Numerov ch',1,': S=(',real(smat(1)),aimag(smat(1)),
+     &  ') |S|=',abs(smat(1))
       endif
-            smats(icc,inc,1:nch)=smat(1:nch) 
+            smats(icc,inc,1:nch)=smat(1:nch)
       enddo
        call cpu_time(finish)
        tmatch=tmatch+finish-start
@@ -6130,7 +6141,9 @@ c     For S-matrix diagonalization
 c     ----------------------------------------------------------
 !      call cpu_time(start)
 c *** Initialize some variables & R-matrix
+      write(*,*) '=== schcc_rmat_MGR: nlag=',nlag,' ns=',ns
       nmax=nlag*ns
+      write(*,*) '=== nmax=nlag*ns=',nmax
       rmax=rvcc(nr)
       write(0,*)'Rmat: rmax=',rmax
       twf=.false.
@@ -6175,13 +6188,31 @@ c *** Interpolation of coupling matrix in Lagrange mesh
       enddo !ichp
 !      deallocate(vcoup) ! not needed any more ?????????????
 
-! TEST
-!      do ir=1,nmax
-!        write(0,'(1f8.3,2x,50f12.8)')zrma(ir),cpot(ir,1,1)
-!      enddo
-!      do ir=1,nr
-!        write(2,'(1f8.3,2x,50f12.8)')rvec(ir),ccmat(1,1,ir)
-!      enddo 
+! TEST - print parameters passed to rmatrix
+      write(*,*) '=== R-matrix parameters ==='
+      write(*,*) 'nch=',nch,' nlag=',nlag,' ns=',ns,' rmax=',rmax
+      write(*,*) 'conv=',conv,' z12=',z12
+      do ich=1,min(3,nch)
+        write(*,'(a,i2,a,f10.5,a,f10.5,a,i2)')
+     &   ' ch',ich,': kch=',kch(ich),' eta=',eta(ich),' l=',ql(ich)
+      enddo
+      write(*,*) '=== zrma (first/last 5 pts) ==='
+      do ir=1,min(5,nmax)
+        write(*,'(a,i4,a,f12.6)') ' zrma(',ir,')=',zrma(ir)
+      enddo
+      do ir=max(1,nmax-4),nmax
+        write(*,'(a,i4,a,f12.6)') ' zrma(',ir,')=',zrma(ir)
+      enddo
+      write(*,*) '=== R-matrix cpot (first 10 pts, ch 1,1) ==='
+      do ir=1,min(10,nmax)
+        write(*,'(a,i4,a,f8.3,a,2f12.6)')' ir=',ir,' r=',zrma(ir),
+     &   ' cpot=',real(cpot(ir,1,1)),aimag(cpot(ir,1,1))
+      enddo
+      write(*,*) '=== vcoup raw (first 10 pts, ch 1,1) ==='
+      do ir=1,min(10,nr)
+        write(*,'(a,i4,a,f8.3,a,2f12.6)')' ir=',ir,' r=',rvcc(ir),
+     &   ' vcoup*conv=',conv*vcoup(1,1,ir),0.d0
+      enddo
 
       call rmatrix(nch,ql,kch,eta,rmax,nlag,ns,cpot,cu,nmax,nch,
      &             nopen,twf,cf,nmax,nch,ninc,nvc,ncp2,cpnl)
@@ -6241,6 +6272,168 @@ c
       endif
           
      
+      return
+      end subroutine
+
+
+c   -----------------------------------------------------------------
+c   Solve multichannel Schrodinger equation calling HPRMAT routines
+c   (High-Performance R-matrix)
+c
+c   NLAG = nb. of Lagrange bases per radial interval
+c   NS   = nb. of radial intervals
+c   -----------------------------------------------------------------
+      subroutine schcc_rmat_hp_MGR(nch,ecm,z12,incvec,ql,conv,dr,
+     & r0,nr,wf,phase,smat,info,nlag,ns,einc,icc)
+      use globals, only: written
+      use nmrv,only: vcoup,ech
+      use xcdcc, only: rvcc,smats
+      use constants , only: e2,pi
+      use scattering, only: ifcont
+      use memory
+      use rmat_hp_mod  ! HPRMAT module
+      implicit none
+      logical :: iftr,twf,info
+c     -------------------------------------------------------------
+      integer :: ir,nma,nch,inc,nr,nmax,icc,ninc,i,ql(nch)
+      integer, parameter  :: ncp2=0  ! nb of non-local couplings
+      integer*4, parameter:: nr2=0
+      integer*4 :: nlag,ns,ich,ichp,nopen
+      integer*4,allocatable:: nvc(:)
+c     -----------------------------------------------------------
+      real*8 :: ecm,tkch,z12,conv
+      real*8  :: r,rmax,dr,r0,einc,kinc
+      real*8  :: zrma(nlag*ns),eta(nch),kch(nch)
+      real*8  :: aux,jci,jcf
+      real*8,parameter :: alpha=0.
+c     -----------------------------------------------------------
+      complex*16 :: cfival,caux,phc,ph2
+      complex*16 :: cpot(nlag*ns,nch,nch),cu(nch,nch),faux(nr)
+      complex*16, allocatable:: cpnl(:,:,:)
+      complex*16 cfx(nch)
+      complex*16, intent(out):: wf(nch,nr)
+      complex*16 :: phase(nch),smat(nch)
+      complex*16,allocatable :: cf(:,:,:)
+      logical :: incvec(nch)
+c     ----------------
+c     For S-matrix diagonalization
+      integer sort,n
+      parameter (sort = 1)
+      complex*16:: umat(nch,nch),evec(nch)
+      real*8 :: eph(nch)
+      real*8 :: big,small
+      big=huge(big)
+      small=epsilon(small)
+c     ----------------------------------------------------------
+c *** Initialize some variables & R-matrix
+      nmax=nlag*ns
+      rmax=rvcc(nr)
+      write(0,*)'HPRMAT Rmat: rmax=',rmax,' solver_type=',solver_type
+      twf=.false.
+
+      ninc=0
+      do i=1,nch
+      if (incvec(i)) ninc=ninc+1
+      enddo
+      allocate(nvc(ninc))
+      i=1
+      do ich=1,nch
+      if (incvec(ich)) then
+      nvc(i)=ich
+      i=i+1
+      endif
+      enddo
+      allocate(cf(nlag*ns,nch,ninc))
+
+      call rmat_ini_hp(nlag,ns,rmax,zrma)
+c *** -----------------------------------
+
+
+c *** Interpolation of coupling matrix in Lagrange mesh
+      kinc=sqrt(conv*ecm)
+      do ich=1,nch
+      aux=ecm+einc-ech(ich)
+      kch(ich)=sqrt(conv*abs(aux))
+      eta(ich)=conv*z12*e2/kch(ich)/2.
+      if (aux.lt.0) kch(ich)=-kch(ich)
+
+      do ichp=ich,nch
+      phc=(0d0,1d0)**(ql(ichp)-ql(ich))
+      faux(1:nr)=conv*vcoup(ich,ichp,1:nr)
+      do ir=1,nmax
+      r=zrma(ir)
+      caux=cfival(r,rvcc,faux,nr,alpha)
+      cpot(ir,ich,ichp)=caux
+      if (ich.ne.ichp) cpot(ir,ichp,ich)=caux
+      enddo
+      enddo !ich
+      enddo !ichp
+
+! DEBUG - print parameters for HPRMAT
+      write(*,*) '=== HPRMAT parameters ==='
+      write(*,*) 'nr=',nr,' rvcc(nr)=',rvcc(nr)
+      write(*,*) 'nch=',nch,' nlag=',nlag,' ns=',ns,' rmax=',rmax
+      write(*,*) 'conv=',conv,' z12=',z12
+      do ich=1,min(3,nch)
+        write(*,'(a,i2,a,f10.5,a,f10.5,a,i2)')
+     &   ' ch',ich,': kch=',kch(ich),' eta=',eta(ich),' l=',ql(ich)
+      enddo
+      write(*,*) 'zrma(1)=',zrma(1),' zrma(nmax)=',zrma(nmax)
+      write(*,*) '=== cpot(ir,1,1) imaginary part ==='
+      do ir=1,nmax,nmax/10
+        write(*,'(a,i4,a,f8.2,a,2f12.4)') ' ir=',ir,' r=',zrma(ir),
+     &   ' cpot=',real(cpot(ir,1,1)),aimag(cpot(ir,1,1))
+      enddo
+
+      call rmatrix_hp(nch,ql,kch,eta,rmax,nlag,ns,cpot,cu,nmax,nch,
+     &             nopen,twf,cf,nmax,nch,ninc,nvc,ncp2,cpnl)
+
+
+       do ich=1,ninc
+       inc=nvc(ich)
+       smat(1:nopen)=cu(1:nopen,inc)*sqrt(kinc/kch(1:nopen))
+       smats(icc,inc,1:nopen)=smat(1:nopen)
+       enddo
+
+       do i=1,ninc
+       inc=nvc(i)
+       do ich=1,nch
+       write(*,500)ich,smat(ich),cu(ich,inc),abs(smat(ich))
+500   format(10x,"Chan. #",i3,5x,
+     &    "S=(",1f8.5,",",1f8.5,")", 5x,
+     &    "S=(",1f8.5,",",1f8.5,") ->  |S|=",1f9.6)
+       enddo
+       enddo
+
+       if (twf) then
+       do  ir=1,nmax
+       write(501,1002)zrma(ir),
+     &      (cf(ir,ich,1)*(0.,-1.),ich=1,nch)
+1002   format(f8.3,10(2es12.4,2x))
+       enddo
+       write(501,*)'&'
+       endif
+
+
+c
+c Diagonalize S-matrix to get eigenphases.
+c
+      if (ifcont) then
+      eph(:)=0
+      call SEigensystem(nopen,smat,nch,evec, Umat,nopen, sort)
+
+      do ich=1,nopen
+         if(abs(evec(ich)).gt.small) eph(ich)=(0.,-0.5)*LOG(evec(ich))
+         print*,ich,' -> eigenphase=',eph(ich)
+      enddo
+      print 101, "Eigen:",(n,evec(n),abs(evec(n)),eph(n),n = 1, nopen)
+101   format(/A, 10(/"d(", I1, ") = ", F10.6, SP, F10.6, SS, " I",
+     & "|d|=",f10.6, " Phas=",f10.6))
+      written(46)=.true.
+      write(46,'(1f8.4,50f12.6)') ecm,(eph(n)*180./pi,n = 1, nch)
+      endif
+
+
       return
       end subroutine
 

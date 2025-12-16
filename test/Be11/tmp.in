@@ -1,0 +1,167 @@
+# 11Be=10Be + n using WS potential
+# ---------------------------------------------------------------------------------------------
+ &SYSTEM  Zv=0. Av=1.0087   sn=0.5
+          Zc=4. Ac=10.013   /
+
+ &corestates spin=0.0 parity=+1 ex=0.0 /
+ &corestates spin=2.0 parity=+1 ex=3.368 /
+ &corestates /
+
+ &output wfout(:)=1 2  3 xcdcc=F verb=0    /
+
+ &GRID  ng=0 rmin=0.0 rmax=150.0 dr=0.05 rint=70 /
+
+
+# Summers S3
+ &POTENTIAL ptype=1 ap=1 at=0 
+           vl0(0:9)=-54.85 -47.77 -54.85 -47.77 -54.85 -47.77 -54.85 -47.77 -54.85 -47.77
+           r0=2.483   a0=0.65  
+           Vso=5    rso=2.483  aso=0.65 
+           pcmodel=0 lambda=2 kband=0
+           cptype=3  Vcp0(0:8)=0 0 0 0 0 0 0 0 0 rcp0=2.483 acp=0.65 delta=1.664 /
+  &potential ptype=0 /
+
+
+
+ &pauli n=0 /
+ &pauli n=1 l=0 j=0.5  /
+
+# Bound
+  &JPSET bastype=1 mlst=4 gamma=1.8 bosc=1.6 nho=30 nsp=0 exmin=-1 exmax=0.0 bas2=0 JTOT=0.5 PARITY=1  lmax=5 /
+  &JPSET bastype=1 mlst=4 gamma=1.8 bosc=1.6 nho=30 nsp=0 exmin=-1 exmax=0.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=5 /
+
+
+
+# Unbound
+  &JPSET JTOT=0.5 PARITY=+1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=10 lmax=9 inc=1 tres=F / ! 1/2+
+  &JPSET JTOT=0.5 PARITY=+1 bastype=2 exmin=3.37  exmax=12  nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 1/2+
+  &jpset /
+
+  &JPSET JTOT=0.5 PARITY=-1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=10 lmax=9 inc=1 tres=F / ! 1/2-
+  &JPSET JTOT=0.5 PARITY=-1 bastype=2 exmin=3.37 exmax=12   nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 1/2-
+
+
+
+  &JPSET JTOT=1.5 PARITY=-1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=10 lmax=9 inc=1 tres=F / ! 3/2-
+  &JPSET JTOT=1.5 PARITY=-1 bastype=2 exmin=3.67 exmax=12.00   nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 3/2-
+
+  &JPSET JTOT=1.5 PARITY=1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=8 lmax=9 inc=1 tres=T / ! 3/2+
+  &JPSET JTOT=1.5 PARITY=1 bastype=2 exmin=3.37 exmax=12.00   nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 3/2+
+
+
+
+  &JPSET JTOT=2.5 PARITY=1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=8 lmax=9 inc=1 tres=T / ! 5/2+
+  &JPSET JTOT=2.5 PARITY=1 bastype=2 exmin=3.37 exmax=12.000   nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 5/2+
+
+
+ 
+  &JPSET JTOT=2.5 PARITY=-1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=7 lmax=9 inc=1 tres=F / ! 5/2-
+  &JPSET JTOT=2.5 PARITY=-1 bastype=2 exmin=3.4 exmax=12.00   nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 5/2-
+
+  &JPSET JTOT=3.5 PARITY=+1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 7/2+
+  &JPSET JTOT=3.5 PARITY=+1 bastype=2 exmin=3.37 exmax=12.00   nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 7/2+
+
+
+
+  &JPSET JTOT=3.5 PARITY=-1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=7 lmax=9 inc=1 tres=F / ! 7/2-
+  &JPSET JTOT=3.5 PARITY=-1 bastype=2 exmin=3.37 exmax=12.00   nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 7/2-
+
+
+
+  &JPSET JTOT=4.5 PARITY=+1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=7 lmax=9 inc=1 tres=F / ! 9/2+
+  &JPSET JTOT=4.5 PARITY=+1 bastype=2 exmin=3.37 exmax=12.00   nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 9/2+
+
+  &JPSET JTOT=4.5 PARITY=-1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=7 lmax=9 inc=1 tres=F / ! 9/2-
+  &JPSET JTOT=4.5 PARITY=-1 bastype=2 exmin=3.37 exmax=12.00   nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 9/2-
+
+
+  &JPSET JTOT=5.5 PARITY=+1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=7 lmax=9 inc=1 tres=F / ! 11/2+
+  &JPSET JTOT=5.5 PARITY=+1 bastype=2 exmin=3.37 exmax=10.00   nk=50 nbins=5 lmax=9 inc=1 tres=F / ! 11/2+
+!  &JPSET JTOT=5.5 PARITY=+1 bastype=2 exmin=0.02 exmax=6.5   nk=50 nbins=3 lmax=9 inc=2 tres=F / ! 11/2+
+!  &JPSET JTOT=5.5 PARITY=+1 bastype=2 exmin=0.02 exmax=6.5   nk=50 nbins=3 lmax=9 inc=3 tres=F / ! 11/2+
+!  &JPSET JTOT=5.5 PARITY=+1 bastype=2 exmin=0.02 exmax=6.5   nk=50 nbins=3 lmax=9 inc=4 tres=F / ! 11/2+
+!  &JPSET JTOT=5.5 PARITY=+1 bastype=2 exmin=0.02 exmax=6.5   nk=50 nbins=3 lmax=9 inc=5 tres=F / ! 11/2+
+!  &JPSET JTOT=5.5 PARITY=+1 bastype=2 exmin=0.02 exmax=6.5   nk=50 nbins=3 lmax=9 inc=6 tres=F / ! 11/2+
+
+  &JPSET JTOT=5.5 PARITY=-1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=7 lmax=9 inc=1 tres=F / ! 11/2-
+  &JPSET JTOT=5.5 PARITY=-1 bastype=2 exmin=3.37 exmax=10.00   nk=50 nbins=4 lmax=9 inc=1 tres=F / ! 11/2-
+
+  &JPSET JTOT=6.5 PARITY=1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=7 lmax=9 inc=1 tres=F / ! 13/2+
+  &JPSET JTOT=6.5 PARITY=1 bastype=2 exmin=3.37 exmax=10.00   nk=50 nbins=4 lmax=9 inc=1 tres=F / ! 13/2+
+
+
+  &JPSET JTOT=6.5 PARITY=-1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=7 lmax=9 inc=1 tres=F / ! 13/2-
+  &JPSET JTOT=6.5 PARITY=-1 bastype=2 exmin=3.37 exmax=10.00   nk=50 nbins=4 lmax=9 inc=1 tres=F / ! 13/2-
+
+  &JPSET JTOT=7.5 PARITY=+1 bastype=2 exmin=0.02 exmax=3.36   nk=50 nbins=7 lmax=9 inc=1 tres=F / ! 15/2+
+  &JPSET JTOT=7.5 PARITY=+1 bastype=2 exmin=3.37 exmax=10.00  nk=50 nbins=4 lmax=9 inc=1 tres=F / ! 15/2+
+  &jpset /
+
+
+
+ &SCATWF ifcont=F  emin=0.01 emax=10.01  nk=50 /
+
+ &belambda  ifbel=F uwfgsfile="wfgs.dat" lambda=2 /
+
+ &bmlambda /
+
+############################    REACTION       ####################################
+&reaction elab=39.17 namep='11Be' mp=11.027 namet='197Au' mt=197 zt=79 jt=0.0 /
+
+
+####################### COUPLING POTENTIALS FOR 11Be+197Au at 31.9 MeVTRIUMF) #####################################
+&trans rcc=9.651 skip=f writeff=T /
+
+&coupling qcmax=0 ncoul=0 lamax=10 /
+
+&grid nquad=120 radmax=150.0 rmax=300 rextrap=500 rstep=0.25 rvecin=0.0 drvec=0.1 hin=0.1 &end
+
+&corepotential ptype=1 ap=10 at=197 rc0=1.108
+               V0=-113 r0=1.063 a0=0.63 
+               V0i=-169 r0i=1.1956 a0i=0.30 /
+               cptype=3 Vcp0=0.d0 Vcp0i=0.d0 delta=1.664 deltai=1.664 mel(1:3)=0. 7.8259  0./
+&corepotential ptype=0 /
+
+#Local potential KD
+&valencepotential ptype=1 ap=0 at=197 rc0=1.0
+                  V0=-46.56 r0=1.237 a0=0.652 
+                  V0i=-0.21 r0i=1.237 a0i=0.652 / !volume
+&valencepotential ptype=2 ap=0 at=197 rc0=1.0
+                  V0=0.d0   r0=1.235 a0=0.647 
+                  V0i=-3.95 r0i=1.257 a0i=0.6 / !surface
+&valencepotential ptype=0 /
+
+
+
+#########################  SOLVE CC EQUATIONS ##############################
+
+# method=0 PC-numerov, 
+         1=ENA with 5 terms in Cosh[Sqrt[T]]
+         2=ENA with 5 terms in Cosh[Sqrt[T]], only diagonal 
+         3=Raynal
+         4=Modified Numerov used in Fresco
+         5=R-matrix with Lagrange mesh (P.Desc.)
+
+# numerov hcm=0.05 rmaxcc=250  hort=6 method=6   rcc=9.651 skip=f jtmin=0.5 jtmax=0.5  / 
+&numerov ns=50 nlag=8 solvertype=1 hcm=0.05 rmaxcc=250  hort=6 method=6   rcc=9.651 skip=f jtmin=0.5 jtmax=0.5 ns=10 nlag=40 solvertype=3 / 
+
+&xsections fileamp='fort.37' thmin=0. thmax=180. dth=0.2  doublexs=f  triplexs=f  icore=1 ner=400 ermin=0.01 ermax=14.0 
+           jsets(1:2)= F F  /
+           jsets(1:30)= F F F F F F T T F F    F F F F F F F F F F     F F F F F F F F F F /
+
+&framework sys='lab' idet=1 /
+&gridener Enlow=20 Enup=40 dEn=0.25 /
+&gridthetac tcl=0.01 tcu=180.01 dtc=1.5 /      
+&gridthetav tvl=0.01 tvu=174.01 dtv=2.5 /      
+&gridphi phil=0.0 phiu=360.0 dphi=5.0 /
+
+
+# ------------------------------ END OF INPUT ---------------------------
+
+
+
+# Energy    V     rv    av    W     rw    aw    Vd   rvd   avd    Wd   rwd   awd   Vso   rvso  avso  Wso   rwso  awso  rc
+#  3.000  47.31 1.234 0.649  0.16 1.234 0.649  0.00 1.250 0.512  4.18 1.250 0.512  6.28 1.074 0.590 -0.01 1.074 0.590 0.000
+   3.500  47.14 1.234 0.649  0.18 1.234 0.649  0.00 1.250 0.512  4.42 1.250 0.512  6.27 1.074 0.590 -0.01 1.074 0.590 0.0
+
+

@@ -21,3 +21,5 @@ FFLAGS1= -g -O0 -Wall -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(P
 #FFLAGS= -g -O0 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero,overflow,underflow,invalid $(PARALLEL)
 #FFLAGS1= -g -O0 -Wtabs -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero,overflow,underflow,invalid $(PARALLEL)
 
+# LAPACK/BLAS from OpenBLAS (with OpenMP support)
+LFLAGS = -lopenblas -fopenmp
