@@ -198,6 +198,8 @@ Core+valence central and deformed (coupling) potentials:
    - hort: if nonzero, uses a stabilization procedure of the CC equations (see long text description)
 
 #### R-matrix parameters (for method=5,6):
+**Note:** For method=6 (HPRMAT), run `./setup.sh` before compiling to configure dependencies.
+
    - nlag: number of Gauss-Legendre quadrature points per sector (default=0, uses internal default)
    - ns: number of R-matrix propagation sectors (default=1)
    - solvertype: solver type for HPRMAT method=6 only (default=3):
