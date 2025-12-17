@@ -311,13 +311,6 @@ subroutine rmatrix_hp(nch, lval, qk, eta, rmax, nr, ns, cpot, cu, &
     ! Use linear equation solving instead of matrix inversion
     B_vector(:) = q2(:, is)
 
-    ! DEBUG - check ch matrix has imaginary part
-    if (is == 1) then
-      write(*,*) '=== ch matrix check ==='
-      write(*,'(a,2e15.6)') ' ch(1,1,1) = ', real(ch(1,1,1)), aimag(ch(1,1,1))
-      write(*,'(a,2e15.6)') ' ch(nr,nr,1)=', real(ch(nr,nr,1)), aimag(ch(nr,nr,1))
-    endif
-
     select case (local_solver)
     case (1)
       ! Dense LAPACK - solve using ZGESV
@@ -377,7 +370,8 @@ subroutine rmatrix_hp(nch, lval, qk, eta, rmax, nr, ns, cpot, cu, &
   end do
 
   ! Solve for collision matrix using linear solve instead of inversion
-  call ZGESV(nopen, nopen, cz, nch, IPIV_local, cu(1:nopen, 1:nopen), nch, INFO_local)
+  ! Note: Pass full cu array with LDB=ndim to avoid array copy issues
+  call ZGESV(nopen, nopen, cz, nch, IPIV_local, cu, ndim, INFO_local)
   if (INFO_local /= 0) stop 'Error in ZGESV for collision matrix'
 
   ! Wave function calculation
