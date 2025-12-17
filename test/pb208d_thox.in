@@ -1,0 +1,126 @@
+# d+58Ni CDCC (no spins)
+# ---------------------------------------------------------------------------------------------
+ &SYSTEM  Zv=0. Av=1.0087   sn=0.0
+          Zc=1. Ac=1.0078  /
+
+ &corestates spin=0.0 parity=+1 ex=0.0 /
+ &corestates /
+
+ &output wfout(:)=1 2 3 4 5   xcdcc=F verb=2 solapout(:)=0  cdccwf=F  /
+
+ &GRID  rmin=0.0 rmax=100.0 dr=0.025 rlast=100 /
+
+# p-n potential
+!   vl0(0:2)=-72.150 -38.150 -72.150
+ &POTENTIAL ptype=3 ap=1 at=0 
+   vl0(0:3)=-72.150 -72.150 -72.150 -72.150
+   r0=0   a0=1.484  /
+
+  &potential ptype=0 /
+
+ &pauli n=0 /
+
+#THOx
+!  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=30 nsp=0 exmin=-5 exmax=7 bas2=0 JTOT=0.0 PARITY=1 lmax=0 /  l=0   /
+!  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=30 nsp=0 exmin=0 exmax=7 bas2=0 JTOT=1.0 PARITY=-1 lmax=1 /  l=1 /
+!  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=30 nsp=0 exmin=0 exmax=7 bas2=0 JTOT=2.0 PARITY=1  lmax=2 /l=2 /
+
+#CGE
+!    &JPSET bastype=3 rnmax =30  r1=1 bosc=1.6 nho=50 nsp=0 exmin=-5 exmax=0 bas2=0 JTOT=0.0 PARITY=1 lmax=0 /  l=0   /
+!   &JPSET bastype=3 rnmax =30  r1=1 bosc=1.6 nho=40 nsp=0 exmin=0 exmax=6 bas2=0 JTOT=0.0 PARITY=1 lmax=0 /  l=0   /
+!   &JPSET bastype=3 rnmax =30  r1=1 bosc=1.6 nho=40 nsp=0 exmin=0 exmax=6 bas2=0 JTOT=1.0 PARITY=-1 lmax=1 /  l=1 /
+!   &JPSET bastype=3 rnmax =30  r1=1 bosc=1.6 nho=40 nsp=0 exmin=0 exmax=6 bas2=0 JTOT=2.0 PARITY=1  lmax=2 /l=2 /
+
+# Bins
+  &JPSET bastype=1 mlst=4 gamma=1.7 bosc=1.6 nho=40 nsp=0 exmin=-5 exmax=0 bas2=0 JTOT=0.0 PARITY=1 lmax=0 / 
+  &JPSET bastype=2 exmin=0.1  exmax=7.1 nk=50 nbins=6 lmax=0  JTOT=0.0 PARITY=1  /
+  &JPSET bastype=2 exmin=0.1  exmax=7.1 nk=50 nbins=6 lmax=1  JTOT=1.0 PARITY=-1  /
+  &JPSET bastype=2 exmin=0.1  exmax=7.1 nk=50 nbins=6 lmax=2  JTOT=2.0 PARITY=1  /
+!  &JPSET bastype=2 exmin=0.1  exmax=7.1 nk=50 nbins=6 lmax=3  JTOT=3.0 PARITY=-1  /
+
+ &JPSET /
+
+
+ &SCATWF ifcont=f  emin=0.01 emax=10.01  nk=100 inc=1 jset=2  /
+
+ &belambda  ifbel=f uwfgsfile="" lambda=1 nk=200 emin=0.1 emax=50 jset=3 /
+ &bmlambda /
+
+############################    REACTION       ####################################
+&reaction elab=6   namep='d' mp=2.014 mt=208 namet='208Pb' zt=82 jt=0.0 / 
+   
+
+######################### COUPLING POTENTIALS FOR (X)CDCC ####################################
+# (if no basis sets have been defined, this section will be skipped)
+# #######################################################q####################################
+
+&TRANS skip=f  rcc=7.11  writeff=T   /   !rcc=1.2*208^(1/3)
+ 
+&coupling qcmax=0  ncoul=0  lamax=4 /
+
+&grid nquad=80  radmax=100.d0 rstep=0.2 rmax=100 rextrap=300 rvecin=0.1d0 drvec=0.025d0 hin=0.1 /
+
+# Core-target (p+208Pb): 
+# Energy    V     rv    av    W     rw    aw    Vd   rvd   avd    Wd   rwd   awd   Vso   rvso  avso  Wso   rwso  awso  rc
+#  3.500  63.38 1.235 0.647  0.17 1.235 0.647  0.00 1.248 0.627  6.29 1.248 0.627  6.31 1.076 0.590 -0.01 1.076 0.590 1.220
+&corepotential ptype=1 ap=0 at=208  rc0=1.2 
+                  V0=-63.38 r0=1.235  a0=0.647  V0i=-0.17 r0i=1.235 a0i=0.647 / ! WS volume
+&corepotential ptype=2 ap=0 at=208
+                  V0i=-6.29 r0i=1.248 a0i=0.627 / ! WS deriv
+&corepotential ptype=0 /
+
+
+## Valence-target (n-208Pb):KD
+# Energy    V     rv    av    W     rw    aw    Vd   rvd   avd    Wd   rwd   awd   Vso   rvso  avso  Wso   rwso  awso  rc
+#  3.500  46.73 1.235 0.647  0.16 1.235 0.647  0.00 1.248 0.510  4.21 1.248 0.510  6.31 1.076 0.590 -0.01 1.076 0.590 0.000
+&valencepotential ptype=1  ap=0 at=208  rc0=1.0 
+              V0=-46.73 r0=1.235  a0=0.647  V0i=-0.16 r0i=1.235 a0i=0.647 / ! WS volume.
+&valencepotential ptype=2  ap=0 at=208  
+             V0i=-4.21 r0i=1.248 a0i=0.510 / ! WS deriv
+&valencepotential ptype=0 /
+
+
+
+######################### SOLVE CC EQUATIONS ##############################
+# method=0 PC-numerov, 
+         1=ENA with 5 terms in Cosh[Sqrt[T]]
+         2=ENA with 5 terms in Cosh[Sqrt[T]], only diagonal 
+         3=Raynal
+         4=Modified Numerov used in Fresco
+
+&numerov hcm=0.1 rmaxcc=200  method=6   jtmin=0 jtmax=25 skip=f nlag=40 ns=10 /   
+
+
+######################### TRIPLE DIFFERENTIAL CROSS SECTINS ##############################
+&xsections fileamp="fort.137" thmin=10.0 thmax=180.0 dth=2  
+           doublexs=f triplexs=F phixs=F icore=1 ner=200 
+           ermin=0.1 ermax=60 jsets(1:2)=T T  /
+
+&framework sys='lab' idet=1 / 
+&gridener Enlow=1 Enup=80 dEn=2 /      
+&gridthetac tcl=0.0 tcu=60.0  dtc=1 /      
+&gridthetav tvl=0.0 tvu=60.0  dtv=1  /
+&gridphi phil=0.0 phiu=360.0 dphi=5.0 /
+
+
+# ---------------------------------------  END OF INPUT ---------------------------------------------------
+
+
+
+&reaction elab=80 jtmin=0 jtmax=40.0   mp=2.014 mt=58 zt=28 /     jbord(1:2)=0 50  jump(1:2)=2 5 / 
+
+
+
+
+
+
+
+
+ 
+
+ &POTENTIAL part='Valence' a1=58  rc=1.
+      V=44.70 vr0=1.192 a=0.663 w=3.95 wr0=1.192 aw=0.663 
+      wd=5.32  wdr0=1.282 awd=0.550 /
+ &POTENTIAL part='Core' a1=58 rc=1.25 
+      V=39.50 vr0=1.192 a=0.663 w=3.97 wr0=1.192 aw=0.663
+      wd=4.90  wdr0=1.278 awd=0.536 /
