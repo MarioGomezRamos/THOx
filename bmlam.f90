@@ -17,7 +17,7 @@ c      ------------------------------------------------------------------------
       integer :: i,np,ir,m,n,ncont,iil,is,itran,ik,jset,nex,ich
       integer:: pci,pcf,ibel!MGR 2022
       integer, parameter:: igs=1
-      integer:: jseti,ni
+      integer:: jseti,ni,ios
 c     --------------------------------------------------------------------------
       real*8:: fival,lambdar
       real*8:: mlam,mlamcore,Bml,Bmlcore,matml_l,bmsum,rms,delta
@@ -79,7 +79,13 @@ c     --------------------------------------------------------------------------
       gyrov=0d0
       gyroc=0d0
       
-      read(kin,nml=bmlambda)
+      
+      read(kin,nml=bmlambda, iostat=ios)
+      
+      if (ios /= 0) then 
+         write(*,*)' Namelist bmlambda not present'
+         return
+      endif
       
       if (.not.ifbml) return
       
