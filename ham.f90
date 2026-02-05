@@ -1390,7 +1390,7 @@ c this is included in basis.f90, so it should be redundant here
        endif
        enddo !ir
        enddo !m
-       if (written(100+i)) then      
+       if (wfprint(i)) then      
         do ir=1,np
         r=rmin+dr*dble(ir-1)
         if (r> rlast) cycle
