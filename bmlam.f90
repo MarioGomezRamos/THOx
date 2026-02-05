@@ -13,7 +13,7 @@ c ** Calculates B(M;lambda) distributions using THO pseudostates
       use factorials
       implicit none
 c      ------------------------------------------------------------------------
-      logical :: energy,fail3,writewf!,ifbel
+      logical :: energy,fail3,writewf,ifbel
       integer :: i,np,ir,m,n,ncont,iil,is,itran,ik,jset,nex,ich
       integer:: pci,pcf,ibel!MGR 2022
       integer, parameter:: igs=1
@@ -21,6 +21,7 @@ c      ------------------------------------------------------------------------
 c     --------------------------------------------------------------------------
       real*8:: fival,lambdar
       real*8:: mlam,mlamcore,Bml,Bmlcore,matml_l,bmsum,rms,delta
+      real*8:: BElcore
       real*8:: matml_sv,matml_sc
       real*8:: mlamcorem!,rotor
       real*8:: wid,qjcir,qjcr,cleb,sixj,coef
@@ -52,6 +53,8 @@ c     --------------------------------------------------------------------------
 c     --------------------------------------------------------------------------  
       namelist /bmlambda/ uwfgsfile,lambda,Bmlcore,ifbml,rms,
      &  coremodel,jset,emin,emax,nk,engs,jseti,ni,delta,gyrov,gyroc
+      namelist /belambda/ uwfgsfile,lambda,BElcore,ifbel,rms,
+     &  coremodel,jset,emin,emax,nk,engs,jseti,ni,delta
       namelist /coretrans/ic, icp, rmm, qc  
 c     --------------------------------------------------------------------------
       pi=acos(-1.0)
@@ -79,11 +82,12 @@ c     --------------------------------------------------------------------------
       gyrov=0d0
       gyroc=0d0
       
-      
       read(kin,nml=bmlambda, iostat=ios)
       
       if (ios /= 0) then 
          write(*,*)' Namelist bmlambda not present'
+         rewind(kin)
+         read(kin,nml=belambda)
          return
       endif
       
