@@ -182,7 +182,7 @@ c *** Radial grids ------------------------------------------------------------
       rquad=radmax*0.5d0*(1.d0+xquad)
       rvecmax=coef*radmax+rmax
       nr=nint((rvecmax-rvecin)/drvec)
-
+      nrin=nint(rvecmax/hin)
       allocate(rfrag(nr))
       allocate(rvin(nrin))
       do irvec=1,nr

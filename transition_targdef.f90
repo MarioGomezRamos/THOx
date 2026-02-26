@@ -26,7 +26,7 @@ c     --------------------------------------------------------------------------
 c changed to complex in v2.3
       complex*16,pointer:: ui(:),uf(:)
       complex*16 :: fprod
-      complex*16 xi,pot,xsum, xsumn,xsumc !,gunc
+      complex*16 xi,pot,xsum, xsumn,xsumc,pot_omp !,gunc
 !      parameter(Kmax=6,xKrot=0.d0,nkmax=300)
       integer nkmax
       parameter(nkmax=300)
@@ -322,6 +322,10 @@ c commented by AMoro, to save memory
 
 !      write(*,*)'nqmin,nqmax=',nqmin,nqmax,' kmax=',kmax,kcmax
 !      write(*,*)'nquad,nrad2=',nquad,nrad2
+!$OMP PARALLEL DO PRIVATE(iquad,irad2,nq,k,potnv,potcv,potncor,potccor,
+!$OMP& r1,r2,nc) 
+!$OMP& SHARED(coefc,coefv,ncoul,nquad,nrad2,nqmin,nqmax,kmax,rquad,
+!$OMP& xrad2, potQKc_targ,potQKn_targ)
       do iquad=1,nquad
       if (debug) write(*,*) 'nquad,iquad=',nquad,iquad
       do irad2=1,nrad2
@@ -339,13 +343,13 @@ c commented by AMoro, to save memory
       
       if ((ncoul.eq.0).or.(ncoul.eq.1)) then  !nuclear part
         nc=1 ! nuclear part
-        potncor= pot(r1,r2,nq,k,coefc,nc)
-        potnv=   pot(r1,r2,nq,k,coefv,nc)
+        potncor= pot_omp(r1,r2,nq,k,coefc,nc)
+        potnv=   pot_omp(r1,r2,nq,k,coefv,nc)
       endif
       if ((ncoul.eq.0).or.(ncoul.eq.2)) then ! coulomb part
        nc=2 ! coulomb part
-       potccor= pot(r1,r2,nq,k,coefc,nc)
-       potcv  = pot(r1,r2,nq,k,coefv,nc)
+       potccor= pot_omp(r1,r2,nq,k,coefc,nc)
+       potcv  = pot_omp(r1,r2,nq,k,coefv,nc)
 !      write(*,*)'coulomb:',pot(r1,r2,nq,k,coefc,nc),
 !     & pot(r1,r2,nq,k,coefv,nc)
       endif       
@@ -360,6 +364,7 @@ c commented by AMoro, to save memory
       
       enddo ! nrad2 (R)
       enddo ! nquad (r)
+!$OMP END PARALLEL DO      
       call cpu_time(t2)
       write(*,'(4x,"[",1f6.2," secs ]")') t2-t1
      

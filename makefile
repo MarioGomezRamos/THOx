@@ -43,7 +43,7 @@ SRC=$(TOPDIR)
 OBJ=modules.o coul90.o precision.o gpu_solver_interface.o rmat_solvers.o rmatrix_hp.o scatcc.o  channels.o writecdccwf.o  basis.o hdiag.o ho.o lst-amos.o utils.o cgbasis.o \
     pauli.o sort.o nag2.o whittaker.o  \
      continuum.o belam.o bmlam.o ham.o  transition_targdef.o\
-        transition.o   clebsg.o  projpot.o fragpot.o xsections_alpha_1d.o \
+        transition.o transition_omp.o  clebsg.o  projpot.o fragpot.o xsections_alpha_1d.o \
         rmatel.o solvecc.o rmatrix.o ccbins.o xsections.o xsections_alpha.o rsc.o\
 	bincc2.o ceigen.o readwf.o  thox.o eigcc.o
 
@@ -56,7 +56,7 @@ endif
 
 #coulfg4.f
 all: $(OBJ)
-	$(FC) -o thox $(OBJ) $(LFLAGS) $(LIBS) $(PARALLEL)  
+	$(FC) -o thox $(OBJ) $(LFLAGS) $(LIBS) $(PARALLEL)  -g
 #	$(FC) -g -o thox $(OBJ) $(LFLAGS) -L./lapack64 -llapack -lrefblas
 #	$(FC) -g -o thox $(OBJ) $(LFLAGS) -L./lapack -llapack -lrefblas
 modules.o:modules.f90
@@ -65,7 +65,7 @@ modules.o:modules.f90
 CC = gcc
 
 # HPRMAT files use free-form Fortran
-FFLAGS_FREE = -O3 -fopenmp -ffree-form
+FFLAGS_FREE = -O3 -fopenmp -ffree-form  
 precision.o:precision.F90
 	$(FC) $(FFLAGS_FREE) -c precision.F90
 gpu_solver_interface.o:gpu_solver_interface.F90 precision.o
@@ -122,6 +122,8 @@ bmlam.o:bmlam.f90 modules.f90
 	$(FC) $(FFLAGS1) -c bmlam.f90	
 transition.o:transition.f90 modules.f90
 	$(FC) $(FFLAGS1)  -c transition.f90
+transition_omp.o:transition_omp.f90 modules.f90
+	$(FC) $(FFLAGS1)  -c transition_omp.f90
 transition_targdef.o:transition_targdef.f90 modules.f90
 	$(FC) $(FFLAGS1)  -c transition_targdef.f90
 fragpot.o:fragpot.f90 modules.f90

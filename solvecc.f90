@@ -50,6 +50,10 @@ c     ---------------------------------------------------------------
       logical,allocatable:: incvec(:)
       logical incch
       real*8 einc
+      real*8,allocatable:: xs_ch(:,:,:,:)!l, state, jt-l,jt-l incoming
+      real*8 jpmax
+      integer npmax, nincmax, lpmax, istatemax,jcc,ijml,iinc,linc
+      character(len=15) :: col_header
 !-----------------------------------------------------------------------
 
       namelist /numerov/ method,
@@ -117,7 +121,13 @@ c ... Numerov specifications
       case(5)
        write(numethod,'(a60)')"R-matrix solution (Pierre)"
       case(6)
-       write(numethod,'(a60)')"R-matrix solution (HPRMAT)"
+       write(numethod,'(a60)')"Modified ENA with turning point cuts"
+      case(7)
+       write(numethod,'(a60)')"Enhanced Numerov w. cuts quad precision"
+      case(8)
+      write(numethod,'(a60)')"ENA with 5 terms and tolsma criterion" 
+      case(9)
+      write(numethod,'(a60)')"R-matrix solution (HPRMAT)" 
       end select 
       write(*,350) adjustl(numethod),hcm,rmaxcc
       if (abs(hort).gt.0) then
@@ -311,7 +321,7 @@ c Radial formfactors (coupling potentials) from this run or from external file
 c (in both cases, they are interpolated to the specified radial grid for CC )
       if (targdef) then  
       if (iftrans) then
-          call int_ff_tdef()  ! interpolate F(R)'s calculated in this run
+          call int_ff_tdef_omp()  ! interpolate F(R)'s calculated in this run
         else
           !NOT PROPERLY IMPLEMENTED. They are going to be different from those calculated. Must be careful
           write(0,*)'Reading form factors not properly implemented.STOP'
@@ -320,7 +330,8 @@ c (in both cases, they are interpolated to the specified radial grid for CC )
         endif
       else
         if (iftrans) then
-          call int_ff()  ! interpolate F(R)'s calculated in this run
+          call int_ff_omp()
+!          call int_ff()  ! interpolate F(R)'s calculated in this run
         else
           call read_ff() ! read F(R)'s radial formfactors from ext file
         endif
@@ -334,34 +345,18 @@ c *** Solve CC eqns for ach J/pi set ***
 c ***
       allocate(smats(ncc,nchmax,nchmax)) 
       call cpu_time(start)
-!!#ifdef _OPENMP
-!!$      num_threads = 4
-!!$      call OMP_SET_NUM_THREADS(num_threads)
-!!#endif
-
-!!$OMP PARALLEL
-!!$      write(*,*)'In parallel region (T)? ', OMP_IN_PARALLEL()
-!!$      write(*,*)'Threads allocated : ', OMP_GET_NUM_THREADS()
-!!$OMP END PARALLEL
-
+      smats=0d0
 !     do icc=1,ncc
       icc=0
-!!$OMP PARALLEL PRIVATE(nch,jtot,l,rturn)
       xsr=0
       xsinel=0
-!!$OMP  DO
       do ijt=1,njt
       xsrj   =0      ! reaction  x-section
       xsinelj=0      ! inelastic x-section
       do partot=1,-1,-2
-!!$OMP CRITICAL
-!        thread_id = omp_get_thread_num()
         jtot=jtmin+dble(ijt-1)
         icc=icc+1    
-        nch=jptset(icc)%nchan   ! number of channels for this J/pi set
-!!!$        print*,'thread:',omp_get_thread_num(),
-!!$     &  'icc,ncc,jtot,jptset()=',icc,ncc,jtot,jptset(icc)%jtot
-!!$OMP END CRITICAL      
+        nch=jptset(icc)%nchan   ! number of channels for this J/pi set     
         if (jtot.ne.jptset(icc)%jtot) then
           print*,'internal error: solvecc'
         endif
@@ -472,7 +467,7 @@ c ... write channels quantum numbers in CDCC file
 	
        call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)    
           
-c ... Compute integrated cross sections
+c ... Compute integrated cross sections without target spin
        do inc=1,nch
        if (.not. incvec(inc)) cycle
         do ich=1,nch
@@ -516,9 +511,108 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
        call flush(156)
        call flush(6) 
 330    enddo !ijt
-!      enddo ! ncc  -------------------------------------------------
-!!$OMP  END DO
-!!$OMP END PARALLEL
+      lpmax=0
+      jpmax=0.0d0
+      istatemax=0
+      write(*,*) 'icc',icc
+      
+      do jcc=1,icc
+      nch=jptset(jcc)%nchan
+      if (nch.eq.0) cycle
+      lpmax=max(lpmax,maxval(jptset(jcc)%l(1:nch)))
+      jpmax= max(jpmax,maxval(jptset(jcc)%jp(1:nch)))
+      istatemax= max(istatemax,maxval(jptset(jcc)%idx(1:nch)))
+      enddo
+      write(*,*) "lpmax,jpmax,istatemax=",lpmax,jpmax,istatemax
+      npmax= 2*jpmax+1
+     
+      nincmax=2*jpgs+1
+
+      call flush(6)
+      if (.not. targdef) then
+      if (.not.allocated(xs_ch))then
+      allocate(xs_ch(0:lpmax,istatemax,npmax,nincmax))
+      endif
+      
+      xs_ch=0.0d0
+      do jcc=1,icc
+         if (jptset(jcc)%nchan.eq.0) cycle
+        do ich=1,jptset(jcc)%nchan
+          do inc=1,jptset(jcc)%nchan
+            if (jptset(jcc)%idx(inc).ne.iexgs) cycle
+            if (ich.eq.inc)cycle
+            iex=jptset(jcc)%idx(ich)
+            ex   =exch(iex)
+            ecmf =ecmi + exch(iexgs)-ex-etarg
+            if (ecmf<0) cycle 
+            jtot=jptset(jcc)%jtot
+            linc=jptset(jcc)%l(inc)
+            iinc=nint(jtot-linc+jpgs)+1
+            l=jptset(jcc)%l(ich)
+            
+            jp=jptset(jcc)%jp(ich)
+            ijml=nint(jtot-l+jpmax)+1
+
+!            write(*,*)'iinc,inc,l,jtot,jpgs',iinc,inc,linc,jtot,jpgs
+
+            xs_ch(l,iex,ijml,iinc)=abs(smats(jcc,inc,ich))**2
+          enddo
+        enddo
+      enddo
+
+          write(446, '(A6)', advance='no') '# L'
+      
+
+       do iex = 1, istatemax
+        do ijml = 1, npmax
+            do iinc = 1, nincmax
+                ! Construct a single string "iex=N" to match the single data column
+                write(col_header, '("iex=", I0)') iex
+                ! Print it right-aligned (adjustr) in a 15-char wide column
+                write(446, '(A15)', advance='no') adjustr(col_header)
+            end do
+        end do
+       end do
+      write(446, *) ! Finish the line
+
+    ! 2. HEADER ROW: J-l
+      write(446, '(A6)', advance='no') '#' ! Empty spacer for 'L' column
+    
+      do iex = 1, istatemax
+        do ijml = 1, npmax
+            do iinc = 1, nincmax
+                write(col_header, '("J-l=", f4.1)') ijml - 1 - jpmax
+                write(446, '(A15)', advance='no') adjustr(col_header)
+            end do
+        end do
+       end do
+      write(446, *)
+
+    ! 3. HEADER ROW: J-linc
+      write(446, '(A6)', advance='no') '#' ! Empty spacer for 'L' column
+    
+      do iex = 1, istatemax
+        do ijml = 1, npmax
+            do iinc = 1, nincmax
+                write(col_header, '("J-linc=", f4.1)') iinc - 1 - jpgs
+                write(446, '(A15)', advance='no') adjustr(col_header)
+            end do
+        end do
+       end do
+       write(446, *)
+
+    ! 4. DATA LOOPS
+    ! Use a fixed format. I6 for the 'L' integer, and repeated E15.6 for data.
+    ! 9999 is a safe repetition factor for standard compilers to cover all columns.
+      do l = 0, lpmax
+         write(446, '(I6, 9999E15.6)') l, 
+     &       (((xs_ch(l,iex,ijml,iinc), iinc=1,nincmax), 
+     &          ijml=1,npmax), iex=1,istatemax)
+      enddo
+
+      close(446)
+
+      end if ! targdef
 
 
        call cpu_time(end)
@@ -752,6 +846,7 @@ c -----------------------------------------------------
       call cpu_time(ti)
       rstart=rvcc(1)
       cutr=-10
+      if (method.ge.6 .and. method.le.8) cutr=-15
       select case(method)
       case(0) ! predictor-corrector (Baylis & Peels)
         call schcc_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
@@ -773,7 +868,18 @@ c -----------------------------------------------------
         call schcc_rmat_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
      &  rstart,nr,wf,phase,smat,info,nlag,ns,einc,icc)
 
-      case(6)     ! R-matrix method (HPRMAT high-performance)
+      case(6)     ! Enhanced Numerov with cuts and tolsma
+        call schcc_erwin_cuts(nch,ecm,zp*zt,incvec,ql,factor,hcm,
+     &  rstart,nr,wf,phase,smat,method,info,einc,icc)
+
+      case(7)     ! Enhanced Numerov with cuts quadruple precision
+        call schcc_erwin_cuts_Q(nch,ecm,zp*zt,incvec,ql,factor,hcm,
+     &  rstart,nr,wf,phase,smat,method,info,einc,icc)
+      
+      case(8)     ! Enhanced Numerov tolsma
+      call schcc_ena_tolsma(nch,ecm,zp*zt,incvec,ql,factor,hcm,
+     &  rstart,nr,wf,phase,smat,method,info,einc,icc)
+      case(9)     ! R-matrix method (HPRMAT high-performance)
         call schcc_rmat_hp_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
      &  rstart,nr,wf,phase,smat,info,nlag,ns,einc,icc)
 
@@ -894,7 +1000,7 @@ c     .............................................................
 !c1      r2=threej(lamr,lri,lrf,zero,zero,zero)
 !c1      r3=sixj(jpi,jpf,lamr,lrf,lri,jtot)
       r2=threej(lamr,lrf,lri,zero,zero,zero)
-      r3=sixj(jpf,jpi,lamr,lri,lrf,jtot)
+      r3=sixj(jpf,jpi,lamr,lri,lrf,jlpf)
 
       r13=r1*r2*r3
 ! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1562,3 +1668,189 @@ c     interpolate & store in integration grid
       end subroutine
 
 
+c *** ---------------------------------------------------------------------
+C     Use previously calcualted F(R)'s and interpolate in radial grid
+c     used to solve the CC equations  
+      subroutine int_ff_omp()
+c *** --------------------------------------------------------------------      
+      use xcdcc,   only: hcm,ffc,lamax,nex,nrcc,jpch,Ff,lambmax,
+     &                   nrad3,rstep,parch,rmaxcc,rvcc,realwf
+      use channels,only: jpiset,jpsets
+      use wfs     ,only: idx
+      use memory
+      use globals ,only: verb
+      implicit none
+      integer :: ir,irr
+      integer :: m1,m2,nff,lam,par1,par2
+      complex*16, pointer:: faux(:)
+      real*8  :: rv(nrad3),xpos,rfirst
+      real*8 :: jp1,jp2,r,ymem
+      real*8, parameter:: alpha=0d0
+      complex*16 cfival,caux,fic,caux2,ffc4
+c     ----------------------------------------------------
+     
+      write(*,'(//,3x, "** INTERPOLATE FORMFACTORS **" )')
+
+      lamax=2*maxval(jpiset(:)%jtot)
+
+c ... Memory requirements
+      ymem=nex*nex*(lamax+1)*nrcc*lc16/1e6
+      if (verb.ge.1) write(*,190) ymem
+190   format(5x,"[ FF require", 1f8.2," Mbytes ]")
+
+      if (allocated(ffc)) deallocate(ffc)
+      allocate(ffc(nex,nex,0:lamax,1:nrcc))
+      ffc=0
+      do ir=1,nrad3
+       rv(ir)= rstep + rstep*(ir-1) ! CHECK
+      enddo     
+ 
+      write(*,170) nrcc, hcm,rmaxcc,hcm
+170   format(/,5x,"=>  Interpolating F(R) in grid with ",i10, ' points:',
+     &           2x,"[ Rmin=",1f5.2,2x," Rmax=",
+     &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
+
+      if (rmaxcc.gt.rv(nrad3)) then
+        write(*,'(3x,"*** WARNING: Coupled eqns integrated up to",f6.1,
+     &  1x,"fm, but formfactors calculated for R<",1f6.1," fm" )')
+     &  rmaxcc,rv(nrad3) 
+      endif 
+
+      nff=0
+!$omp parallel do private(m1,par1,jp1,m2,jp2,par2,lam,faux,ir,r,xpos,
+!$omp& caux)   
+      do m1=1,nex
+      par1= parch(m1)
+      jp1 = jpch(m1)
+! Changed in v2.4 !!!!!!!!!!!!!!!!!!!!
+!      do m2=m1,nex
+      do m2=1,nex
+      if (realwf.and.(m2.lt.m1)) cycle
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      jp2 = jpch(m2)
+      par2= parch(m2)
+       do lam= nint(dabs(jp1-jp2)),min(nint(jp1+jp2),lambmax) !nint(jp1+jp2)
+       if (par1*par2*(-1)**lam<0) cycle
+       faux =>  Ff(m1,m2,lam,:)
+c      interpolate & store in integration grid
+       do ir=1,nrcc
+!        r=hcm*ir ! grid used in scattcc
+!        r=dble(ir-1)*hcm ! grid used in scattcc (Changed in v2.2)
+        r=rvcc(ir)
+        if (r.gt.rv(nrad3)) cycle ! DO NOT EXTRAPOLATE 
+!        caux=cfival(r,rv,faux,nrad3,alpha)
+        xpos=(r-rstep)/rstep
+        caux=FFC4(xpos,faux,nrad3)
+        ffc(m1,m2,lam,ir)=caux
+!        if (abs(caux).gt.1e20) then 
+!          write(90,*)'# ** INT_FF: F(R)=',caux, 
+!     &  'for ir,lam,m1,m2',ir,lam,m1,m2
+!         write(90,'(1f8.3,2x,2g16.5)') (rv(irr),faux(irr),irr=1,nrad3)
+!         write(90,*)'&'
+!         stop
+!        endif
+       enddo ! ir
+      enddo ! lam
+      enddo !m2
+      enddo !m1
+!$omp end parallel do
+  
+      !write(*,*) '=> there are', nff,' radial formfactors '
+      nullify(faux)
+      deallocate(ff)
+      end subroutine
+
+
+*** ---------------------------------------------------------------------
+C     Use previously calcualted F(R)'s and interpolated in radial grid
+c     used to solve the CC equations  (Target excitation)
+      subroutine int_ff_tdef_omp()
+c *** --------------------------------------------------------------------      
+      use xcdcc,   only: hcm,ffcn,ffcc,lamax,nex,nrcc,jpch,Fc,nlambhipr,
+     &                   nrad3,rstep,parch,rmaxcc,rvcc,Fn
+      use channels,only: jpiset,jpsets
+      use wfs     ,only: idx
+      use memory
+      use globals ,only: verb
+      implicit none
+      integer :: ir,irr
+      integer :: m1,m2,nff,lam,par1,par2
+      complex*16, pointer:: faux1(:),faux2(:)
+      real*8  :: rv(nrad3)
+      real*8 :: jp1,jp2,r,ymem,yffc
+      real*8, parameter:: alpha=0d0
+      complex*16 cfival,caux,ffc4
+c     ----------------------------------------------------
+     
+      write(*,'(//,3x, "** INTERPOLATE FORMFACTORS TARG DEF **" )')
+
+
+      ymem=nex*nex*(nlambhipr)*nrcc*lc16/1e6
+      if (verb.ge.1) write(*,190) ymem
+190   format(5x,"[ FF require", 1f8.2," Mbytes ]")
+
+      if (allocated(ffcn)) deallocate(ffcn)
+      if (allocated(ffcc)) deallocate(ffcc)
+      allocate(ffcn(nex,nex,nlambhipr,1:nrcc),
+     & ffcc(nex,nex,nlambhipr,1:nrcc))
+      ffcn=0
+      ffcc=0
+             
+      do ir=1,nrad3
+       rv(ir)= rstep + rstep*(ir-1) ! CHECK
+      enddo     
+      write(*,170) nrcc, hcm,rmaxcc,hcm
+170   format(/,5x,"=>  Interpolating F(R) in grid with ",i4, ' points:',
+     &           2x,"[ Rmin=",1f5.2,2x," Rmax=",
+     &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
+
+      if (rmaxcc.gt.rv(nrad3)) then
+        write(*,'(3x,"*** WARNING: Coupled eqns integrated up to",f6.1,
+     &  1x,"fm, but formfactors calculated for R<",1f6.1," fm" )')
+     &  rmaxcc,rv(nrad3) 
+      endif 
+
+      nff=0
+!$omp parallel do private(m1,par1,jp1,m2,jp2,par2,faux1,faux2,
+!$omp& ir,r,yffc,caux,lam)      
+      do m1=1,nex
+      par1= parch(m1)
+      jp1 = jpch(m1)
+      do m2=m1,nex
+      jp2 = jpch(m2)
+      par2= parch(m2)
+       do lam= 1,nlambhipr !nint(jp1+jp2)
+       nff=nff+1
+       faux1 =>  Fc(m1,m2,lam,:)
+       faux2 =>  Fn(m1,m2,lam,:)
+c      interpolate & store in integration grid
+
+       do ir=1,nrcc
+!        r=hcm*ir ! grid used in scattcc
+!        r=dble(ir-1)*hcm ! grid used in scattcc (Changed in v2.2)
+        r=rvcc(ir)
+        if (r.gt.rv(nrad3)) cycle ! DO NOT EXTRAPOLATE 
+!        caux=cfival(r,rv,faux1,nrad3,alpha)
+        yffc=(r-rv(1))/(rv(2)-rv(1))
+        caux=ffc4(yffc,faux1,nrad3)
+        ffcc(m1,m2,lam,ir)=caux
+!        caux=cfival(r,rv,faux2,nrad3,alpha)
+        yffc=(r-rv(1))/(rv(2)-rv(1))
+        caux=ffc4(yffc,faux2,nrad3)
+        ffcn(m1,m2,lam,ir)=caux
+!        if (abs(caux).gt.1e20) then 
+!          write(90,*)'# ** INT_FF: F(R)=',caux, 
+!     &  'for ir,lam,m1,m2',ir,lam,m1,m2
+!         write(90,'(1f8.3,2x,2g16.5)') (rv(irr),faux(irr),irr=1,nrad3)
+!         write(90,*)'&'
+!         stop
+!        endif
+       enddo ! ir
+      enddo ! lam
+      enddo !m2
+      enddo !m1
+!$omp end parallel do  
+      write(*,*) '=> there are', nff,' radial formfactors '
+      nullify(faux1,faux2)
+      deallocate(fc,fn)
+      end subroutine

@@ -106,12 +106,14 @@ c
         integer:: cindex(maxchan)
         integer:: qpar(maxchan)
         real*8 :: qj(maxchan), qspj(maxchan),qjc(maxchan),exc(maxchan)
+        real*8 :: qspstot(maxchan)
         integer:: jpsets,inpsets
         integer:: indjset(maxsets)
+        logical:: lscoup 
  
       TYPE SPCHANNEL
           integer  l
-          real*8:: j,jc,sn
+          real*8:: j,jc,sn,stot
       END TYPE
 !      TYPE(SPCHANNEL):: spchan(maxsets,maxchan) 
       TYPE(SPCHANNEL),allocatable:: spchan(:,:) 
@@ -129,6 +131,7 @@ c
           integer  nchsp           ! number of valence configurations
           real*8:: exc(maxchan)    ! excitation energy of core for each channel
           real*8:: jsp(maxchan)    ! j of valence for each channel
+          real*8:: stot(maxchan)  ! total spin of valence+core for each channel LS coupling
           integer  lsp(maxchan)    ! l of valence for each channel
           integer  spindex(maxchan)! s.p. configuration index
           real*8:: jc (maxchan)    ! core spin for each channel

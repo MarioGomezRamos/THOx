@@ -241,4 +241,76 @@ c --------------------------------------------------------------
       return
       end
 
+      SUBROUTINE rmatel_lscoup(nset,mset,xlambdac,nch,mch,K,nQ,lambda,
+     .xjp1,xjp2,xKc,rmatn,rmatc) 
+!      use xcdcc, only: chann!,rmatn,rmatc
+      use factoriales
+      use channels,only:spchan,jpiset,sn
       
+      implicit real*8(a-h,o-z) 
+      real*8 rmatn,rmatc,xjp1,xjp2,st1,st2
+      integer nch,mch,nset
+      real*8,external:: threej,sixj
+      pi=dacos(-1.d0)
+      rmatn=0d0; rmatc=0d0
+!      xI1=chann(nch,1,nset)
+!      xl1=chann(nch,2,nset)
+!      s1=chann(nch,3,nset)
+!      xj1=chann(nch,4,nset)
+!      xI2=chann(mch,1,mset)
+!      xl2=chann(mch,2,mset)
+!      xj2=chann(mch,4,mset)
+
+!       s1=spchan(nset,1)%sn
+       s1=sn 
+
+       if (nq.gt.0) then
+       write(*,*) 'LS coupling not implemented for core excitation'
+       rmatn=0d0
+       rmatc=0d0
+       return
+       endif
+
+      if (abs(xlambdac-dble(K)).gt.1e-2) then
+      rmatn=0d0
+      rmatc=0d0
+      return
+      endif
+
+c AMM: initial???
+       xl1=jpiset(nset)%lsp(nch)
+       st1=jpiset(nset)%stot(nch)
+       xI1=jpiset(nset)%jc(nch)
+       
+c AMM: final??
+       xl2=jpiset(mset)%lsp(mch)
+       st2=jpiset(mset)%stot(mch)
+       xI2=jpiset(mset)%jc(mch)
+
+       if (abs(st1-st2).gt.1e-2) then
+       rmatn=0d0
+       rmatc=0d0
+       return
+       endif
+
+      if(mod(nint(xlambdac+xl1+xl2),2).ne.0) then
+      rmatn=0d0
+      rmatc=0d0
+      return
+      endif
+
+      xlambdag=dsqrt(2.d0*xlambdac+1.d0)
+      xl1g=dsqrt(2.d0*xl1+1.d0)
+      xl2g=dsqrt(2.d0*xl2+1.d0)
+!      if (lambdac.eq.2) write(197,'(2f8.4,i3,2f8.4,4i3)') 
+!     &  xi1,xl1,nch,xi2,xl2,mch,k,nq,lambda
+
+
+      xfac=(-1.d0)**nint(st1+xjp2+xlambdac)*xl1g*xl2g/xlambdag*
+     & threej(xlambdac,xl1,xl2,0.d0,0.d0,0.d0)*
+     & sixj(xlambdac,xjp2,xjp1,st1,xl1,xl2)
+
+      rmatn=xfac
+      rmatc=xfac
+123   return
+      end      

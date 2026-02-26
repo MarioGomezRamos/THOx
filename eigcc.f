@@ -5,7 +5,7 @@
       use sistema
       use wfs, only:nr,dr,rvec,wfc,energ,rint,rmin,rlast,rmax
       use channels, only:jtot,sn,partot,nchmax,ql,cindex,qj,qjc,jpiset,
-     &  jpsets
+     &  jpsets,qspstot,lscoup
       use parameters, only: maxchan,maxeset
       use potentials, only: ccmat,vcl
       use xcdcc, only: binset,realwf
@@ -73,6 +73,7 @@ c *** ----------------------------------------------
       
        call coefmat(nset,nchan)
        ccmat(:,:,:)=-ccmat(:,:,:)
+       
       
        do ich=1,nchan
        ql(ich)    =jpiset(nset)%lsp(ich)  
@@ -125,6 +126,21 @@ c *** ----------------------------------------------
       
       write(*,*) 'sqrt(rms):', sqrt(rms/norm)
       
+      if (zv.eq.0 .and. zc.eq.1.and. nint(ac+av).eq.2.and. nchan.ge.2)
+     &  then
+      write(*,*) 'Deuteron'
+      write(*,*) 'sqrt(rms):', sqrt(rms/norm)/2d0
+      
+      do ir=1,maxn-1
+        integrand(ir)=rvec(ir)**2*(sqrt(8d0)*y(ir,1)*y(ir,2)-y(ir,2)**2)
+     *  /20d0 
+      enddo
+      call sim(integrand,aux,1,maxn-1,dr,maxn-1)
+      write(*,*) 'Quadrupole moment (fm^2):', aux/norm
+      endif
+      
+
+
       if (changepot) then
       write(*,*) 'Central potential in channel',inc,'rescaled by',
      & 1d0-p/conv
@@ -132,9 +148,12 @@ c *** ----------------------------------------------
       write(*,*) 'Energy',egs
       else
       write(*,*) 'Energy:',p,'from',egs
+      ener=p
+      energ(nset,1)=-ener
       endif
       
       
+
       do ich=1,nchan
       do ir=1,maxn-1
       wfc(nset,1,ich,ir)=y(ir,ich)/((ir-1d0)*dr+1e-10)
@@ -152,6 +171,21 @@ c *** ----------------------------------------------
        write(101,247)jtot,partot
 !          write(200+i,247)jtot,partot
 247	   format('# J:',f4.2,' parity:',i2)
+      if (lscoup) then
+      write(101,*) '#  channel l (sn Jc) S'
+!           write(200+i,*)'#  channel core Jc (l sn) jn'
+        
+        do inchanf=1,nchan
+        incn=inchanf
+         
+        write(101,1245)incn,cindex(incn),ql(incn),sn,qjc(incn),
+     &   qspstot(incn)
+1245	 format('# ',i2,' :',i2,i2,f4.1,f4.1,f4.1)
+ 
+        enddo ! inchanf
+
+
+      else
         write(101,*) '#  channel core Jc (l sn) jn'
 !           write(200+i,*)'#  channel core Jc (l sn) jn'
         
@@ -162,6 +196,7 @@ c *** ----------------------------------------------
 245	 format('# ',i2,' :',i2,f4.1,i2,f4.1,f4.1)
  
         enddo ! inchanf
+      endif !lscoup
 
        if (nchan.gt.nchmax) nchmax=nchan
        

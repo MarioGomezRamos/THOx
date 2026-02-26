@@ -48,12 +48,7 @@ c *** Initialize some variables ***********
       debug   =.false.
       bincc   =.false.
       writewf =.false.
-      if (bastype.eq.4) then
-        realwf=.true.
-        bcoef=1.0
-      else
-       bcoef=sqrt(2./pi)
-      endif
+      
       if (debug) open(kfr,file='wfbin.fr')
 c *** ------------------------------------
 
@@ -67,6 +62,13 @@ c *** ------------------------------------
       li      =jpiset(iset)%lsp(inc)
 
       allocate(cph(0:li))
+
+      if (bastype.eq.4) then
+        realwf=.true.
+        bcoef=1.0
+      else
+       bcoef=sqrt(2./pi)
+      endif
 
 
 c *** Multichannel (complex) bins
@@ -358,7 +360,11 @@ c     ----------
      & "Emid=",1f8.3,2x,"Erel=[",1f8.4,1x,"-",1f8.4,"] MeV;",
      & i2," chan(s) (Inc=",i3,")",3x,
      & "Norm=",1f8.4,3x,"Rms=",1f8.4)   
-
+      if (nchan.gt.1) then
+      do ich=1,nchan
+      write(*,*) 'Norm for chan ',ich,' = ',chnorm(ich)
+      enddo
+      endif
 
 c  write bin wfs
       if (debug)

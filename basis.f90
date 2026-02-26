@@ -8,9 +8,9 @@ c     nchan={Ic,lsj} configurations
       use wfs    ,only: exmin,exmax
       use potentials, only: vscale
       implicit none
-      logical fail3,tres,ehat,merge
+      logical fail3,tres,ehat,merge,lscoupl
       integer l,lmin,lmax,bastype,mlst,nodes
-      real*8:: xl,j,jn,jcore,ex
+      real*8:: xl,j,jn,jcore,ex,st,stot
       real*8:: bosc,gamma,r1,rnmax
       real*8:: eta
       integer:: ichsp,ic,iset,nset,nchsp,nfmax,nho,parity
@@ -40,15 +40,19 @@ c     nchan={Ic,lsj} configurations
      &                wcut,   ! mininum weight per channel to be retained (default 1) 
      &                vscale, ! scaling factor for v-core potential
      &                r1,rnmax,  !CG	
-     &                nodes,changepot  !Nodes for bound state,change energy or potential 
+     &                nodes,changepot,  !Nodes for bound state,change energy or potential 
+     &                st,    ! total spin of valence+core for LS coupling
+     &                lscoupl ! if TRUE, use LS coupling scheme instead of JJ
 !     &                realcc ! if TRUE, calculate real multichannel states instead of scat. states
 
+      
+      
 
 c Initialize variables and assign default values
       nfmax=0; exmin=-1e-20; exmax=1e20; inc=1; tres=.false.; nho=0;
       ehat=.false. ; filewf=""
       wcut(1:maxchan) = 0.0
-      lmin=-1; lmax=-1; l=-1; j=-1;
+      lmin=-1; lmax=-1; l=-1; j=-1; st=-1.
       gamma=0d0
       eta=0d0
       vscale=1.
@@ -56,7 +60,10 @@ c Initialize variables and assign default values
       r1=0; rnmax=0
       changepot=.false.
 
+      lscoupl=.false.
+
       read(kin,nml=jpset) 
+      if (lscoupl) lscoup=.true.
       nset=indjset(iset)
       if (l.lt.0) l=0;
       lmin=l;
@@ -105,7 +112,11 @@ c      endif
 
 
 c determine allowed single-particle configurations 
+      if (lscoup) then
+       call spconf_ls(nset,nchsp,lmin,lmax,st)
+      else
       call spconf(nset,nchsp,lmin,lmax,j)
+      endif
       jpiset(nset)%nchsp =nchsp
       jpiset(nset)%lsp(maxchan)=0; 
       
@@ -113,6 +124,57 @@ c determine allowed single-particle configurations
       write(*,*)'   CORE+VALENCE channels:' 
       nchan=0
 !      write(99,*)'read_jpi: nce,nchsp=',nce,nchsp
+      if (lscoup) then
+      if (nce.gt.1) then
+      stop("lscoup with multiple core states not implemented yet")
+      endif
+      do ic=1,nce
+!        ex    = exc1(ic)
+!        jcore = jc(ic)
+         ex    = qnc(ic)%exc    
+         jcore= qnc(ic)%jc   
+      do ichsp=1,nchsp
+        l     = qspl(ichsp); xl=l
+        stot    = qspstot(ichsp)
+!        write(*,*) 'chan=',ichsp,l,jn,jcore
+        if ((-1)**l*parc(ic).ne.partot) cycle      
+        if (fail3(xl,stot,jtot))       cycle
+        if (fail3(sn,jcore,stot))            cycle
+        nchan=nchan+1
+        if (nchan.gt.maxchan) then 
+          write(*,*)"Too many channels!"
+          write(*,*)" Increase maxchan in modules.f90"
+          stop
+        endif
+
+        jpiset(nset)%spindex(nchan)=ichsp
+        jpiset(nset)%cindex (nchan)=ic
+        jpiset(nset)%lsp(nchan)    =l
+        jpiset(nset)%stot(nchan)    =stot
+        jpiset(nset)%jc(nchan)     =jcore
+        jpiset(nset)%exc(nchan)    =ex
+        jpiset(nset)%parc(nchan)   =parc(ic)
+        jpiset(nset)%bas2          =bas2  
+!         write(0,*)'jpiset',nset,l
+        jpiset(nset)%jc(nchan)    =jcore
+        jpiset(nset)%wcut(1:nchan)=wcut(1:nchan)
+!        if (bastype.ne.1) jpiset(nset)%nex =
+!     &     jpiset(nset)%nex+nbins
+
+        spindex(nchan)=ichsp  
+        cindex(nchan)=ic
+        ql(nchan)=l
+        qjc(nchan)=jcore
+        exc(nchan)=ex               !I redefined it to have the excitation energy for each nchan
+        qpar(nchan)=parc(ic)
+
+         if (bastype.ne.1) jpiset(nset)%nex =nbins
+             write(*,340) nchan,l,sn,jcore,stot,ex,ichsp,ic
+340	format(5x,'Channel #',i2,',',i2,'(',f4.1,f4.1,')',f4.1
+     &,' Ex=',f6.3,' MeV with sp config #',i1,' and core #',i1)
+       enddo !ichsp
+      enddo !ic  
+      else
       do ic=1,nce
 !        ex    = exc1(ic)
 !        jcore = jc(ic)
@@ -140,16 +202,13 @@ c determine allowed single-particle configurations
         jpiset(nset)%exc(nchan)    =ex
         jpiset(nset)%parc(nchan)   =parc(ic)
         jpiset(nset)%bas2          =bas2
-        jpiset(nset)%lsp(nchan)   =l  
 !         write(0,*)'jpiset',nset,l
-        jpiset(nset)%jsp(nchan)   =jn
         jpiset(nset)%jc(nchan)    =jcore
         jpiset(nset)%wcut(1:nchan)=wcut(1:nchan)
 !        if (bastype.ne.1) jpiset(nset)%nex =
 !     &     jpiset(nset)%nex+nbins
          if (bastype.ne.1) jpiset(nset)%nex =nbins
-
-
+     
 c deprecated variables
         spindex(nchan)=ichsp  
         cindex(nchan)=ic
@@ -164,12 +223,12 @@ c deprecated variables
      &,' Ex=',f6.3,' MeV with sp config #',i1,' and core #',i1)
        enddo !ichsp
       enddo !ic
+      endif !lscoup
 
       if (nchan.eq.0) then 
           write(*,*)' No core+valece channels found!'
           stop
       endif
-
       jpiset(nset)%nchan=nchan
       if (nchan.gt.nchmax) nchmax=nchan
       write(*,*)'  '
@@ -231,6 +290,55 @@ c
        end subroutine
 
 
+c
+c determine & store single-particle channels compatible with jtot & lmax
+c
+      subroutine spconf_ls(iset,nchsp,lmin,lmax,st)
+!      use wfs, only:  ql,qspl,qspj,spindex,jc,parc,spchan,nce
+      use channels
+      implicit none
+      logical:: fail3
+      real*8 :: xl,stmin,stmax,jcore,st,stcyc
+      integer:: l,lmin,lmax,nst,ic,ist,iset
+      integer,intent(out):: nchsp
+      write(*,*)'         '
+      write(*,*)'SINGLE-PARTICLE configurations:'
+      write(*,'(3x,"[ l val-core truncated at lmin,lmax=",i2,1x,i2,"]")'
+     &  ) lmin,lmax
+     
+      nchsp=0
+	  	   
+      do l=lmin,lmax
+       xl=l
+       stmin=abs(xl-jtot)
+       stmax=xl+jtot
+       nst=nint(stmax-stmin)
+       do ist=0,nst
+       stcyc=stmin+ist
+       if ((st.ge.0).and.(stcyc.ne.st)) cycle
+       do ic=1,nce
+          jcore=jc(ic)
+          if ((-1)**l*parc(ic).ne.partot) cycle      
+          if(fail3(stcyc,sn,jcore))cycle
+          nchsp=nchsp+1
+	      qspl(nchsp)=l
+          qspstot(nchsp)=stcyc
+
+          spchan(iset,nchsp)%l  =l
+          spchan(iset,nchsp)%sn =sn
+          spchan(iset,nchsp)%stot  =stcyc
+          spchan(iset,nchsp)%jc =jcore
+
+          write(*,235) nchsp,l,sn,jcore,stcyc
+!          goto 236  ! I change this go to by a cycle
+          exit
+235	format(7x,'S.p. configuration #',i2,i2,'(',f4.1,f4.1,')',f4.1)
+       enddo !ic
+236    enddo !jn
+       enddo !l 
+       write(*,*)'   '
+       end subroutine
+
 
 
 c -----------------------------------------------
@@ -247,6 +355,7 @@ c -----------------------------------------------
        real*8 ::bosc,gamma,eta,acg,r1,rnmax 
 
  
+      unit_out=448
 c *** THO basis
        if (allocated(wftho)) deallocate(wftho)
        select case(bastype)

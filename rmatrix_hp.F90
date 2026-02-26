@@ -166,7 +166,7 @@ end subroutine rmat_ini_hp
 !             3=Woodbury-Kinetic, 4=GPU cuSOLVER)
 !------------------------------------------------------------------------------
 subroutine rmatrix_hp(nch, lval, qk, eta, rmax, nr, ns, cpot, cu, &
-                   ncp1, ndim, nopen, twf, cf, nwf1, nwf2, nc, nvc, ncp2, cpnl, isolver)
+                   ncp1, ndim, nopen, twf, cf, nwf1, nwf2, nc, nvc, ncp2, cpnl)
   use rmat_hp_mod
   use rmat_solvers, only: solve_rmatrix_woodbury, solve_rmatrix_gpu
   implicit real*8(a,b,d-h,o-z)
@@ -174,7 +174,6 @@ subroutine rmatrix_hp(nch, lval, qk, eta, rmax, nr, ns, cpot, cu, &
   dimension lval(nch), qk(nch), eta(nch), cpot(ncp1, ndim, ndim)
   dimension cu(ndim, ndim), cf(nwf1, nwf2, nc), nvc(nc), cx(3)
   dimension cpnl(ncp2, ndim, ndim)
-  integer, intent(in), optional :: isolver
   logical twf, tnl
   integer :: local_solver
   logical, save :: first_call = .true.
@@ -188,11 +187,11 @@ subroutine rmatrix_hp(nch, lval, qk, eta, rmax, nr, ns, cpot, cu, &
   integer :: INFO_local
 
   ! Set local solver type
-  if (present(isolver)) then
-    local_solver = isolver
-  else
+!  if (present(isolver)) then
+!    local_solver = isolver
+!  else
     local_solver = solver_type
-  end if
+!  end if
 
   ! Print solver info (only once)
   if (first_call) then

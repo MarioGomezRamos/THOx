@@ -1202,7 +1202,9 @@ c------------------------------------------------------------------------
       IMPLICIT REAL*8(A-H,O-Z)
       integer,intent(IN):: L,M
       PHASE(I) = (-1)**I
-C
+
+      pi=acos(-1d0)
+
 C      CALCULATE THE COEFFICIENT OF P(L,M)*E(I*M*PHI) IN Y(L,M)
 C
          LF1 = L + 1
@@ -1298,6 +1300,52 @@ CDIR$ IVDEP
          A(I,K) = 0
     9 CONTINUE
       IF(SHOW) WRITE(KO,15 ) DET/LOG(10.)
+15    FORMAT(/' Log10 determinant is ',2F10.5)
+      IF(SHOW) WRITE(KO,402) (A(I,N+1),I=1,N)
+      RETURN
+      END
+
+      SUBROUTINE GAUSS5_Q(N,NR,A,M,SING,DET,EPS,SHOW)
+C
+C    SOLVE BY GAUSSIAN ELIMINATION SUM(J): A(I,J).P(J) = A(I,N+1)
+C             WHERE P(J) IS LEFT IN MAT(J,N+1)
+C
+      IMPLICIT REAL*16(A-H,O-Z)
+      parameter(KO=99)
+      COMPLEX*32 A(NR,N+M),DET,RA
+      LOGICAL SING,SHOW
+      SING  = .FALSE.
+      ZERO = 0.0Q0
+      ONE = 1.0Q0
+      NPM = N + M
+      DO 201 I=1,N
+201   IF(SHOW) WRITE(KO,402) (A(I,J)  ,J=1,NPM)
+      DET = ZERO
+      DO 9 K = 1, N
+      IF (abs(A(K,K)) .NE. ZERO ) GO TO 5
+         SING = .TRUE.
+         WRITE(KO,3) K,DET/LOG(10.0Q0)
+    3  FORMAT(//' THE MATRIX IS SINGULAR AT',I3,', Log10 determinant is
+     &  ',2E16.8/)
+      DO 401 I=1,N
+401   IF(SHOW) WRITE(KO,402) (            A(I,J)  ,J=1,NPM)
+C402   FORMAT( 1X,20F6.1/(1X,20F6.3))
+402   FORMAT( 1X,1P,14E9.1/(1X,24E9.1))
+         RETURN
+    5 KP1 = K + 1
+      DET = DET + LOG(A(K,K))
+         RA = ONE/A(K,K)
+      DO 6 J = KP1, NPM
+    6 A(K,J) = A(K,J) * RA
+      A(K,K) = ONE
+      DO 9 I = 1, N
+      IF (I .EQ. K  .OR. ABS (A(I,K)) .EQ. 0) GO TO 9
+CDIR$ IVDEP
+         DO 8 J = KP1, NPM
+    8    A(I,J) = A(I,J) - A(I,K)*A(K,J)
+         A(I,K) = ZERO
+    9 CONTINUE
+      IF(SHOW) WRITE(KO,15 ) DET/LOG(10.0Q0)
 15    FORMAT(/' Log10 determinant is ',2F10.5)
       IF(SHOW) WRITE(KO,402) (A(I,N+1),I=1,N)
       RETURN

@@ -194,6 +194,7 @@ c Pauli-forbidden states to be removed
       call pauli_forbidden(kin)
 
       nst=0 ! total number of selected eigenvalues
+      lscoup=.false.
       do iset=1,inpsets
       dummy=.false.
       nset=iset
@@ -292,7 +293,8 @@ c *** Coupling potentials (includes DCE routines)
       if (.not. targdef) then
       write(*,'(5x,a)') 
      & '[using transition subroutine for spin-zero target]'
-      call transition 
+      call transition_omp
+!       call transition  
       else
       write(*,'(5x,a)') '[using transition_targdef subroutine 
      & with target excitation]'
@@ -474,10 +476,10 @@ c
       integer::l,lmin,lmax,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
       real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
-      real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale,r1,rnmax
+      real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale,r1,rnmax,st
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc,nodes
-      logical changepot
+      logical changepot,lscoupl
       character*40 filewf
 
       namelist /grid/ ng, rmin,rmax,dr,rlast,rint
@@ -490,7 +492,7 @@ c
      &                bas2,
      &                nk, nbins,inc,tres,ehat,filewf,wcut,merge,
      &                vscale,
-     &                r1,rnmax,nodes,changepot ! CG Basis
+     &                r1,rnmax,nodes,changepot,st,lscoupl ! CG Basis
 
       
       jpsets=0; inpsets=0

@@ -4,7 +4,7 @@ c ----------------------------------------------------------------
       subroutine d2sigma_alpha_1d(nth,dth,thmin,thcut,emin,emax,ncont,
      &                   icore,jsets,fileamp,doublexs,triplexs,phixs)
       use xcdcc,    only: elab,jpch,nex,exch,parch,famps0,binset,rel
-      use channels, only: jpiset,jpsets,nchmax,sn,qnc
+      use channels, only: jpiset,jpsets,nchmax,sn,qnc,lscoup
       use sistema
       use constants
       use parameters, only:  maxchan,maxsets,maxeset
@@ -100,6 +100,10 @@ c     ..........................................................................
       real*8,allocatable :: xs3body(:,:,:), energ3(:)
 ! AMM July 19
       real*8,allocatable :: xs3body_phi(:,:,:,:), energ4(:,:,:,:)
+
+      real*8 :: sti !lscoup
+      integer ::itphik,ipk
+      real*8 ::phik,factor
 !------------------------------------------------------------------------
 c ------------------------------------------------------------------------------
       namelist /framework/ sys,idet ! ,atarget not needed
@@ -679,6 +683,7 @@ c-------------------------------------------------------------------------------
 *     -------------------------------------------------------------- 
       sc=qnc(icore)%jc
       ind=0
+      cgc(:)=0.d0
       do imu=1,nint(2*sc+1)
       mu=imu-sc-1
       do isig=1,nint(2*sn+1)
@@ -690,10 +695,23 @@ c-------------------------------------------------------------------------------
       do inc=1,nchan
       li     =jpiset(iset)%lsp(inc)
       ji     =jpiset(iset)%jsp(inc)
+      sti    =jpiset(iset)%stot(inc)
       jci    =jpiset(iset)%jc(inc)
       ic  =jpiset(iset)%cindex(inc)
       if (ic.ne.icore) cycle
       rli=li
+      if (lscoup) then
+      if (abs(sig+mu).gt.sti) cycle
+      if (fail3(rli,sti,jpf)) cycle
+      if (fail3(sti,sn,jci)) cycle
+      do inu=1,2*li+1
+      rnu=inu-li-1
+      if (abs(rnu+sig+mu).gt.jpf) cycle
+      ind=ind+1
+      cgc(ind)=cleb(rli,rnu,sti,sig+mu,jpf,rnu+sig+mu)*
+     .cleb(sn,sig,jci,mu,sti,sig+mu)
+      enddo
+      else !no lscoup
       if (fail3(rli,sn,ji)) cycle
       if (fail3(ji,jci,jpf)) cycle
       do inu=1,2*li+1
@@ -703,6 +721,7 @@ c-------------------------------------------------------------------------------
       cgc(ind)=cleb(rli,rnu,sn,sig,ji,rnu+sig)*
      .cleb(ji,rnu+sig,jci,mu,jpf,rnu+sig+mu)
       enddo
+      endif !lscoup
       enddo
       enddo
       enddo
@@ -769,6 +788,7 @@ c-------------------------------------------------------------------------------
       allocate(xyt(maxne))
       if (allocated(fxyc)) deallocate(fxyc)
       allocate(fxyc(maxne))
+      xyt=0d0;fxyc=0d0
 
 *     ---------------------------------------------------------------
 *     calculate and store coefficients for spherical harmonics
@@ -813,7 +833,7 @@ c-------------------------------------------------------------------------------
 !$OMP& niel,iecv,ecv,ecmf,kcmf,th,sumps,iex,ibin,ki,kf,dk,dkb,ik,phbin,
 !$OMP& if2c,icount,imo,mo,ind,imu,mu,isig,sig,ampt,ampt2,li,ji,jci,rli,
 !$OMP& rnu,mult,xsig,nk,kinset,wkfac,haux,fxytab) 
-!$OMP& PRIVATE(ii,maxtab,imax,jmax) 
+!$OMP& PRIVATE(ii,maxtab,imax,jmax,sti,ipk,itphik,phik,factor) 
 
 !      write(*,*)'itc,itv,iten=',itc,itv,iten
       
@@ -836,12 +856,23 @@ c-------------------------------------------------------------------------------
 *     check if either theta is zero since no need to do multiple phi
 *     calculations (if wanted, itphi>1) in this geometry
 *     ---------------------------------------------------------------
-      itphim=itphi/2+1
+      itphim=itphi
+      itphik=itphi
+      !itphim=itphi/2+1
+      !itphik=itphi/2+1
       iflag=0
-      zert=(abs(tcd).le.acc.or.abs(tvd).le.acc)
+      !zert=(abs(tcd).le.acc.or.abs(tvd).le.acc)
+      zert=(abs(tvd).le.acc)
       if(itphi.gt.1.and.zert) then
       itphim=1
       iflag=1
+      endif
+
+      zert=(abs(tcd).le.acc)
+      factor=1d0
+      if(itphi.gt.1.and.zert) then
+      factor=itphik
+      itphik=1
       endif
 *     ---------------------------------------------------------------
 *     loop over detected energy of chosen particle
@@ -863,6 +894,12 @@ c-------------------------------------------------------------------------------
       cospv=cos(phi)
       sinpv=sin(phi)
 
+
+
+!     loop over azimuth for big K
+!      do 40 ipk=1,itphik
+!      phik=(phil+(ipk-1)*dphi)*degrad  
+      phik=0d0
 *     -----------------------------------------------------------------
 *     construct remaining vectors
 *     -----------------------------------------------------------------
@@ -872,8 +909,8 @@ c-------------------------------------------------------------------------------
      & mupt/mucv*p1L**2)
 *     wavevector of cm of core and valence particles
       bkp(3)=p2L*costc
-      bkp(1)=p2L*sintc
-      bkp(2)=0d0
+      bkp(1)=p2L*sintc*cos(phik)
+      bkp(2)=p2L*sintc*sin(phik)
 !*     wavevector of relative motion of core and valence particles
       !alpha
       kp(3)=p1L*costv
@@ -914,14 +951,14 @@ c-------------------------------------------------------------------------------
 !      xb=acos(xb)
 !      xbd=xb/degrad
       yb=abs(ybo-Kthr)
-!      if(abs(bkp(1)).lt.1.d-6.and.abs(bkp(2)).lt.1.d-6) then
-!      phKb=0.d0
-!      else 
-!      phKb=atan2(bkp(2),bkp(1))
-!      endif
+      if(abs(bkp(1)).lt.1.d-6.and.abs(bkp(2)).lt.1.d-6) then
+      phKb=0.d0
+      else 
+      phKb=atan2(bkp(2),bkp(1))
+      endif
 !      xbd=tcd
 !      xb=tc
-      phKb=0d0
+!      phKb=0d0
       if(wrt) 
      & write(99,'(4i3," phikb,xbd=",20g12.5)') iv,ii,ien,ip,phKb,xbd  
 *     -----------------------------------------------------------------
@@ -1208,10 +1245,27 @@ c    ...........................................................................
       if (ic.ne.icore) cycle
       li     =jpiset(iset)%lsp(inc)
       ji     =jpiset(iset)%jsp(inc)
+      sti    =jpiset(iset)%stot(inc)
       jci    =jpiset(iset)%jc(inc)
+      !write(*,*)'iset,inc,li,ji,sti,jci=',iset,inc,li,ji,sti,jci
       rli=li
+      if (lscoup.and. (abs(mu+sig).gt.sti)) cycle
       do inu=1,2*li+1
       rnu=inu-li-1
+      !write(*,*)'  inu,rnu=',inu,rnu,'ylm',co,ylm(li,inu)
+      if (lscoup) then
+      if (fail3(sn,jci,sti)) cycle
+      if (fail3(rli,sti,jpf)) cycle
+      if (abs(rnu+sig+mu).gt.jpf) cycle
+      ind=ind+1
+      iam=nint((imo-1)*(2*jpf+1)+rnu+sig+mu+jpf+1)
+      if (iam.lt.0) then
+          write(*,*)'solvecc error: iam<0!';
+          write(*,*)'iam,imo,jpf,rnu,sig,mu=',iam,imo,jpf,rnu,sig,mu
+          write(*,*)'shape(tmat)=',shape(tmat)
+          stop
+      endif
+      else !lscoup
       if (fail3(rli,sn,ji)) cycle
       if (fail3(ji,jci,jpf)) cycle
       if (abs(rnu+sig).gt.ji.or.abs(rnu+sig+mu).gt.jpf) cycle
@@ -1224,6 +1278,7 @@ c    ...........................................................................
           write(*,*)'shape(tmat)=',shape(tmat)
           stop
       endif
+      endif !lscoup
 
 !!! CHECK
 !      raux=cleb(rli,rnu,sn,sig,ji,rnu+sig)*
@@ -1233,25 +1288,17 @@ c    ...........................................................................
 !      endif
 !AMMoro Sept 16
 !      ampt=ampt+(-xi)**li*cgc(ind)*ylm(li,inu)*  ! NOTE phbin() inserted here!!!!!
-      ampt=ampt+(-xi)**li*cgc(ind)*ylm(li,inu)* ! phbin(iset)*  ! NOTE phbin() inserted here!!!!!
-     .tmat(iset,inc,iam)*exp(xi*nint(mo-rnu-sig-mu)*phKb)
-
-!TESTING
-c1      ampt2=ampt2+(-xi)**li*cgc(ind)*ylm(li,inu)*phbin(iset)*
-c1     & fin(iset,inc,iam)*exp(xi*nint(mo-rnu-sig-mu)*phKb)
-!!
+      ampt=ampt+(-xi)**li*cgc(ind)*ylm(li,inu)* 
+     .tmat(iset,inc,iam)!*exp(xi*nint(mo-rnu-sig-mu)*phKb)
+      
       enddo ! inu
       enddo ! inc
       enddo ! j/pi
       tmatsq=tmatsq+abs(ampt)**2*polar(imo)
-c2      tmatsq2=tmatsq2+abs(ampt2)**2*polar(imo)   !!! TESTING
       enddo ! isigma
       enddo ! imu
       enddo ! imo
-c2      tmatsq2=tmatsq2*((2.d0*pi)**3)/dble(nmi)
       tmatsq=(4.d0*pi/mkp)**2*tmatsq/dble(nmi)
-c1      if (icount.lt.100)
-c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
       
 
 500   continue
@@ -1260,8 +1307,8 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
 *     -----------------------------------------------------------------
 
       mult=mupt**2*mucv*m(kp)*m(bkp)/m(qp)/(2d0*pi*hc)**5/hc
-      sigphi(ip)=sigphi(ip)+10.d0*mult*tmatsq
-52    continue !sigphi(ip)=0.d0
+!      sigphi(ip)=sigphi(ip)+10.d0*mult*tmatsq
+      sigphi(ip)=sigphi(ip)+10.d0*mult*tmatsq*2d0*pi!integral over phik
 
 *     -----------------------------------------------------------------
 *     close the phi loop
@@ -1274,7 +1321,7 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
       xsig=sigphi(1)
       else if(iflag.eq.0) then
       call sim(sigphi,xsig,1,itphim,dphir,itphim)
-      xsig=2.d0*xsig
+      !xsig=2.d0*xsig !MGR full phi range
       else
       xsig=sigphi(1)*(phiu-phil)*degrad
       endif

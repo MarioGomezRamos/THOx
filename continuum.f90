@@ -12,7 +12,7 @@ c -------------------------------------------------------------------------
       subroutine coefmat(nset,nchan)
       use wfs, only: nr,wfsp,rvec
       use channels,only:jtot,qj,spindex,ql,qj,qjc,cindex,nphon,
-     &                  sn,partot,qnc,jpiset
+     &                  sn,partot,qnc,jpiset,lscoup,qspstot
       use sistema
       use globals
       use potentials, only:ccmat,vtran,vlcoup,laminc,lpot,pcmodel,kband,
@@ -30,6 +30,7 @@ c     -----------------------------------------------------------------------
       real*8:: lambdar,sixj,cleb,lfr,lir,cl
       real*8:: allp2, gcoup,big,small
       real*8 :: kbandi,kbandf
+      real*8:: sti,stf !stot for LS coupling
 c     -----------------------------------------------------------------------
 c     Pauli blocking 
       integer ispi,ip
@@ -77,17 +78,29 @@ c     -----------------------------------------------------------------------
       do nchanf=1,nchan
        als=0d0
        faux(1:nr)=0d0
+
+       
        li=ql(nchani);  xl=li
        lf=ql(nchanf)
 
+       if (lscoup) then
+       sti=qspstot(nchani); stf=qspstot(nchanf)
+       else
        ji=qj(nchani)
        jf=qj(nchanf)
+       endif
 
        jci=qjc(nchani)
        jcf=qjc(nchanf)
         
        ici=cindex(nchani)
        icf=cindex(nchanf)
+       if (lscoup) then
+         if (ici.ne.icf) then
+         write(*,*) 'LS coupling does not allow core exc.', ici,icf
+         cycle
+         endif
+       endif
 
        nphi=nphon(ici)
        nphf=nphon(icf)
@@ -202,10 +215,83 @@ c spin.spin term
       
 
       if (reid93) then !MGR
+      if (lscoup .and. sti.ne.stf)  cycle
       do ir=1, nr     
       r=rvec(ir)
         if (r.lt.1e-9) r=1e-9 
              vnm=0d0
+             if (lscoup) then
+             write(reidj,'(i1)') nint(jtot)
+             reidname(3:3)=reidj
+              if (abs(li-nint(jtot)).ne. 0) then !only S=1
+             reidname(1:2)='3C'    
+             if (nint(jtot).eq.0) reidname(1:2)='3P' 
+             call rreid93(r,reidname,'PN',reidpot) 
+              if (li.gt.lf) then
+              vnm=reidpot(2,1)
+              else if (li.lt.lf) then
+              vnm=reidpot(1,2)
+              else !li.eq.lf
+               if (li.lt.nint(jtot) .or. nint(jtot).eq.0) then
+               vnm=reidpot(1,1)
+               else
+               vnm=reidpot(2,2)
+               endif
+              endif
+             else if (li.eq.nint(jtot) .and. lf.eq.nint(jtot)) then !S=0 and S=1
+             if (nint(sti).eq.0) then
+                          select case(li)
+             case(0)
+             reidname(1:2)='1S'
+             case(1)
+             reidname(1:2)='1P'
+             case(2)
+             reidname(1:2)='1D'
+             case(3)
+             reidname(1:2)='1F'
+             case(4)
+             reidname(1:2)='1G'
+             case(5)
+             reidname(1:2)='1H'
+             case(6)
+             reidname(1:2)='1I'
+             case(7)
+             reidname(1:2)='1K'
+             case(8)
+             reidname(1:2)='1L'
+             end select
+!             if (ir.eq.1)  write(0,*) 'Reid93 J', reidname(1:3)  
+             call rreid93(r,reidname,'PN',reidpot)
+             !S=0
+             vnm=reidpot(1,1) 
+             else if (nint(sti).eq.1) then
+             select case(li)
+             case(0)
+             reidname(1:2)='3S'
+             cycle
+             case(1)
+             reidname(1:2)='3P'
+             case(2)
+             reidname(1:2)='3D'
+             case(3)
+             reidname(1:2)='3F'
+             case(4)
+             reidname(1:2)='3G'
+             case(5)
+             reidname(1:2)='3H'
+             case(6)
+             reidname(1:2)='3I'
+             case(7)
+             reidname(1:2)='3K'
+             case(8)
+             reidname(1:2)='3L'
+             end select
+!            if (ir.eq.1)  write(0,*) 'Reid93 J', reidname(1:3) 
+             call rreid93(r,reidname,'PN',reidpot) 
+              vnm=reidpot(1,1)
+             endif
+             endif 
+             else !not lscoup
              write(reidj,'(i1)') nint(jtot)
              reidname(3:3)=reidj
 !             if(i.eq.1) write(*,*) 'Reid93 J', reidname(3:3)
@@ -295,6 +381,7 @@ c spin.spin term
      & /2d0*sqrt((-lf+1.5d0+jf)*(lf+jf+2.5d0)/(jf+1d0))
               endif
               vnm=vnm+auxreid*reidpot(1,1)
+             endif
              endif
              ccmat(nchani,nchanf,ir)=cmplx(vnm,zero)*conv
           enddo   
