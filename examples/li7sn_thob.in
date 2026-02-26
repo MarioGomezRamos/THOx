@@ -1,0 +1,103 @@
+# 7Li + 119Sn no deformations; no intrinsic spins
+# ---------------------------------------------------------------------------------------------
+ &SYSTEM  Zv=1. Av=3.0160    sn=0.0
+          Zc=2. Ac=4.002603   /
+
+ &corestates spin=0.0 parity=+1 ex=0.0 /
+ &corestates /
+
+ &output wfout(:)=1 2  3  verb=3 solapout(:)=0  /
+
+ &GRID  ng=0 rmin=0.0 rmax=100.0 dr=0.1 rint=100  rlast=0 /
+
+
+# Buck & Merchant
+!           Vso=-1.2635   rso=0  aso=2.52 lsderiv=F /
+ &POTENTIAL ptype=3 ap=1 at=0 rc0=3.095
+           vl0(0:4)= -66.1 -84.2 -66.1 -84.2 -66.1 
+           r0=0    a0=2.52  /
+  &potential ptype=0 /
+
+ &pauli n=0 /
+
+#Bound
+  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=35 nsp=0  exmin=-10 exmax=0 bas2=0 JTOT=1.0 PARITY=-1  lmax=1 /  
+!  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=30  nsp=0 exmin=-10 exmax=0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /  ! 1/2-
+
+
+  &JPSET JTOT=0.0 PARITY=+1 bastype=2 exmin=0.05 exmax=8  nk=100 nbins=8 lmax=0 tres=F / 
+  &JPSET JTOT=1.0 PARITY=-1 bastype=2 exmin=0.05 exmax=8  nk=100 nbins=8 lmax=1 tres=F / 
+!  &JPSET JTOT=2.0 PARITY=+1 bastype=2 exmin=0.05 exmax=8  nk=100 nbins=4 lmax=2 tres=F / 
+!  &JPSET JTOT=3.0 PARITY=-1 bastype=2 exmin=0.05 exmax=8  nk=100 nbins=10 lmax=3 tres=F / 
+  &JPSET /
+
+ &pauli /
+
+ &pauli n=1 l=0 j=0.5 wfname="wf_1s.dat" /
+
+ 
+  &SCATWF ifcont=f  emin=0.1 emax=6.01  nk=200 inc=1  writewf=F jset=5 / 
+
+  &belambda  ifbel=F uwfgsfile="" lambda=1 emin=0.05 emax=20 nk=200 jset=7 BElcore=0.0 /
+  &bmlambda /
+
+############################    REACTION       ####################################
+  &reaction elab=26.5  namep='7Li' mp= 7.0169 namet='119Sn' mt=119 zt=50 jt=0.0  /
+
+
+######################### COUPLING POTENTIALS FOR XCDCC ######################################
+# (if no basis sets have been defined, this section will be skipped)
+# ############################################################################################
+&trans rcc=6.325  writeFF=T skip=f /
+
+#Optional: kcmax, lamax
+&coupling qcmax=0   ncoul=0 lamax=4  / 
+
+&grid nquad=100  radmax=80.d0 rstep=0.1 rmax=200 rextrap=0 rvecin=0.d0 drvec=0.1d0 hin=0.1 /
+
+
+
+
+                 
+# 4He + 119Sn (Avrigeanu 2010) at 15 MeV
+     V=132.482  vr0=6.698 a=0.640 w=5.37 wr0=6.591 aw=0.5 
+     wd=22.786 wdr0=7.476 awd=0.362  /
+# Core-target (a+119Sn) Perey potential
+&corepotential ptype=1 ap=0 at=1 rc0=6.394
+               V0=-132.482  r0=6.698 a0=0.640 
+               V0i=-5.37   r0i=6.591 a0i=0.5 /
+&corepotential  ptype=2  ap=0 at=1 rc0=6.394
+                V0i=-22.786  r0i=7.476 a0i=0.362  /      
+&corepotential ptype=7  potfile='sn119a_pauli_rvw.dat'  normr=1 normi=1   /                        
+&corepotential ptype=0 /
+
+## Valence-target: t+119Sn  F.D. Becchetti with no LS and Ni=1
+&valencepotential ptype=1 ap=0 at=1 rc0=6.394
+                 V0 =-157.95  r0=5.902  a0=0.72 
+                 V0i=-44.98     r0i=6.886  a0i=0.88 /
+&valencepotential ptype=0 /
+
+
+#########################  SOLVE CC EQUATIONS ##############################
+
+# method=0 PC-numerov, 
+         1=ENA with 5 terms in Cosh[Sqrt[T]]
+         2=ENA with 5 terms in Cosh[Sqrt[T]], only diagonal 
+         3=Raynal
+         4=Modified Numerov used in Fresco
+         5=R-matrix with Lagrange mesh (P.Desc.)
+
+&numerov  hcm=0.1 rmaxcc=100  hort=0.1 method=6 rcc=6.325  jtmin=0.0 jtmax=20.0 nlag=60 ns=40/ jump(1)=10 jbord(1)=60.0     skip=f /  
+
+&xsections fileamp="fort.137" thmin=0.0 thmax=179. dth=0.5  doublexs=T triplexs=F icore=1 ner=200 ermin=0.2 ermax=15 
+          jsets(1:9)=F F T T T T T T T   / itarg=1 /
+
+&framework sys='lab' idet=1 / atarget=1.0 
+&gridener Enlow=2.0 Enup=40.0 dEn=2.  /      
+&gridthetac tcl=2 tcu=160.1   dtc=2.0 /
+&gridthetav tvl=2 tvu=160.1  dtv=2.0 /
+&gridphi phil=0.0 phiu=360.0 dphi=5.0 /
+
+
+# ---------------------------------------  END OF INPUT ---------------------------------------------------
+

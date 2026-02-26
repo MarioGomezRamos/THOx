@@ -1,0 +1,103 @@
+echo Running on `hostname`
+cat > Cdc.$$ << EOF
+7Li+119Sn at E=26.5 MeV TC
+ &CDCC
+    hcm=0.1  rsp=75 rmatch=-75 rasym=500 accrcy=0.001 absend=-1  
+   elab=26.5
+   jbord=  0  10 400 600
+   jump =  1   5  10
+
+   cdccc=0 cutr=-8.
+   thmin=0 thmax=180 thinc=1 chans=1 smats=2 xstabl=1  
+   nk=50 ncoul=0 reor=0 q=5 hat=F / 
+
+
+ &NUCLEUS part='Proj'     name='7Li'   charge=3  mass=7.0160 
+           be=2.4670 n=2 l=1  j=1.5  spin=1.5   a=1 parity=-1 /
+ &NUCLEUS part='Valence'  name='t'     charge=1  mass=3.016049 spin=0.5 parity=+1 /
+ &NUCLEUS part='Core'     name='4He'   charge=2  mass=4.0026   spin=0.0 parity=+1  /
+ &NUCLEUS part='Target'   name='119Sn' charge=50 mass=119      spin=0.0  / ! assume I=0   
+! &NUCLEUS part='Resid' name='119Sn+t'  charge=51 mass=122  parity=-1 be=13.2 n=7 l=1 j=1.5 spin=1.5 a=0/ ! 122Sb
+
+
+# Bound excited state (1/2-)
+  &BIN spin=0.5 parity=-1 start=-1.9894 step=1. end=-1.9894 energy=F n=2 l=1 j=0.5 isc=1 /
+
+# BINS ------------------------------------------------------------------  
+#s-waves
+  &BIN spin=0.5 parity=+1 start=0 step=1 end=7. energy=F l=0 j=0.5 isc=12 /
+
+#p-waves
+  &BIN  spin=0.5 parity=-1 start=0 step=1. end=7. energy=F l=1 j=0.5  / 
+  &BIN  spin=1.5 parity=-1 start=0 step=1. end=7. energy=F l=1 j=1.5  / 
+
+!d-waves
+  &BIN spin=1.5 parity=+1 start=0 step=1. end=7. energy=F l=2 j=1.5 /
+  &BIN  spin=2.5 parity=+1 start=0 step=1. end=7. energy=F l=2 j=2.5 /
+
+!f-waves
+  &BIN spin=2.5 parity=-1 start=0 step=1 end=7. energy=F l=3 j=2.5 /
+  &BIN spin=3.5 parity=-1 start=0 step=1. end=7. energy=F l=3 j=3.5 /
+
+!g-waves
+!   &BIN iftr=T spin=3.5 parity=+1 start=2 step=1.25 end=12. energy=T l=4 j=3.5 /
+!   &BIN iftr=T spin=4.5 parity=+1 start=2 step=1.25 end=12. energy=T l=4 j=4.5 /
+
+ &BIN /
+
+# 7Li+119Sn :  
+ &POTENTIAL part='Proj' a1=1. a2=0 rc=6.325 /
+!    V=114.2 VR0=6.325 a=0.853  w=12.72 wr0=8.554 aw=0.809  /  
+
+# t+119Sn  F.D. Becchetti (no LS)
+ &POTENTIAL part='Valence' a1=1 a2=0 rc=6.394
+      V=157.95  vr0=5.902 a=0.72 w=44.98 wr0=6.886 aw=0.88 / 
+                 
+# alpha+119Sn (Avrigeanu 2010)
+ &POTENTIAL part='Core' a1=1 a2=0 rc=6.394
+     V=132.482  vr0=6.698 a=0.640 w=5.37 wr0=6.591 aw=0.5 
+     wd=22.786 wdr0=7.476 awd=0.362  /
+ &POTENTIAL part='Core' a1=1 a2=0 shape=9 freal=1 fimag=1 / ! Pauli blocking
+
+# 4He+3H binding potential : Buck & Merchant
+&POTENTIAL part='Gs' shape=2 a1=0. a2=1. rc=3.095 
+      v=83.78 a=2.52 
+      vso=4.012 aso=2.52 /
+
+# 4He+3H for bins - parity +1
+&POTENTIAL part='Bin' shape=2 a1=0. a2=1. rc=3.095  parity=+1
+      v=66.1    a=2.52 
+      vso=4.012 aso=2.52 /
+      
+# 4He+3H for bins - parity -1
+&POTENTIAL part='Bin'  shape=2 a1=0. a2=1. rc=3.095  parity=-1
+      v=81.45 a=2.52 
+      vso=8.312 aso=2.52 /
+
+
+EOF
+cdc4k < Cdc.$$ > li7sn_cdcc.in
+\rm Cdc.$$
+exit
+head -999 data.$$
+#ln -s b8c13-t2.xsec fort.16
+#ln -s b8c13-t2.xst fort.13
+#ln -s b8c13-t2.xsl fort.56
+#ln -s b8c13-t2.cdcc fort.57
+timer fresco < data.$$
+sumbins < b8c13-t2.xsec >! b8c13-t2.xsum
+awk '{print $1 , $2/1000}' b8c13-t2.xsum >! b8c13-t2.xso
+xslr b8c13-t2.xsl
+\rm data.$$ Cdc.$$
+\rm fort.*
+exit
+
+
+# U(d-alpha): Bi
+ &POTENTIAL part='Bi' a1=0 a2=4 rc=1.15 
+        V=80.00 vr0=1.15 a=0.7  
+        vso=2.5 RSO0=1.15 aso=0.7/ 
+ 
+
+
+
