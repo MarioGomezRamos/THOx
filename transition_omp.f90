@@ -382,7 +382,12 @@ c commented by AMoro, to save memory
       do l=0,nq ! small lambda
 ! CHECK AMM : i <-> f
 !      call rmatel(m,n,xlc,i,j,k,nq,l,xjp1,xjp2,xKrot,rmatn,rmatc)
+      if (lscoup) then
+      call rmatel_lscoup(n,m,xlc,j,i,k,nq,l,xjp2,xjp1,kband1,
+     & rmatn,rmatc)
+      else
       call rmatel(n,m,xlc,j,i,k,nq,l,xjp2,xjp1,kband1,rmatn,rmatc)
+      endif
 
       if (abs(rmatn).lt.1e-6.and.abs(rmatc).lt.1e-6) cycle
       nk=nk+1
