@@ -34,6 +34,7 @@ c     ------------------------------------------------------------
       real*8  :: ecmi,ecmf,etai,etaf,mupt,ermin,ermax
       real*8  :: excore,ei,ef,ki,kf
       real*8  :: thmin,thmax,thcut,thcut_min,thcut_max,dth
+      real*8  :: ecut_min,ecut_max
       real*8  :: cth,sth,s2,th,thrad
       real*8, allocatable :: pl(:,:),delci(:),delcf(:)
       real*8  :: rm,rmp,rmlp,lri,lrf
@@ -62,6 +63,7 @@ c PLM
       namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,phixs,jsets,
      &                    ermin,ermax,ner,icore,thcut,
      &                    thcut_min,thcut_max,
+     &                    ecut_min,ecut_max,
      &                    triplexs,rel,alphaxs!GR
 
 c initialize -------------------------------------------------
@@ -73,6 +75,7 @@ c initialize -------------------------------------------------
       written(kxs+1:kxs+min(nex,9))=.true.
       pi=acos(-1d0)
       thmin=0; thmax=0; dth=0; thcut=0;thcut_min=0;thcut_max=0
+      ecut_min=0; ecut_max=0.
       doublexs=.false. ; triplexs=.false. ; phixs=.false.
       rel=.false.
       ermin=-1; ermax=-1
@@ -606,8 +609,9 @@ c Double x-sections
 1000  if ((doublexs).or.(triplexs).or.(alphaxs)) then
 !       write(0,*)'calling d2sigma:'
         if(.not. alphaxs) then
-        call d2sigma(nth,dth,thmin,thcut_min,thcut_max,ermin,ermax,ner,
-     &                 icore,jsets,fileamp,doublexs,triplexs,phixs)
+        call d2sigma(nth,dth,thmin,thcut_min,thcut_max,ermin,ermax,
+     &               ecut_min,ecut_max,ner,
+     &               icore,jsets,fileamp,doublexs,triplexs,phixs)
         else
         write(*,*) 'Computing angle alpha'
         call d2sigma_alpha_1d(nth,dth,thmin,thcut,ermin,ermax,ner,
@@ -625,6 +629,7 @@ c ----------------------------------------------------------------
 c Double differential x-sections dsigma/dEx dW  (NEW VERSION) 
 c ----------------------------------------------------------------
       subroutine d2sigma(nth,dth,thmin,thcut_min,thcut_max,emin,emax,
+     &              ecut_min,ecut_max,
      &              ncont,icore,jsets,fileamp,doublexs,triplexs,phixs)
       use xcdcc,    only: elab,jpch,nex,exch,parch,famps0,binset,rel
       use channels, only: jpiset,jpsets,nchmax,sn,qnc
@@ -654,8 +659,10 @@ c     -----------------------------------------------------------------------
 c     -------------------------------------------------------------------------
       real*8:: kpt,kcv,krel,dkrdk,wbin
       real*8:: ji,jf,jci,jcf,raux,xsaux,jac,jpi,jpf,jtarg
+      real*8:: raux_cut
       real*8:: ecmi,ecmf,kcmi,kcmf,excore
       real*8:: th,thmin,dth,thcut,thcut_min,thcut_max
+      real*8:: ecut_min, ecut_max
       real*8:: dec,ebind,ecv,ethr,emin,emax,exc
       real*8:: facK,mv,mc,mucv,mupt,f2t,xstot,sumr
       real*8,allocatable::dsdew(:,:),dsdew_b(:,:,:)
@@ -1135,23 +1142,33 @@ c Integrate in ENERGY, to get dsigma/dOmega for core state ICORE
       open(90,file='dsdw_conv.xs',status='unknown')
       open(91,file='dsdwe_conv.xs',status='unknown')
       open(92,file='dsdwe_conv.gnu',status='unknown')
+      if (ecut_max.gt.0) then
+        open(900,file='dsdw_conv_ecut.xs',status='unknown')
+      endif
       write(91,'("nel ", i5,2x, "ang ", i5)') ncont,nth 
       do ith=1,nth
-      raux=0.
+      raux    =0.
+      raux_cut=0
       th = thmin + dth*(ith-1)
       if ((th.lt.thcut_min).or.(th.gt.thcut_max)) cycle
       write(91,'(a,1f8.4)') '#thcm=',th
       do iecv=1,ncont
       ecv=emin+(iecv-1)*dec
-      raux=raux + dsdew(iecv,ith)*dec
+      raux    =raux     + dsdew(iecv,ith)*dec
+      if ((ecv.lt.ecut_max).and.(ecv.gt.ecut_min)) then
+        raux_cut=raux_cut + dsdew(iecv,ith)*dec
+      endif
       write(91,'(1f10.4,1g14.6)') ecv, dsdew(iecv,ith)      
-      write(92,'(2f10.4,1g14.6)') th,ecv, dsdew(iecv,ith)      
+      write(92,'(2f10.4,1g14.6)') th,ecv, dsdew(iecv,ith)    
       enddo !iecv
       write(92,*)' ' 
       write(90,*) th, raux
+      if (ecut_max.gt.0) then
+        write(900,'(2f10.4,1g14.6)') th,raux_cut
+      endif
       enddo !ith
       call flush(90)
-      close(90); close(91); close(92)
+      close(90); close(91); close(92);
 
 
 
@@ -1384,6 +1401,7 @@ c-------------------------------------------------------------------------------
 
       if (allocated(xyt)) deallocate(xyt)
       allocate(xyt(2,maxne))
+      write(0,*)'allocating xyt with dims:',2,maxne
       if (allocated(fxyc)) deallocate(fxyc)
       allocate(fxyc(10,maxne))
 
@@ -1633,12 +1651,14 @@ c-------------------------------------------------------------------------------
       else 
       phKb=atan2(bkp(2),bkp(1))
       endif
+
       if(wrt) 
      & write(99,'(4i3," phikb,xbd=",20g12.5)') iv,ii,ien,ip,phKb,xbd  
 *     -----------------------------------------------------------------
 *     pick out nearest angles indices in array for interpolations
 *     -----------------------------------------------------------------
       xyt(:,:)=0
+      
 !      iang=nint((xbd-thmin)/dth)+1
 !      if (wrt) write(99,*)'thmin,thinc=',thmin,dth
       iang=int((xbd-thmin)/dth)+1 ! CHECK
@@ -1951,7 +1971,7 @@ c1      if (icount.lt.100)
 c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
       
 
-500   continue
+
 *     -----------------------------------------------------------------
 *     Phase Space Factor
 *     -----------------------------------------------------------------
@@ -1979,7 +1999,11 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
 *     triple differential cross section (in mb)
 *     -----------------------------------------------------------------
       sigphi(ip)=sigphi(ip)+10.d0*mult*tmatsq
+      if (eks.lt.emin) then
+       write(99, *)'iroots,iroot,eks,tmatsq=',iroots,iroot,eks,tmatsq
+      endif
 52    if(iroots.eq.0) sigphi(ip)=0.d0
+500   continue
 *     -----------------------------------------------------------------
 *     prepare to go around again at this phi if two roots required
 *     -----------------------------------------------------------------
@@ -2128,6 +2152,7 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
       nxy(2)=nny
       xyb(1)=xb
       xyb(2)=yb
+!      write(0,*)' nnx,nny=',nnx,nny
 *     ---------------------------------------------------------------
 *     loop on x and y grid finding sub-matrix needed
 *     ---------------------------------------------------------------
@@ -2140,7 +2165,7 @@ c1     & write(*,*)'tmatsq=',tmatsq,tmatsq2,tmatsq2/tmatsq
       min=1
       max=nxy(i)
       num=nxy(i)/2
-      if(num .lt.1) num=1
+!      if(num .lt.1) num=1
 55    if(max-min.lt.4) goto 70
       if(xyt(i,num)-xyb(i)) 60,82,61
 60    min=num
@@ -2289,6 +2314,7 @@ c     ------------------------------------------------------------
       real*8  :: xsruth,xs,xstot,xsj,xr,xrj,sigex(nex),xsaux
       real*8  :: sigtex(ntex+1),sigextex(nex,ntex+1)
       real*8  :: thcut_min, thcut_max
+      real*8  :: ecut_min, ecut_max
 c     -----------------------------------------------------------
       complex*16, parameter:: zz=cmplx(0.,1.)
       complex*16,allocatable:: ampl(:,:,:,:,:),fam(:,:,:,:,:)
@@ -2311,7 +2337,8 @@ c PLM
       namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,jsets,
      &                    ermin,ermax,ner,icore,itarg,
      &                    triplexs,rel,
-     &                    thcut_min,thcut_max
+     &                    thcut_min,thcut_max,
+     &                    ecut_min, ecut_max
 
 c initialize -------------------------------------------------
       written(kamp)=.false.
