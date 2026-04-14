@@ -1,9 +1,9 @@
-c  DCE code 
-c  Calculates coupling potentials for 3-body CDCC calculations with core excitation
-c  according to the formalism first proposed in PRC74, 014606 (2006) 
-c
-c  R. de Diego, A.M. Moro (2013-2014)
-c  ----------------------------------------------------------------------------------
+!c  DCE code 
+!c  Calculates coupling potentials for 3-body CDCC calculations with core excitation
+!c  according to the formalism first proposed in PRC74, 014606 (2006) 
+!c
+!c  R. de Diego, A.M. Moro (2013-2014)
+!c  ----------------------------------------------------------------------------------
 
       subroutine transition_targdef
       use xcdcc
@@ -17,20 +17,20 @@ c  -----------------------------------------------------------------------------
       logical skip,writeff
       integer qcmin,qcmax,kcmax,coups,ilam,ilamp,iq,idtf,idti!,lambmax
       logical,external :: fail3
-c     -------------------------------------------------------------------------------
+!c     -------------------------------------------------------------------------------
       character*5:: jpi
       character*40 filename,couplings,comment,fileamps
-c     -------------------------------------------------------------------------------
+!c     -------------------------------------------------------------------------------
       real*8 factor,ptr,ttr
       real*8,allocatable:: xrad2(:),xrad3(:)
-c changed to complex in v2.3
+!c changed to complex in v2.3
       complex*16,pointer:: ui(:),uf(:)
       complex*16 :: fprod
       complex*16 xi,pot,xsum, xsumn,xsumc,pot_omp !,gunc
 !      parameter(Kmax=6,xKrot=0.d0,nkmax=300)
       integer nkmax
       parameter(nkmax=300)
-c     ------------------------------------------------------------------------------
+!c     ------------------------------------------------------------------------------
        logical ignorespin,noclosed
        real*8 a,b,bel,coef,coefc,coefv,e1,e2,emaxf,eminf,ep,et,finish
        real*8 fmem,fscale,drvec,jt,pi,r1,r2,radmax,rextrap,rfirst,rjp
@@ -49,8 +49,8 @@ c     --------------------------------------------------------------------------
 ! v0.6c
 !      dimension energ(nener,numfilmax),!,xrad2(:),elapsed(2),
 !     .np(numfilmax)
-c      real*8, allocatable:: energ(:,:)
-c      integer, allocatable:: np(:)
+!      real*8, allocatable:: energ(:,:)
+!      integer, allocatable:: np(:)
       TYPE GFAC  ! derived variable to store the geometrical factors
        INTEGER i,f,k,l,nq
        REAL*8:: rmatc,rmatn
@@ -94,17 +94,17 @@ c      integer, allocatable:: np(:)
       pi=acos(-1d0)
       writeff=.false.
       noclosed=.false.
-c     ----------------------------------------------------------------------------      
+!c     ----------------------------------------------------------------------------      
       write(*,'(/,5x,"*********** COUPLING POTENTIALS  *********** ")')
       
-c ---------------------------------------------------------------------------------
-c AMoro: partial preread to set dimensions
+!c ---------------------------------------------------------------------------------
+!c AMoro: partial preread to set dimensions
       rextrap=0
       skip=.false. 
       read(kin,nml=trans)
 
       if(jpsets.eq.0) then
-      write(*,'(/,5x,"** No basis states have been defined",
+      write(*,'(/,5x,"** No basis states have been defined",            &
      &    "=> skipping this section **" )') 
       return
       endif
@@ -114,7 +114,7 @@ c AMoro: partial preread to set dimensions
       return
       endif
 
-c *** Quantum number limits for transition potentials
+!c *** Quantum number limits for transition potentials
       lamax=-1
       qcmin=0
       coups=0
@@ -147,7 +147,7 @@ c *** Quantum number limits for transition potentials
 
 
 
-c *** Radial grids ------------------------------------------------------------
+!c *** Radial grids ------------------------------------------------------------
       read(kin,nml=grid)
       coefc=av/mp
       coefv=-ac/mp ! = coefc-1
@@ -211,11 +211,11 @@ c *** Radial grids ------------------------------------------------------------
       xrad2(irad2)=rmax/dble(nrad2)*irad2
       enddo
 
-c *** Interpolate projectile wfs at quadrature points
+!c *** Interpolate projectile wfs at quadrature points
       call wf2quad()
 
 
-c *** Set limits for quantum numbers & multipoles ----------------------------------
+!c *** Set limits for quantum numbers & multipoles ----------------------------------
       npe    =maxval(jpiset(:)%nex)*(ntex+1)
       xImax  =maxval(tset(:)%jtarg) !Maximum I
       xJpmax =maxval(jpiset(:)%jtot) !Maximum Jp
@@ -255,13 +255,13 @@ c *** Set limits for quantum numbers & multipoles ------------------------------
 !      write(*,400) nqmin,nqmax,0,min(kmax,kcmax),0,lambmax
       write(*,400) nqmin,nqmax,0,kmax,0,lambpmax,0,lambmax
 
-400   format(/,2x,"o Quantum numbers limits:",/,5x,
-     &  "- Core multipoles:",i2,"-",i2,/,5x,
-     &  "- K:",i2,"-",i2,/,5x,
-     &  "- Proj.-proj multipoles:", i2,"-", i2,/,5x,
-     &  "- Proj.-target multipoles:", i2,"-", i2)
+400   format(/,2x,"o Quantum numbers limits:",/,5x,                     &
+     &  "- Core multipoles:",i2,"-",i2,/,5x,                            &
+     &  "- K:",i2,"-",i2,/,5x,                                          &
+     &  "- Proj.-proj multipoles:", i2,"-", i2,/,5x,                    &
+     &  "- Proj.-target multipoles:", i2,"-", i2)                       
      
-c -------------------------------------------------------------------------------------
+!c -------------------------------------------------------------------------------------
 
 !MGR Build lambda hipervector
        nlambhipr=0
@@ -277,7 +277,7 @@ c ------------------------------------------------------------------------------
                do itex2=itex1,ntex+1
              if((abs(tset(itex1)%Krot-tset(itex2)%Krot)).gt. 1e-1) cycle
               krotor=tset(itex1)%Krot 
-              if (rotor(tset(itex2)%jtarg,krotor,iq,tset(itex1)%jtarg,1)
+              if (rotor(tset(itex2)%jtarg,krotor,iq,tset(itex1)%jtarg,1)&
      &              .ne.0d0) then
                    nonzero=1
                    exit loop1
@@ -299,7 +299,7 @@ c ------------------------------------------------------------------------------
 !--------------------------------------------------------------------------
        
 
-c *** START CALCULATION OF COUPLING POTENTIALS ---------------------------------------
+!c *** START CALCULATION OF COUPLING POTENTIALS ---------------------------------------
       write(*,'(/,2x,"** FORMFACTORS **")') 
       fmem=nex*nex*(nlambhipr+1)*nrad3*lc16/1e6
       write(*,'(5x," [ formfactors need",1f7.1," Mbytes ]")') fmem
@@ -307,7 +307,7 @@ c *** START CALCULATION OF COUPLING POTENTIALS ---------------------------------
       allocate(potQKn_targ(nquad,nrad2,0:nQmax,0:Kmax,2))
       allocate(potQKc_targ(nquad,nrad2,0:nQmax,0:Kmax,2))
       allocate(Fc(nex,nex,nlambhipr,nrad3),Fn(nex,nex,nlambhipr,nrad3))
-c commented by AMoro, to save memory
+!c commented by AMoro, to save memory
 !      allocate(Fc(nex,nex,0:lambmax,nrad3))
 !      allocate(Fn(nex,nex,0:lambmax,nrad3)) 
 !      Fc=0.d0;  Fn=0.d0
@@ -322,9 +322,9 @@ c commented by AMoro, to save memory
 
 !      write(*,*)'nqmin,nqmax=',nqmin,nqmax,' kmax=',kmax,kcmax
 !      write(*,*)'nquad,nrad2=',nquad,nrad2
-!$OMP PARALLEL DO PRIVATE(iquad,irad2,nq,k,potnv,potcv,potncor,potccor,
-!$OMP& r1,r2,nc) 
-!$OMP& SHARED(coefc,coefv,ncoul,nquad,nrad2,nqmin,nqmax,kmax,rquad,
+!$OMP PARALLEL DO PRIVATE(iquad,irad2,nq,k,potnv,potcv,potncor,potccor, &
+!$OMP& r1,r2,nc)                                                        &
+!$OMP& SHARED(coefc,coefv,ncoul,nquad,nrad2,nqmin,nqmax,kmax,rquad,     &
 !$OMP& xrad2, potQKc_targ,potQKn_targ)
       do iquad=1,nquad
       if (debug) write(*,*) 'nquad,iquad=',nquad,iquad
@@ -370,13 +370,13 @@ c commented by AMoro, to save memory
      
       rfirst=rstep 
       write(*,300) rfirst,rmax,rstep
-300   format(/,5x,"[Radial grid: Rmin=",1f6.3," fm,", 
-     &      " Rmax=",1f6.1," fm," 
+300   format(/,5x,"[Radial grid: Rmin=",1f6.3," fm,",                   &
+     &      " Rmax=",1f6.1," fm,"                                       &
      &      " Step=",1f6.3," fm]",/)
 
       if (rextrap.gt.rmax) then
        write(*,301) rextrap
-301   format(5x,"[ Coulomb couplings extrapolated to",1f6.1," fm]",/)
+301   format(5x,"[ Coulomb couplings extrapolated to",1f6.1," fm]",/)   
       endif
       nff=0
       exclude=1
@@ -411,8 +411,8 @@ c commented by AMoro, to save memory
        Iin=jpiset(m)%jc(i) 
 
        if (ignorespin) then
-       if (nchann1.gt.1) 
-     &   write(0,*) 'WARNING!!!, ignorespin not properly implemented for
+       if (nchann1.gt.1)                                                &
+     &   write(0,*) 'WARNING!!!, ignorespin not properly implemented for &
      & multichannel states'
        xj1=jpiset(m)%lsp(i)
        Iin=0d0
@@ -432,8 +432,8 @@ c commented by AMoro, to save memory
 !      WRITE(*,*)'xl1,Iin=',xl2,Ifn
  
       if (ignorespin) then
-        if (nchann2.gt.1) 
-     &   write(0,*) 'WARNING!!!, ignorespin not properly implemented for
+        if (nchann2.gt.1)                                                &
+     &   write(0,*) 'WARNING!!!, ignorespin not properly implemented for &
      & multichannel states'
        xj2=jpiset(n)%lsp(j)
        Ifi=0d0
@@ -484,11 +484,11 @@ c commented by AMoro, to save memory
       if ((m.eq.1).and.(n.eq.1).and.(verb.gt.0)) then
         if (nk.eq.1) then
         write(198,'("j=",1f4.2, " Jf=",1f4.2)')xjp1,xjp2
-        write(198,'(7A7,2A10)')
+        write(198,'(7A7,2A10)')                                         &
      & "NK","Ch1","Ch2","LAM","K","QC","lambda","P(N)", "P(C)"
         endif
       endif
-      if (verb.gt.0) write(198,1100) nk,i,j,lc,k,nq,l,
+      if (verb.gt.0) write(198,1100) nk,i,j,lc,k,nq,l,                   &
      & rmatn,xl1,xl2
 1100  format(7i7,2x,2f10.3,2x,2f4.1,2i5)
       enddo ! l (lambda)
@@ -498,12 +498,12 @@ c commented by AMoro, to save memory
 
 
       if (nk.gt.0) then
-      write(*,'(4x,a5,"-> ",a5," with LAM=",1i2,
-     &   2x,"NK=",i3,2x, "non-zero geom. P(K)  ",$)') 
-     &   jpi(xjp1,jpiset(m)%partot),
+      write(*,'(4x,a5,"-> ",a5," with LAM=",1i2,                        &
+     &   2x,"NK=",i3,2x, "non-zero geom. P(K)  ",$)')                   &
+     &   jpi(xjp1,jpiset(m)%partot),                                    &
      &   jpi(xjp2,jpiset(n)%partot),nint(xlc),nk
       else        
-        if (debug) write(*,'(4x,"m=",i2,"-> n=",i2," with LAM=",1i2,
+        if (debug) write(*,'(4x,"m=",i2,"-> n=",i2," with LAM=",1i2,    &
      &  2x,"(NO allowed transitions)")') m,n,lc
       endif
 
@@ -512,9 +512,9 @@ c commented by AMoro, to save memory
 
 
 
-c ---------------------------------------------------------
-c    Calculate formfactors F(R) for each |n,ie1> ->|m,ie2> 
-c ---------------------------------------------------------
+! ---------------------------------------------------------
+!    Calculate formfactors F(R) for each |n,ie1> ->|m,ie2> 
+! ---------------------------------------------------------
       if (nk.eq.0) cycle     
       if (debug) write(*,*)'radial integrals'
       do ie1=1,jpiset(m)%nex ! np(m)
@@ -546,30 +546,29 @@ c ---------------------------------------------------------
 !      write(*,*) 'Cutting lambda'
 !      if(l.ne.nq) cycle !CAREFUL
       if(l.eq.nq) then
-      xintgn(iquad)=fprod*(potQKn_targ(iquad,irad2,nq,k,1)+
+      xintgn(iquad)=fprod*(potQKn_targ(iquad,irad2,nq,k,1)+             &
      &              potQKn_targ(iquad,irad2,nq,k,2))*xrad2(irad2)**l
-c subtract projectile-target monopole Coulomb
-      if ((nq.eq.0).and.zp*zt.gt.1e-3.and.k.eq.0.and.ncoul.ne.1)
-     & then
+! subtract projectile-target monopole Coulomb
+      if ((nq.eq.0).and.zp*zt.gt.1e-3.and.k.eq.0.and.ncoul.ne.1) then
 !     &  .and.(m.eq.n).and.(ie1.eq.ie2)) then 
        vmon=VCOUL(xrad2(irad2),zp,zt,Rcc)     
       endif
-       xintgc(iquad)=fprod*
-     &((potQKc_targ(iquad,irad2,nq,k,1)+potQKc_targ(iquad,irad2,nq,k,2))
+       xintgc(iquad)=fprod*                                             &
+     &((potQKc_targ(iquad,irad2,nq,k,1)+potQKc_targ(iquad,irad2,nq,k,2)) &
      & *xrad2(irad2)**l-vmon)
       
       else 
-      xintgn(iquad)=fprod*
-     .potQKn_targ(iquad,irad2,nq,k,1)*xrad2(irad2)**l*
-     .(coefc*rquad(iquad))**(nq-l)+fprod*
-     .potQKn_targ(iquad,irad2,nq,k,2)*xrad2(irad2)**l*
-     .(coefv*rquad(iquad))**(nq-l)
+      xintgn(iquad)=fprod*                                              &
+     &potQKn_targ(iquad,irad2,nq,k,1)*xrad2(irad2)**l*                  &
+     &(coefc*rquad(iquad))**(nq-l)+fprod*                               &
+     &potQKn_targ(iquad,irad2,nq,k,2)*xrad2(irad2)**l*                  &
+     &(coefv*rquad(iquad))**(nq-l)
 
-      xintgc(iquad)=fprod*
-     .potQKc_targ(iquad,irad2,nq,k,1)*xrad2(irad2)**l*
-     .(coefc*rquad(iquad))**(nq-l)+fprod*
-     .potQKc_targ(iquad,irad2,nq,k,2)*xrad2(irad2)**l*
-     .(coefv*rquad(iquad))**(nq-l)
+      xintgc(iquad)=fprod*                                              &
+     &potQKc_targ(iquad,irad2,nq,k,1)*xrad2(irad2)**l*                  &
+     &(coefc*rquad(iquad))**(nq-l)+fprod*                               &
+     &potQKc_targ(iquad,irad2,nq,k,2)*xrad2(irad2)**l*                  &
+     &(coefv*rquad(iquad))**(nq-l)
       endif
       xsumn=xsumn + xintgn(iquad)*wquad(iquad)
       xsumc=xsumc + xintgc(iquad)*wquad(iquad)
@@ -596,15 +595,15 @@ c subtract projectile-target monopole Coulomb
       call cpu_time(finish)
 !      print*, 'Time = ',finish-start,'seconds'
       write(*,1220) nff,finish-start
-1220  format(/,5x,"-> [",i7, " formfactors generated in ",
+1220  format(/,5x,"-> [",i7, " formfactors generated in ",              &
      & 1x,1f6.1," secs ]",/)
 
 
 !      if (.false.) then !Skipping input for fresco
 
-c    -----------------------------------------------------------
-c    Write formfactors
-c    ----------------------------------------------------------- 
+!c    -----------------------------------------------------------
+!c    Write formfactors
+!c    ----------------------------------------------------------- 
       if (writeff) open(kfr,file="ff.fr",status='unknown')
       ttr=0.d0
       fscale=1.d0
@@ -667,13 +666,13 @@ c    -----------------------------------------------------------
       if (mproj1.eq.1) then
       m1=idti
       else
-      m1=ie1+npa1-jpiset(if1)%nex+(idti-1)*sum(jpiset(1:jpsets)%nex)
+      m1=ie1+npa1-jpiset(if1)%nex+(idti-1)*sum(jpiset(1:jpsets)%nex)    &
      & +ntex+1-idti !np(if1)
       endif
       if (mproj2.eq.1) then
       m2=idtf
       else
-      m2=ie2+npa2-jpiset(if2)%nex+(idtf-1)*sum(jpiset(1:jpsets)%nex)
+      m2=ie2+npa2-jpiset(if2)%nex+(idtf-1)*sum(jpiset(1:jpsets)%nex)    &
      & +ntex+1-idtf !np(if2)
       endif
       
@@ -691,7 +690,7 @@ c    -----------------------------------------------------------
 !      write(*,*) 'm1,m2:',m1,m2
 !      write(*,*) 'mproj1,mproj2:',mproj1,mproj2
       call flush(6)
-c for fresco
+! for fresco
       do lc=1,nlambhipr
 !        if (exclude(lc).eq.1) then
 !          do iexclude=lc,nlambhipr-1
@@ -741,17 +740,17 @@ c for fresco
 !      if ((m1.eq.3).and.((m2.eq.4).or.(m2.eq.5))) 
 !     & write(330,*)'Rmel',rmeln,rmelc
       if (mproj1.le.mproj2) then
-      if ((sum(abs(Fc(mproj1,mproj2,lc,:)))+
+      if ((sum(abs(Fc(mproj1,mproj2,lc,:)))+                            &
      & sum(abs(Fn(mproj1,mproj2,lc,:)))).lt.1e-10) cycle
       else
-      if ((sum(abs(Fc(mproj2,mproj1,lc,:)))+
+      if ((sum(abs(Fc(mproj2,mproj1,lc,:)))+                            &
      & sum(abs(Fn(mproj2,mproj1,lc,:)))).lt.1e-10) cycle
       endif
 !      write(330,*) 'Non-zero'
 !      write(330,*)
       write(comment,'(2x,"<",i3,"|",i2,"|",i3,">")') m1,nint(xlc),m2
-      if (writeff) 
-     & write(kfr,500) nrad3,rstep,rfirst,fscale,nint(xlc),xlcp,nq+0d0
+      if (writeff)                                                      &
+     & write(kfr,500) nrad3,rstep,rfirst,fscale,nint(xlc),xlcp,nq+0d0   &
      & ,m2,m1,comment
       if (verb.ge.4) write(120,'("# <",i3,"|",i2,"|",i3,">")') m1,lc,m2
       
@@ -774,14 +773,14 @@ c for fresco
 !      endif          
 !      write(kfr,'(2x,1g16.10,2x,1g16.10)') factor*(fauxc+fauxn)
 !      write(120,'(1x,1f8.3,2x,2g16.8)') r2,factor*(fauxc+fauxn)
-       if (writeff) 
-     &      write(kfr,'(2x,1g16.10,2x,1g16.10)') fauxc+fauxn
-      if (verb.ge.4) 
+       if (writeff)                                                     &
+     &      write(kfr,'(2x,1g16.10,2x,1g16.10)') fauxc+fauxn            
+      if (verb.ge.4)                                                    &
      & write(120,'(1x,1f8.3,2x,2g16.8)') r2,fauxc+fauxn
       enddo !irad
 !      write(440,*) 'm1',m1,'m2',m2,'xlc',nint(xlc),'xlcp',xlcp,'Q',nq,
 !     & 'rmeln',rmeln,'rmelc',rmelc
-c Extrapolate Coulomb formactors from R=Rmax to Rextrap
+! Extrapolate Coulomb formactors from R=Rmax to Rextrap
       fauxc=fauxc/rmelc
       if (rextrap.gt.rmax) then
       caux=real(fauxc)*rmax**(xlc+1) 
@@ -793,12 +792,12 @@ c Extrapolate Coulomb formactors from R=Rmax to Rextrap
       endif
      
       if (writeff) write(kfr,'(2x,1g16.10,2x,1g16.10)')fauxc*rmelc
-      if (verb.ge.4) write(120,'(1x,1f8.3,2x,2g16.8)')r2,
+      if (verb.ge.4) write(120,'(1x,1f8.3,2x,2g16.8)')r2,               &
      & fauxc*rmelc
       Fc(mproj1,mproj2,lc,ir)=fauxc
       Fn(mproj1,mproj2,lc,ir)=0
-      if ((ir.eq.nrad3).and.(abs(fauxc).gt.0.01d0)) 
-     & write(330,500) nrad3,rstep,rfirst,fscale,nint(xlc),xlcp,nq+0d0
+      if ((ir.eq.nrad3).and.(abs(fauxc).gt.0.01d0))                     &
+     & write(330,500) nrad3,rstep,rfirst,fscale,nint(xlc),xlcp,nq+0d0   &
      & ,m2,m1,comment
       enddo !nrad3
       endif ! rextrap> rmax
@@ -806,14 +805,14 @@ c Extrapolate Coulomb formactors from R=Rmax to Rextrap
       enddo !lc (next multipole)
      
       if (verb.ge.4) then
-c ---------- Nuclear
+!c ---------- Nuclear
 !      write(10,800) '#','Jp1=',xjp1,'parity1=',ipar1,'Jp2=',xjp2,
 !     & 'parity2=',ipar2,'ener1=',e1,'ener2=',e2
-c ---------- Coulomb
+!c ---------- Coulomb
 !      write(11,800) '#','Jp1=',xjp1,'parity1=',ipar1,'Jp2=',xjp2,
 !     & 'parity2=',ipar2,'ener1=',e1,'ener2=',e2
-c ---------- nuclear + coulomb
-      write(12,800) '#','Jp1=',xjp1,'parity1=',ipar1,'Jp2=',xjp2,
+!c ---------- nuclear + coulomb
+      write(12,800) '#','Jp1=',xjp1,'parity1=',ipar1,'Jp2=',xjp2,       &
      & 'parity2=',ipar2,'ener1=',e1,'ener2=',e2
       endif
 
@@ -851,9 +850,9 @@ c ---------- nuclear + coulomb
         write(*,*)'fort.12: nuclear + Coulomb formfactors'      
       endif ! verb
       call flush(330)
-c     -----------------------------------------------------------
-c     Write energies in Fresco fromat
-c     ----------------------------------------------------------- 
+!c     -----------------------------------------------------------
+!c     Write energies in Fresco fromat
+!c     ----------------------------------------------------------- 
       open(ken,file="states.fr",status='unknown')     
       i=0
       icopyt=0
@@ -920,12 +919,12 @@ c     -----------------------------------------------------------
  1154 format('         copyt=',i2,' /')
  1155 format(' Skipping state #',i3,' J/pi',f4.1,i2,' and Ex=',f8.4)
  1156 format('         copyp=',i2)
-c     ----------------------------------------------------------------
+!c     ----------------------------------------------------------------
 !      endif  !End skipping
 
-c      total = etime(elapsed)
-c      print*,'total=',total,'user=',elapsed(1),
-c     .'system=',elapsed(2)
+!c      total = etime(elapsed)
+!c      print*,'total=',total,'user=',elapsed(1),
+!c     .'system=',elapsed(2)
       call flush(ken)
       call flush(kfr)
       close(ken); close(kfr)

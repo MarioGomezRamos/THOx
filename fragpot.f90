@@ -1,11 +1,11 @@
       subroutine read_fragpot(kin,kpot,zfrag)
-c *** Read fragment-target potential parameters and store the potential in the radial grid
-c  Only CENTRAL potentials are allowed so far, i.e.:
-c
-c    V(r)=Vcou(r)+ Vc(r)
-c
-c    Vcou(r) = coulomb central
-c    Vc(r)   = nuclear central potential
+!c *** Read fragment-target potential parameters and store the potential in the radial grid
+!c  Only CENTRAL potentials are allowed so far, i.e.:
+!c
+!c    V(r)=Vcou(r)+ Vc(r)
+!c
+!c    Vcou(r) = coulomb central
+!c    Vc(r)   = nuclear central potential
        use ptpots
        use sistema
 !       use wfs, only:rfrag,nr
@@ -39,18 +39,18 @@ c    Vc(r)   = nuclear central potential
        real*8:: betat(1:10),deltat(1:10)
        real*8:: betait(1:10),deltait(1:10)
        logical:: deftarget,defcore
-c      ......................................................................................       
-       namelist /corepotential/ ptype,ap,at,V0,r0,a0,rc0,
-     & cptype,Vcp0,rcp0,acp,delta,deltat,beta,betat,
-     & V0i,r0i,a0i,
-     & Vcp0i,rcp0i,acpi,deltai,betai,mel,deltait,betait,melt,
+!c      ......................................................................................       
+       namelist /corepotential/ ptype,ap,at,V0,r0,a0,rc0,               &
+     & cptype,Vcp0,rcp0,acp,delta,deltat,beta,betat,                    &
+     & V0i,r0i,a0i,                                                     &
+     & Vcp0i,rcp0i,acpi,deltai,betai,mel,deltait,betait,melt,           &
+     & potfile,np,nv,normr,normi                                        
+       namelist /valencepotential/ ptype,ap,at,V0,r0,a0,rc0,            & 
+     & cptype,Vcp0,rcp0,acp,delta,beta,betat,deltat,                    &
+     & V0i,r0i,a0i,                                                     &
+     & Vcp0i,rcp0i,acpi,deltai,betai,mel,deltait,betait,melt,           &
      & potfile,np,nv,normr,normi
-       namelist /valencepotential/ ptype,ap,at,V0,r0,a0,rc0,
-     & cptype,Vcp0,rcp0,acp,delta,beta,betat,deltat,
-     & V0i,r0i,a0i,
-     & Vcp0i,rcp0i,acpi,deltai,betai,mel,deltait,betait,melt,
-     & potfile,np,nv,normr,normi
-c      ......................................................................................
+!c      ......................................................................................
        pi=acos(-1d0)
        ncomp=0 !number of potential components
 
@@ -64,11 +64,11 @@ c      .........................................................................
        written(44)=.false.
        written(42)=.false.   
        lambdamax=0
-c100    V0=0; vl0(:)=0d0; r0=0d0; a0=0d0;
-c       Vso=0d0; rso=0d0; aso=0d0; rc0=0d0
-c       Vcp0=0d0; rcp0=0d0; acp=0d0
-c       Vss0=0d0; rss=0d0; ass=0d0
-c       Vll0=0d0; rll=0d0; all=0d0
+!c100    V0=0; vl0(:)=0d0; r0=0d0; a0=0d0;
+!c       Vso=0d0; rso=0d0; aso=0d0; rc0=0d0
+!c       Vcp0=0d0; rcp0=0d0; acp=0d0
+!c       Vss0=0d0; rss=0d0; ass=0d0
+!c       Vll0=0d0; rll=0d0; all=0d0
 100    V0=0; r0=0d0; a0=0d0; rc0=0d0;
        Vcp0=0d0; rcp0=0d0; acp=0d0;
        V0i=0; r0i=0d0; a0i=0d0;
@@ -111,12 +111,12 @@ c       Vll0=0d0; rll=0d0; all=0d0
        if ((deltai(2)==0d0).and.(deltai(1)/=0d0))deltai(2)=deltai(1)
        do i=1,10
        if ((delta(i).eq.0d0).and.(beta(i).ne.0d0)) delta(i)=beta(i)*rabs
-       if ((deltai(i).eq.0d0).and.(betai(i).ne.0d0)) 
+       if ((deltai(i).eq.0d0).and.(betai(i).ne.0d0))                    &
      & deltai(i)=betai(i)*rabsi
        enddo
 
-        if ((sum(abs(betat)).gt.1e-6).or.(sum(abs(betait)).gt.1e-6).or.
-     &   (sum(abs(deltat)).gt.1e-6).or.(sum(abs(deltait)).gt.1e-6).or.
+        if ((sum(abs(betat)).gt.1e-6).or.(sum(abs(betait)).gt.1e-6).or. &
+     &   (sum(abs(deltat)).gt.1e-6).or.(sum(abs(deltait)).gt.1e-6).or.  &
      &   (sum(abs(melt(:))).gt.1e-6).and.(cptype.ne.0)) then
            deftarget=.true.
        if ((betat(2).eq.0d0) .and.(betat(1).ne.0d0)) betat(2)=betat(1)
@@ -124,21 +124,21 @@ c       Vll0=0d0; rll=0d0; all=0d0
        if ((betait(2)==0d0).and.(betait(1)/=0d0)) betait(2)=betait(1)
        if ((deltait(2)==0d0).and.(deltait(1)/=0d0))deltait(2)=deltait(1)
            do i=1,10 
-       if ((deltat(i).eq.0d0).and.(betat(i).ne.0d0)) 
+       if ((deltat(i).eq.0d0).and.(betat(i).ne.0d0))                    &
      & deltat(i)=betat(i)*rabs
-       if ((deltait(i).eq.0d0).and.(betait(i).ne.0d0)) 
+       if ((deltait(i).eq.0d0).and.(betait(i).ne.0d0))                  &
      & deltait(i)=betait(i)*rabsi
        enddo
         endif  
 
-        if ((sum(abs(beta)).gt.1e-6).or.(sum(abs(betai)).gt.1e-6).or.
-     &   (sum(abs(delta)).gt.1e-6).or.(sum(abs(deltai)).gt.1e-6).or.
+        if ((sum(abs(beta)).gt.1e-6).or.(sum(abs(betai)).gt.1e-6).or.   &
+     &   (sum(abs(delta)).gt.1e-6).or.(sum(abs(deltai)).gt.1e-6).or.    &
      &   (sum(abs(mel(:))).gt.1e-6).and.(cptype.ne.0)) then
            defcore=.true.
         endif  
         
         if (deftarget.and.defcore) then
-         write(*,*) 'Trying to include target and core excitations
+         write(*,*) 'Trying to include target and core excitations      &
      &     simultaneously'
          write(*,*)'This is not implemented. Ignoring target excitation'
       
@@ -166,13 +166,13 @@ c       Vll0=0d0; rll=0d0; all=0d0
        endif
        ncomp=ncomp+1
 !       write(*,*)'number of potentials=',ncomp
-c       if (abs(vl0(0))>0d0) v0=vl0(0)
+!c       if (abs(vl0(0))>0d0) v0=vl0(0)
        if (ptype.ne.0) write(*, '(/,2x,"o Central potential",$)') 
 
        select case(ptype) ! Central potential
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case(0)  ! Last potential already read
-c ------------------------------------------------------
+!c ------------------------------------------------------
         if (written(44)) then
          write(44,'("# Central potential for:",a10)') fragname
          do ir=1,nr
@@ -194,72 +194,72 @@ c ------------------------------------------------------
         deallocate(vcl,vcli)
 
         return
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case(1,2)  ! WS / WS derivative types
-c ------------------------------------------------------
+!c ------------------------------------------------------
           if (ptype.eq.1) write(*,*)'- type=1 => Woods-Saxon'
           if (ptype.eq.2) write(*,*)'- type=2 => Woods-Saxon derivative'
            write(*,120) V0,r0*a13,a0,V0i,R0i*a13,A0i,Rc0*a13
-c           write(*,122) Vso,rso*A13, aso
- 120       format(3x,'[V0=',1f7.2,' MeV, Rr=',f5.2,
-     &           ' fm, ar=',f5.2,' fm, ',
-     &           ' W0=',1f7.2,' MeV, Ri=',f5.2,
-     &           ' fm, ai=',f5.2,' fm, '
+!c           write(*,122) Vso,rso*A13, aso
+ 120       format(3x,'[V0=',1f7.2,' MeV, Rr=',f5.2,                     &
+     &           ' fm, ar=',f5.2,' fm, ',                               &
+     &           ' W0=',1f7.2,' MeV, Ri=',f5.2,                         &
+     &           ' fm, ai=',f5.2,' fm, '                                &
      &           ' Rc=',f5.2,' fm ]')
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case(3) 
-c ------------------------------------------------------
+!c ------------------------------------------------------
              write(*,*)'- type=3 => Gaussian'
              write(*,140) V0,r0,a0
              write(*,142)V0i,r0i,a0i
- 140       format(3x,'[V=',1f8.3,' MeV  r0r=',f6.3,
+ 140       format(3x,'[V=',1f8.3,' MeV  r0r=',f6.3,                     &
      &           ' fm  a0=',f6.3,' fm ]')
- 142       format(3x,'[Vi=',1f8.3,' MeV  r0i=',f6.3,
+ 142       format(3x,'[Vi=',1f8.3,' MeV  r0i=',f6.3,                    &
      &           ' fm  a0i=',f6.3,' fm ]',/)
 
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case(4)
-c ------------------------------------------------------
+!c ------------------------------------------------------
            write(*,*)'- type=4 => Posch-Teller'
            write(*,160) V0,a0,rc0
- 160       format(3x,'[V=',1f8.3,' MeV, ar=',f6.3,
+ 160       format(3x,'[V=',1f8.3,' MeV, ar=',f6.3,                      &
      &           ' fm, rc0=',f6.3,' fm ]',/)
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case(5)
-c ------------------------------------------------------
+!c ------------------------------------------------------
            write(*,*)'-type=5=> External potential'
 		   write(*,*)'			Reading ',np,'points'
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case(6)
-c ------------------------------------------------------
+!c ------------------------------------------------------
            write(*,*)'-type=6=> Yukawa potential'
            write(*,140) V0,a0,r0
 
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case(7)
-c ------------------------------------------------------
+!c ------------------------------------------------------
            write(*,*)'-type=7=> External potential (temp.)'
 
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case default
-c ------------------------------------------------------
+!c ------------------------------------------------------
           write(*,*)'Potential type=',ptype,' not used'
           stop
         end select
  150    format(6f10.5)
 
 
-c coupling component, if any
+!c coupling component, if any
        if (sum(abs(delta)).lt.1e-4) goto 200
        write(*, '(/,2x,"o Deformed potential",$)')
        select case(cptype)
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case(0)  ! no coupling potential 
-c ------------------------------------------------------
+!c ------------------------------------------------------
            write(*,*)' => No coupling potential'
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case(1)  ! dV/dr type
-c ------------------------------------------------------
+!c ------------------------------------------------------
 	if (ptype.eq.1) then
            write(*,*)'- Coupling Pot. type=1 => deriv. W-S'
 !	   write(*,*)'- WARNING!!!! => Possible 4pi factors not included'
@@ -273,26 +273,26 @@ c ------------------------------------------------------
 	   write(*,143)Vcp0,acp,rcp0
 	   write(*,*)'- We are NOT using DELTA!!'
 	   endif
- 143       format(3x,'[Vcp=',1f8.3,' MeV acp=',f6.3,'  rcp0=',f6.3,
+ 143       format(3x,'[Vcp=',1f8.3,' MeV acp=',f6.3,'  rcp0=',f6.3,     &
      &           ' fm ]',/)
  141       format(6x,'[delta(',i3,')=',1f6.3,' fm ]',/)
 	else
 	   write(*,*)'- Coupling Pot. type=1 => deriv. PT/Gaussian'
 	   write(*,*)'- WARNING!!!! => not implemented yet'
         endif
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case(2,3)  ! Projection on multipoles
-c ------------------------------------------------------
-	  write(*,*)
+!c ------------------------------------------------------
+	  write(*,*)                                                      &
      &       ' => deform central potential & project on P_{lambda}'
-         if (cptype.eq.3) write(*,*)
+         if (cptype.eq.3) write(*,*)                                    &
      &       '     (monopole potential will be also recalculated!)'
          do i=1,10
            if (delta(i).ne.0d0) write(*,141) i,delta(i)
          enddo  
-c ------------------------------------------------------
+!c ------------------------------------------------------
         case(4)  ! V_2 type
-c ------------------------------------------------------
+!c ------------------------------------------------------
 	   write(*,*)'- Coupling Pot. type=2 => deformed fermi function'
 	   write(*,*)'- WARNING!!!! => work in progress'                      !remember to erase!
 	   write(*,144)beta
@@ -300,11 +300,11 @@ c ------------------------------------------------------
 	end select
 	    
 
-c Coulomb potential
+!c Coulomb potential
 200   Rc=Rc0*A13
       if (zfrag.gt.1e-6) then
        if (maxval(abs(mel)).gt.1e-4) then
-          write(*,'(2x,"o Coulomb deformation: Mn [e.fm^q]=",10f6.2)')
+          write(*,'(2x,"o Coulomb deformation: Mn [e.fm^q]=",10f6.2)')  &
      &    mel(1:nmult)
           written(42)=.true.
        endif
@@ -323,7 +323,7 @@ c Coulomb potential
       endif
       endif
 
-c Central NUCLEAR potential: real
+!c Central NUCLEAR potential: real
         if (abs(v0).gt.1e-6) then
         written(44)=.true.
         do ir=1,nr
@@ -344,7 +344,7 @@ c Central NUCLEAR potential: real
         enddo !ir
         endif
                 
-c Central NUCLEAR potential: imag
+!c Central NUCLEAR potential: imag
         if (abs(v0i).gt.1e-6) then
         written(44)=.true.
         do ir=1,nr
@@ -380,47 +380,47 @@ c Central NUCLEAR potential: imag
         endif
 
 
-c! Spin-orbit
-c       if (abs(vso)>1e-5) then
-c       do ir=1,nr
-c           r=rfrag(ir) 
-c           if (r.lt.1e-6) r=0.5*dr
-c            select case(ptype)
-c            case(1)  ! WS type
-c              vlsaux=wsso(r,vso,rso*a13,aso)		
-c            case(2) !  Posch-Teller
-c!		vaux=pt(r,v0,rabs,a0)
-c            case(3) ! Gaussian 
-c! 	        vaux=gausspot(r,v0,r0)
-c	    end select
-c	    vls(ir)=vls(ir)+vlsaux 
-c!	    if (abs(vls(ir))>10000) write(0,*) vls(ir)  
-c        enddo !ir
-c        endif
+!c! Spin-orbit
+!c       if (abs(vso)>1e-5) then
+!c       do ir=1,nr
+!c           r=rfrag(ir) 
+!c           if (r.lt.1e-6) r=0.5*dr
+!c            select case(ptype)
+!c            case(1)  ! WS type
+!c              vlsaux=wsso(r,vso,rso*a13,aso)		
+!c            case(2) !  Posch-Teller
+!c!		vaux=pt(r,v0,rabs,a0)
+!c            case(3) ! Gaussian 
+!c! 	        vaux=gausspot(r,v0,r0)
+!c	    end select
+!c	    vls(ir)=vls(ir)+vlsaux 
+!c!	    if (abs(vls(ir))>10000) write(0,*) vls(ir)  
+!c        enddo !ir
+!c        endif
 
 
-c! l.l (only central!!!!) 
-c       if (abs(vll0)>1e-5) then
-c       do ir=1,nr
-c           r=rfrag(ir) 
-c           if (r.lt.1e-6) r=0.5*dr
-c            select case(ptype)
-c            case(1)  ! WS type
-c              vllaux=ws(r,vll0,rll*a13,all)		
-c            case(2) !  Posch-Teller
-c!		vaux=pt(r,v0,rabs,a0)
-c            case(3) ! Gaussian 
-c! 	        vaux=gausspot(r,v0,r0)
-c	    end select
-c	    vll(ir)=vll(ir)+vllaux 
-c!	    if (abs(vll(ir))>1) write(0,*) vll(ir)  
-c        enddo !ir
-c        endif
+!c! l.l (only central!!!!) 
+!c       if (abs(vll0)>1e-5) then
+!c       do ir=1,nr
+!c           r=rfrag(ir) 
+!c           if (r.lt.1e-6) r=0.5*dr
+!c            select case(ptype)
+!c            case(1)  ! WS type
+!c              vllaux=ws(r,vll0,rll*a13,all)		
+!c            case(2) !  Posch-Teller
+!c!		vaux=pt(r,v0,rabs,a0)
+!c            case(3) ! Gaussian 
+!c! 	        vaux=gausspot(r,v0,r0)
+!c	    end select
+!c	    vll(ir)=vll(ir)+vllaux 
+!c!	    if (abs(vll(ir))>1) write(0,*) vll(ir)  
+!c        enddo !ir
+!c        endif
 
             
-c -------------------------------------------------------------    
-c Non-central (deformed) part (REAL): CONTROLED BY CPTYPE
-c -------------------------------------------------------------
+!c -------------------------------------------------------------    
+!c Non-central (deformed) part (REAL): CONTROLED BY CPTYPE
+!c -------------------------------------------------------------
         vcaux(:)=vcl(:)
         if (sum(abs(delta)).gt.1e-4) then 
         do ir=1,nr
@@ -453,7 +453,7 @@ c -------------------------------------------------------------
               enddo !ir
         endif ! delta>0
 
-c Non-central (deformed) part (IMAGINARY)
+!c Non-central (deformed) part (IMAGINARY)
         wcaux(:)=vcli(:)
         if (sum(abs(deltai)).gt.1e-4) then 
         written(42)=.true.
@@ -486,7 +486,7 @@ c Non-central (deformed) part (IMAGINARY)
              enddo !ir
         endif ! deltai > 0
 
-c add central part to fragment-target potential
+!c add central part to fragment-target potential
        vfrag (1:nr,0)=vfrag (1:nr,0) + vcaux(1:nr)
        vfragi(1:nr,0)=vfragi(1:nr,0) + wcaux(1:nr)
 	   
@@ -566,11 +566,11 @@ c add central part to fragment-target potential
       end subroutine read_fragpot
 
 
-c Read external potential
-c Format: 
-c 1st line: header
-c 2nd line: npoints, rstep, rfirst
-c Next lines: real, imag
+!c Read external potential
+!c Format: 
+!c 1st line: header
+!c 2nd line: npoints, rstep, rfirst
+!c Next lines: real, imag
       subroutine extpot(filename,vr,vi,nr)
         use ptpots, only: rfrag
         implicit none
@@ -612,8 +612,8 @@ c Next lines: real, imag
 
       write(*,'(3x,"=> read:",i4," points")') npt 
       write(*,250) xv(1),xv(npt),xv(2)-xv(1)
-250   format(/,5x,"[Radial grid: Rmin=",1f6.3," fm,", 
-     &      " Rmax=",1f6.1," fm," 
+250   format(/,5x,"[Radial grid: Rmin=",1f6.3," fm,",                   &
+     &      " Rmax=",1f6.1," fm,"                                       &
      &      " Step=",1f6.3," fm]",/)
 
         do n=1,nr
@@ -634,9 +634,9 @@ c Next lines: real, imag
 
  
 
-c -------------------------------
-c q>0 Coulomb potential   
-c -------------------------------
+!c -------------------------------
+!c q>0 Coulomb potential   
+!c -------------------------------
       function vcoulq(r,rc,zt,q,mn)
       use constants, only: e2
       implicit none
@@ -647,9 +647,9 @@ c -------------------------------
       vcoulq=0d0
       pi=acos(-1d0)
       rq=q
-c  we use e^2 here since this includes thef 'e' 
-c  coming from the Mn since this is 
-c  typically given in units of e.fm^q
+!c  we use e^2 here since this includes thef 'e' 
+!c  coming from the Mn since this is 
+!c  typically given in units of e.fm^q
 ! old
 !      aux=zt*e2/dsqrt(2d0*q+1)
 ! new 
@@ -689,7 +689,7 @@ c  typically given in units of e.fm^q
 !!! TEST
       real*8 ws, p1,p2,p3,betar(1:10)
 !   
-      data (sp(i),i=1,5) /-.96816024,-.8360311,-.61337143,-.32425342,0./  
+      data (sp(i),i=1,5) /-.96816024,-.8360311,-.61337143,-.32425342,0./  &
      &,(w(i),i=1,5) /.08127439,.18064816,.26061070,.31234708,.33023936 /
 !       save rsp,sp,w,c
        save rsp,sp,w
@@ -746,7 +746,7 @@ c  typically given in units of e.fm^q
           vdef(k)=vdef(k) + cns * vcr
 40      continue
 50      continue
-c       vdefr=vdef(qmax)
+!c       vdefr=vdef(qmax)
 	return
       end
 
@@ -764,7 +764,7 @@ c       vdefr=vdef(qmax)
 !!! TEST
       real*8 ws, p1,p2,p3,betar
 !   
-      data (sp(i),i=1,5) /-.96816024,-.8360311,-.61337143,-.32425342,0./  
+      data (sp(i),i=1,5) /-.96816024,-.8360311,-.61337143,-.32425342,0./  &
      &,(w(i),i=1,5) /.08127439,.18064816,.26061070,.31234708,.33023936 /
 !       save rsp,sp,w,c
        save rsp,sp,w
