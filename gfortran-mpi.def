@@ -1,0 +1,25 @@
+# If compiled with gfortran and MPI
+FC=gfortran
+
+# For debugging (-g -founds ..)
+PARALLEL=-fopenmp
+#PARALLEL =
+FFLAGS= -g -O0 -Wall -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL) -fbacktrace -DMPI -I/usr/include/x86_64-linux-gnu/mpich
+FFLAGS1= -g -O0 -Wall -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL) -fbacktrace -DMPI -I/usr/include/x86_64-linux-gnu/mpich
+
+#FFLAGS= -g -O2 -Wtabs  -ffixed-form -fno-align-commons
+#FFLAGS1= -O2 -Wtabs  -ffixed-form -fno-align-commons
+
+#FFLAGS=  -O3  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL)
+#FFLAGS1=  -O3  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL)
+
+
+#FFLAGS= -g -O0 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) -pg
+#FFLAGS1= -g -O0 -Wtabs -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) -pg
+
+
+#FFLAGS= -g -O0 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero,overflow,underflow,invalid $(PARALLEL)
+#FFLAGS1= -g -O0 -Wtabs -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero,overflow,underflow,invalid $(PARALLEL)
+
+# LAPACK/BLAS from OpenBLAS (with OpenMP support)
+LFLAGS = -lopenblas -fopenmp -L/usr/lib/x86_64-linux-gnu/mpich/lib -lmpich -lmpl -lopa -lpthread

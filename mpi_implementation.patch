@@ -1,0 +1,19 @@
+This patch implements MPI parallelization for THOx CDCC coupled equations solver.
+
+Key features:
+- Distributes J/parity combinations across MPI processes
+- Load-balanced work distribution
+- S-matrix results collected via MPI_RECV/MPI_SEND
+- Backward compatible (MPI_INIT/FINALIZE wrapper)
+
+Files modified:
+1. gfortran-mpi.def (new) - MPI compilation configuration
+2. makefile - Added MPI build option
+3. README.md - Added MPI usage documentation
+4. solvecc.f90 - Added MPI parallelization to coupled equations solver
+
+To use:
+1. Make sure MPICH is installed: apt install libmpich-dev
+2. Edit makefile: change "include gfortran.def" to "include gfortran-mpi.def"
+3. Compile: make
+4. Run: mpirun -np N ./thox < input.in
