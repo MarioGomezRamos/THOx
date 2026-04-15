@@ -576,7 +576,7 @@ c
       rewind(kin, err=360)
       return
 
-360   write(*,*)'error rewindind std input file'
+360   continue  ! Rewind failed (expected when running with MPI on non-master processes)
       return
 
       end subroutine
