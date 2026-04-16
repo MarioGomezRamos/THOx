@@ -1,0 +1,1726 @@
+**************************************************
+ ***        THOx+DCE+CC code: version 2.6        ***
+**************************************************
+
+ ***************** CONSTANTS **********************
+ * hbarc=197.32706 MeV.fm     e^2= 1.43997 MeV.fm *
+ * so, alpha= 1/137.03599       amu=931.4943 MeV  *
+ **************************************************
+   A real*8 is            8  bytes
+   A complex*16 is           16  bytes
+ Pre-reading input to set dimensions
+ 
+  Dimensions for memory allocation
+    o J/pi sets:           2  merged into           2
+    o Maximum internal l:           2
+ 
+  Pre-read finished
+ - COMPOSITE:
+     Core:    Ac=  1.0078  Zc=  1.00
+     Valence: Av=  1.0087  Zv=  0.00
+
+ - Reduced mass:  469.589 MeV/c2
+ - CORE states:
+     # 1: J/pi= 0.0+   Ex= 0.00 MeV
+
+  RADIAL GRID FOR INTERNAL WFS:
+ - Using uniform grid with 1201 points:  [ Rmin= 0.000   Rmax=  60.0  Step= 0.050 fm ]
+
+   ------------- Potential component: 1-------------
+
+ o Undeformed valence-core potential: 
+   COULOMB     : uniform charged sphere with Rc= 0.001 fm
+   NUCLEAR part: type=3 => Gaussian
+       o  Gaussian      V0(l=0-3)=( -72.150 -38.150 -72.150   0.000) MeV, R0= 0.000 fm, ar= 1.484 fm 
+ --------------------------------------------------
+   
+  PAULI forbidden sp states:
+ => No states will be removed
+  
+
+
+ ******************************************
+      BASIS SET:  1 WITH TOTAL J/pi= 0.0+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  0]
+       S.p. configuration # 1 ( 0 0.0) 0.0
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 0 0.0) 0.0 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** RADIAL BASIS **
+ - THO basis with m= 4  b= 1.60  fm, gamma= 1.500 and N= 20 states
+**************************************************
+ ***        THOx+DCE+CC code: version 2.6        ***
+**************************************************
+
+ ***************** CONSTANTS **********************
+ * hbarc=197.32706 MeV.fm     e^2= 1.43997 MeV.fm *
+ * so, alpha= 1/137.03599       amu=931.4943 MeV  *
+ **************************************************
+   A real*8 is            8  bytes
+   A complex*16 is           16  bytes
+ Pre-reading input to set dimensions
+ 
+  Dimensions for memory allocation
+    o J/pi sets:           2  merged into           2
+    o Maximum internal l:           2
+ 
+  Pre-read finished
+ - COMPOSITE:
+     Core:    Ac=  1.0078  Zc=  1.00
+     Valence: Av=  1.0087  Zv=  0.00
+
+ - Reduced mass:  469.589 MeV/c2
+ - CORE states:
+     # 1: J/pi= 0.0+   Ex= 0.00 MeV
+
+  RADIAL GRID FOR INTERNAL WFS:
+ - Using uniform grid with 1201 points:  [ Rmin= 0.000   Rmax=  60.0  Step= 0.050 fm ]
+
+   ------------- Potential component: 1-------------
+
+ o Undeformed valence-core potential: 
+   COULOMB     : uniform charged sphere with Rc= 0.001 fm
+   NUCLEAR part: type=3 => Gaussian
+       o  Gaussian      V0(l=0-3)=( -72.150 -38.150 -72.150   0.000) MeV, R0= 0.000 fm, ar= 1.484 fm 
+**************************************************
+ ***        THOx+DCE+CC code: version 2.6        ***
+**************************************************
+
+ ***************** CONSTANTS **********************
+ * hbarc=197.32706 MeV.fm     e^2= 1.43997 MeV.fm *
+ * so, alpha= 1/137.03599       amu=931.4943 MeV  *
+ **************************************************
+   A real*8 is            8  bytes
+   A complex*16 is           16  bytes
+ Pre-reading input to set dimensions
+ 
+  Dimensions for memory allocation
+    o J/pi sets:           2  merged into           2
+    o Maximum internal l:           2
+ 
+  Pre-read finished
+ - COMPOSITE:
+     Core:    Ac=  1.0078  Zc=  1.00
+     Valence: Av=  1.0087  Zv=  0.00
+
+ - Reduced mass:  469.589 MeV/c2
+ - CORE states:
+     # 1: J/pi= 0.0+   Ex= 0.00 MeV
+
+  RADIAL GRID FOR INTERNAL WFS:
+ - Using uniform grid with 1201 points:  [ Rmin= 0.000   Rmax=  60.0  Step= 0.050 fm ]
+
+   ------------- Potential component: 1-------------
+
+ o Undeformed valence-core potential: 
+   COULOMB     : uniform charged sphere with Rc= 0.001 fm
+   NUCLEAR part: type=3 => Gaussian
+       o  Gaussian      V0(l=0-3)=( -72.150 -38.150 -72.150   0.000) MeV, R0= 0.000 fm, ar= 1.484 fm 
+ --------------------------------------------------
+   
+  PAULI forbidden sp states:
+ => No states will be removed
+  
+
+
+ ******************************************
+      BASIS SET:  1 WITH TOTAL J/pi= 0.0+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  0]
+       S.p. configuration # 1 ( 0 0.0) 0.0
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 0 0.0) 0.0 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** RADIAL BASIS **
+ - THO basis with m= 4  b= 1.60  fm, gamma= 1.500 and N= 20 states
+**************************************************
+ ***        THOx+DCE+CC code: version 2.6        ***
+**************************************************
+
+ ***************** CONSTANTS **********************
+ * hbarc=197.32706 MeV.fm     e^2= 1.43997 MeV.fm *
+ * so, alpha= 1/137.03599       amu=931.4943 MeV  *
+ **************************************************
+   A real*8 is            8  bytes
+   A complex*16 is           16  bytes
+ Pre-reading input to set dimensions
+ 
+  Dimensions for memory allocation
+    o J/pi sets:           2  merged into           2
+    o Maximum internal l:           2
+ 
+  Pre-read finished
+ - COMPOSITE:
+     Core:    Ac=  1.0078  Zc=  1.00
+     Valence: Av=  1.0087  Zv=  0.00
+
+ - Reduced mass:  469.589 MeV/c2
+ - CORE states:
+     # 1: J/pi= 0.0+   Ex= 0.00 MeV
+
+  RADIAL GRID FOR INTERNAL WFS:
+ - Using uniform grid with 1201 points:  [ Rmin= 0.000   Rmax=  60.0  Step= 0.050 fm ]
+
+   ------------- Potential component: 1-------------
+
+ o Undeformed valence-core potential: 
+   COULOMB     : uniform charged sphere with Rc= 0.001 fm
+   NUCLEAR part: type=3 => Gaussian
+       o  Gaussian      V0(l=0-3)=( -72.150 -38.150 -72.150   0.000) MeV, R0= 0.000 fm, ar= 1.484 fm 
+ --------------------------------------------------
+   
+  PAULI forbidden sp states:
+ => No states will be removed
+  
+
+
+ ******************************************
+      BASIS SET:  1 WITH TOTAL J/pi= 0.0+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  0]
+       S.p. configuration # 1 ( 0 0.0) 0.0
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 0 0.0) 0.0 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** RADIAL BASIS **
+ - THO basis with m= 4  b= 1.60  fm, gamma= 1.500 and N= 20 states
+ --------------------------------------------------
+   
+  PAULI forbidden sp states:
+ => No states will be removed
+  
+
+
+ ******************************************
+      BASIS SET:  1 WITH TOTAL J/pi= 0.0+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  0]
+       S.p. configuration # 1 ( 0 0.0) 0.0
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 0 0.0) 0.0 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** RADIAL BASIS **
+ - THO basis with m= 4  b= 1.60  fm, gamma= 1.500 and N= 20 states
+  [bas2=0 => Use Hsp eigenstates to diagonalize       full H]
+
+
+     SINGLE-PARTICLE eigenstates:
+
+  [bas2=0 => Use Hsp eigenstates to diagonalize       full H]
+
+
+     SINGLE-PARTICLE eigenstates:
+
+  [bas2=0 => Use Hsp eigenstates to diagonalize       full H]
+
+
+     SINGLE-PARTICLE eigenstates:
+
+  o S.p. configuration # 1 =>s0.0
+
+
+ o Building full Hamiltonian matrix ( 20x 20):.  [bas2=0 => Use Hsp eigenstates to diagonalize       full H]
+
+
+     SINGLE-PARTICLE eigenstates:
+
+  
+
+
+     *** EIGENVALUES of full Hamiltonian *** 
+     #  1   -2.2174  [  1.00000]    rms=  3.8616
+     #  2    0.0068  [  1.00000]    rms= 20.1515
+     #  3    0.0327  [  1.00000]    rms= 37.2561
+     #  4    0.2253  [  1.00000]    rms= 32.6886
+     #  5    0.5629  [  1.00000]    rms= 31.6297
+     #  6    1.0892  [  1.00000]    rms= 33.1908
+     #  7    1.8700  [  1.00000]    rms= 33.5399
+     #  8    2.9382  [  1.00000]    rms= 32.5616
+     #  9    4.3363  [  1.00000]    rms= 30.6252
+     # 10    6.1756  [  1.00000]    rms= 27.9779
+     # 11    8.6418  [  1.00000]    rms= 24.8605
+
+     [ 11 out of  20 eigenvalues retained ]
+
+
+ ******************************************
+      BASIS SET:  2 WITH TOTAL J/pi= 2.0+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  2]
+       S.p. configuration # 1 ( 2 0.0) 2.0
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 2 0.0) 2.0 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** RADIAL BASIS **
+ - THO basis with m= 4  b= 1.60  fm, gamma= 1.500 and N= 20 states
+  [bas2=0 => Use Hsp eigenstates to diagonalize       full H]
+
+
+     SINGLE-PARTICLE eigenstates:
+
+  o S.p. configuration # 1 =>s0.0
+  o S.p. configuration # 1 =>d2.0
+
+
+ o Building full Hamiltonian matrix ( 20x 20):.
+
+ o Building full Hamiltonian matrix ( 20x 20):.  o S.p. configuration # 1 =>s0.0
+
+
+ o Building full Hamiltonian matrix ( 20x 20):.  o S.p. configuration # 1 =>s0.0
+
+
+ o Building full Hamiltonian matrix ( 20x 20):.  
+
+
+     *** EIGENVALUES of full Hamiltonian *** 
+     #  1   -2.2174  [  1.00000]    rms=  3.8616
+     #  2    0.0068  [  1.00000]    rms= 20.1515
+     #  3    0.0327  [  1.00000]    rms= 37.2561
+     #  4    0.2253  [  1.00000]    rms= 32.6886
+     #  5    0.5629  [  1.00000]    rms= 31.6297
+     #  6    1.0892  [  1.00000]    rms= 33.1908
+     #  7    1.8700  [  1.00000]    rms= 33.5399
+     #  8    2.9382  [  1.00000]    rms= 32.5616
+     #  9    4.3363  [  1.00000]    rms= 30.6252
+     # 10    6.1756  [  1.00000]    rms= 27.9779
+     # 11    8.6418  [  1.00000]    rms= 24.8605
+
+     [ 11 out of  20 eigenvalues retained ]
+
+
+ ******************************************
+      BASIS SET:  2 WITH TOTAL J/pi= 2.0+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  2]
+       S.p. configuration # 1 ( 2 0.0) 2.0
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 2 0.0) 2.0 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** RADIAL BASIS **
+ - THO basis with m= 4  b= 1.60  fm, gamma= 1.500 and N= 20 states
+  
+
+
+     *** EIGENVALUES of full Hamiltonian *** 
+     #  1   -2.2174  [  1.00000]    rms=  3.8616
+     #  2    0.0068  [  1.00000]    rms= 20.1515
+     #  3    0.0327  [  1.00000]    rms= 37.2561
+     #  4    0.2253  [  1.00000]    rms= 32.6886
+     #  5    0.5629  [  1.00000]    rms= 31.6297
+     #  6    1.0892  [  1.00000]    rms= 33.1908
+     #  7    1.8700  [  1.00000]    rms= 33.5399
+     #  8    2.9382  [  1.00000]    rms= 32.5616
+     #  9    4.3363  [  1.00000]    rms= 30.6252
+     # 10    6.1756  [  1.00000]    rms= 27.9779
+     # 11    8.6418  [  1.00000]    rms= 24.8605
+
+     [ 11 out of  20 eigenvalues retained ]
+  
+
+
+     *** EIGENVALUES of full Hamiltonian *** 
+     #  1    0.0000  [  1.00000]    rms=  2.3439
+     #  2    0.0707  [  1.00000]    rms= 35.5576
+     #  3    0.2871  [  1.00000]    rms= 34.8682
+     #  4    0.6697  [  1.00000]    rms= 36.5835
+     #  5    1.2827  [  1.00000]    rms= 35.6272
+
+
+ ******************************************
+      BASIS SET:  2 WITH TOTAL J/pi= 2.0+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  2]
+       S.p. configuration # 1 ( 2 0.0) 2.0
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 2 0.0) 2.0 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** RADIAL BASIS **
+     #  6    2.0991  [  1.00000]    rms= 34.2801
+ - THO basis with m= 4  b= 1.60  fm, gamma= 1.500 and N= 20 states
+     #  7    3.1460  [  1.00000]    rms= 32.7587
+     #  8    4.4849  [  1.00000]    rms= 30.8562
+     #  9    6.2110  [  1.00000]    rms= 28.4569
+     # 10    8.4727  [  1.00000]    rms= 25.6199
+     # 11   11.5052  [  1.00000]    rms= 22.5120
+     # 12   15.6894  [  1.00000]    rms= 19.3269
+     # 13   21.6640  [  1.00000]    rms= 16.2392
+
+     [ 13 out of  20 eigenvalues retained ]
+
+
+     ******  PROJECTILE SCATTERING STATES ******
+     # Continuum WFS for Jp=2.0+ ; Channels= 1 ;  Inc. chan.= 1 Uniform Ecm=F
+
+  
+
+
+     *** EIGENVALUES of full Hamiltonian *** 
+     #  1   -2.2174  [  1.00000]    rms=  3.8616
+     #  2    0.0068  [  1.00000]    rms= 20.1515
+     #  3    0.0327  [  1.00000]    rms= 37.2561
+     #  4    0.2253  [  1.00000]    rms= 32.6886
+     #  5    0.5629  [  1.00000]    rms= 31.6297
+     #  6    1.0892  [  1.00000]    rms= 33.1908
+     #  7    1.8700  [  1.00000]    rms= 33.5399
+     #  8    2.9382  [  1.00000]    rms= 32.5616
+     #  9    4.3363  [  1.00000]    rms= 30.6252
+     # 10    6.1756  [  1.00000]    rms= 27.9779
+     # 11    8.6418  [  1.00000]    rms= 24.8605
+
+     [ 11 out of  20 eigenvalues retained ]
+
+
+ ******************************************
+      BASIS SET:  2 WITH TOTAL J/pi= 2.0+
+ ******************************************
+          
+ SINGLE-PARTICLE configurations:
+   [ l val-core truncated at lmin,lmax= 0  2]
+       S.p. configuration # 1 ( 2 0.0) 2.0
+    
+   
+    CORE+VALENCE channels:
+     Channel # 1 : Ic= 0.0 ( 2 0.0) 2.0 Ex= 0.000 MeV with sp config #1 and core #1
+   
+  ** RADIAL BASIS **
+ - THO basis with m= 4  b= 1.60  fm, gamma= 1.500 and N= 20 states
+  [bas2=0 => Use Hsp eigenstates to diagonalize       full H]
+
+
+     SINGLE-PARTICLE eigenstates:
+
+  [bas2=0 => Use Hsp eigenstates to diagonalize       full H]
+
+
+     SINGLE-PARTICLE eigenstates:
+
+  [bas2=0 => Use Hsp eigenstates to diagonalize       full H]
+
+
+     SINGLE-PARTICLE eigenstates:
+
+  o S.p. configuration # 1 =>d2.0
+
+
+ o Building full Hamiltonian matrix ( 20x 20):.  o S.p. configuration # 1 =>d2.0
+
+
+ o Building full Hamiltonian matrix ( 20x 20):.  o S.p. configuration # 1 =>d2.0
+
+
+ o Building full Hamiltonian matrix ( 20x 20):.  
+
+
+     *** EIGENVALUES of full Hamiltonian *** 
+     #  1    0.0000  [  1.00000]    rms=  2.3439
+     #  2    0.0707  [  1.00000]    rms= 35.5576
+     #  3    0.2871  [  1.00000]    rms= 34.8682
+     #  4    0.6697  [  1.00000]    rms= 36.5835
+     #  5    1.2827  [  1.00000]    rms= 35.6272
+     #  6    2.0991  [  1.00000]    rms= 34.2801
+     #  7    3.1460  [  1.00000]    rms= 32.7587
+     #  8    4.4849  [  1.00000]    rms= 30.8562
+     #  9    6.2110  [  1.00000]    rms= 28.4569
+     # 10    8.4727  [  1.00000]    rms= 25.6199
+     # 11   11.5052  [  1.00000]    rms= 22.5120
+     # 12   15.6894  [  1.00000]    rms= 19.3269
+     # 13   21.6640  [  1.00000]    rms= 16.2392
+
+     [ 13 out of  20 eigenvalues retained ]
+  
+
+
+     *** EIGENVALUES of full Hamiltonian *** 
+
+
+     ******  PROJECTILE SCATTERING STATES ******
+     # Continuum WFS for Jp=2.0+ ; Channels= 1 ;  Inc. chan.= 1 Uniform Ecm=F
+
+     #  1    0.0000  [  1.00000]    rms=  2.3439
+     #  2    0.0707  [  1.00000]    rms= 35.5576
+     #  3    0.2871  [  1.00000]    rms= 34.8682
+     #  4    0.6697  [  1.00000]    rms= 36.5835
+     #  5    1.2827  [  1.00000]    rms= 35.6272
+     #  6    2.0991  [  1.00000]    rms= 34.2801
+     #  7    3.1460  [  1.00000]    rms= 32.7587
+     #  8    4.4849  [  1.00000]    rms= 30.8562
+     #  9    6.2110  [  1.00000]    rms= 28.4569
+     # 10    8.4727  [  1.00000]    rms= 25.6199
+     # 11   11.5052  [  1.00000]    rms= 22.5120
+     # 12   15.6894  [  1.00000]    rms= 19.3269
+     # 13   21.6640  [  1.00000]    rms= 16.2392
+
+     [ 13 out of  20 eigenvalues retained ]
+
+
+     ******  PROJECTILE SCATTERING STATES ******
+     # Continuum WFS for Jp=2.0+ ; Channels= 1 ;  Inc. chan.= 1 Uniform Ecm=F
+
+  
+
+
+     *** EIGENVALUES of full Hamiltonian *** 
+     #  1    0.0000  [  1.00000]    rms=  2.3439
+     #  2    0.0707  [  1.00000]    rms= 35.5576
+     #  3    0.2871  [  1.00000]    rms= 34.8682
+     #  4    0.6697  [  1.00000]    rms= 36.5835
+     #  5    1.2827  [  1.00000]    rms= 35.6272
+     #  6    2.0991  [  1.00000]    rms= 34.2801
+     #  7    3.1460  [  1.00000]    rms= 32.7587
+     #  8    4.4849  [  1.00000]    rms= 30.8562
+     #  9    6.2110  [  1.00000]    rms= 28.4569
+     # 10    8.4727  [  1.00000]    rms= 25.6199
+     # 11   11.5052  [  1.00000]    rms= 22.5120
+     # 12   15.6894  [  1.00000]    rms= 19.3269
+     # 13   21.6640  [  1.00000]    rms= 16.2392
+
+     [ 13 out of  20 eigenvalues retained ]
+
+
+     ******  PROJECTILE SCATTERING STATES ******
+     # Continuum WFS for Jp=2.0+ ; Channels= 1 ;  Inc. chan.= 1 Uniform Ecm=F
+
+  Namelist bmlambda not present
+
+
+     ******  REACTION CALCULATION ******
+
+     Projectile: Mass=   2.014 amu   Z=   1.0
+     Target:     Mass=  58.000 amu   Z=  28.0
+
+     Nb. of target states:  1
+     o state #  1   J/pi=0.0+    Ex= 0.000
+     [using transition subroutine for spin-zero target]
+
+     *********** COUPLING POTENTIALS  *********** 
+  [ coups=0=> All transitions will be considered]
+  [ ncoul=0 => C+N couplings ]
+
+  ** CORE-TARGET potential:
+
+  o Central potential - type=1 => Woods-Saxon
+   [V0= -44.70 MeV, Rr= 4.61 fm, ar= 0.66 fm,  W0=  -3.95 MeV, Ri= 4.61 fm, ai= 0.66 fm,  Rc= 3.87 fm ]
+     [adding monopole Coulomb with Rc= 3.871]
+
+  o Central potential - type=2 => Woods-Saxon derivative
+   [V0=   0.00 MeV, Rr= 0.00 fm, ar= 0.00 fm,  W0=  -5.32 MeV, Ri= 4.96 fm, ai= 0.55 fm,  Rc= 0.00 fm ]
+
+  ** VALENCE-TARGET potential:
+
+  o Central potential - type=1 => Woods-Saxon
+   [V0= -39.50 MeV, Rr= 4.61 fm, ar= 0.66 fm,  W0=  -3.95 MeV, Ri= 4.61 fm, ai= 0.66 fm,  Rc= 3.87 fm ]
+
+  o Central potential - type=2 => Woods-Saxon derivative
+   [V0=   0.00 MeV, Rr= 0.00 fm, ar= 0.00 fm,  W0=  -4.90 MeV, Ri= 4.95 fm, ai= 0.54 fm,  Rc= 0.00 fm ]
+
+
+  ***  PROJECTILE WAVEFUNCTIONS *** 
+
+    Set  1  Jpi= 0.0+ => 11 state(s)
+        #  1  Ex= -2.2174
+        #  2  Ex=  0.0068
+        #  3  Ex=  0.0327
+        #  4  Ex=  0.2253
+        #  5  Ex=  0.5629
+        #  6  Ex=  1.0892
+        #  7  Ex=  1.8700
+        #  8  Ex=  2.9382
+        #  9  Ex=  4.3363
+        # 10  Ex=  6.1756
+        # 11  Ex=  8.6418
+
+    Set  2  Jpi= 2.0+ => 13 state(s)
+        #  1  Ex=  0.0000
+        #  2  Ex=  0.0707
+        #  3  Ex=  0.2871
+        #  4  Ex=  0.6697
+        #  5  Ex=  1.2827
+        #  6  Ex=  2.0991
+        #  7  Ex=  3.1460
+        #  8  Ex=  4.4849
+        #  9  Ex=  6.2110
+        # 10  Ex=  8.4727
+        # 11  Ex= 11.5052
+        # 12  Ex= 15.6894
+        # 13  Ex= 21.6640
+
+     => 24 state(s) in  2 set(s)
+
+  o Quantum numbers limits:
+     - Core multipoles: 0-0
+     - K: 0- 2
+     - Proj.-target multipoles: 0-2
+
+  ** FORMFACTORS **
+      [ formfactors need    8.3 Mbytes ]
+
+  o V^{K,Q}(r,R)     [  0.55 secs ]
+
+     [Radial grid: Rmin= 0.200 fm, Rmax=  60.0 fm, Step= 0.200 fm]
+
+     0.0+ ->  0.0+  with LAM= 0  NK=  1  non-zero P(K)    Namelist bmlambda not present
+
+
+     ******  REACTION CALCULATION ******
+
+     Projectile: Mass=   2.014 amu   Z=   1.0
+     Target:     Mass=  58.000 amu   Z=  28.0
+
+     Nb. of target states:  1
+     o state #  1   J/pi=0.0+    Ex= 0.000
+     [using transition subroutine for spin-zero target]
+
+     *********** COUPLING POTENTIALS  *********** 
+  [ coups=0=> All transitions will be considered]
+  [ ncoul=0 => C+N couplings ]
+
+  ** CORE-TARGET potential:
+
+  o Central potential - type=1 => Woods-Saxon
+   [V0= -44.70 MeV, Rr= 4.61 fm, ar= 0.66 fm,  W0=  -3.95 MeV, Ri= 4.61 fm, ai= 0.66 fm,  Rc= 3.87 fm ]
+     [adding monopole Coulomb with Rc= 3.871]
+
+  o Central potential - type=2 => Woods-Saxon derivative
+   [V0=   0.00 MeV, Rr= 0.00 fm, ar= 0.00 fm,  W0=  -5.32 MeV, Ri= 4.96 fm, ai= 0.55 fm,  Rc= 0.00 fm ]
+  Namelist bmlambda not present
+
+
+     ******  REACTION CALCULATION ******
+
+     Projectile: Mass=   2.014 amu   Z=   1.0
+     Target:     Mass=  58.000 amu   Z=  28.0
+
+     Nb. of target states:  1
+     o state #  1   J/pi=0.0+    Ex= 0.000
+     [using transition subroutine for spin-zero target]
+
+     *********** COUPLING POTENTIALS  *********** 
+  [ coups=0=> All transitions will be considered]
+  [ ncoul=0 => C+N couplings ]
+
+  ** CORE-TARGET potential:
+
+  o Central potential - type=1 => Woods-Saxon
+   [V0= -44.70 MeV, Rr= 4.61 fm, ar= 0.66 fm,  W0=  -3.95 MeV, Ri= 4.61 fm, ai= 0.66 fm,  Rc= 3.87 fm ]
+     [adding monopole Coulomb with Rc= 3.871]
+
+  o Central potential - type=2 => Woods-Saxon derivative
+   [V0=   0.00 MeV, Rr= 0.00 fm, ar= 0.00 fm,  W0=  -5.32 MeV, Ri= 4.96 fm, ai= 0.55 fm,  Rc= 0.00 fm ]
+
+  ** VALENCE-TARGET potential:
+
+  o Central potential - type=1 => Woods-Saxon
+   [V0= -39.50 MeV, Rr= 4.61 fm, ar= 0.66 fm,  W0=  -3.95 MeV, Ri= 4.61 fm, ai= 0.66 fm,  Rc= 3.87 fm ]
+
+  o Central potential - type=2 => Woods-Saxon derivative
+   [V0=   0.00 MeV, Rr= 0.00 fm, ar= 0.00 fm,  W0=  -4.90 MeV, Ri= 4.95 fm, ai= 0.54 fm,  Rc= 0.00 fm ]
+
+  ** VALENCE-TARGET potential:
+
+  o Central potential - type=1 => Woods-Saxon
+   [V0= -39.50 MeV, Rr= 4.61 fm, ar= 0.66 fm,  W0=  -3.95 MeV, Ri= 4.61 fm, ai= 0.66 fm,  Rc= 3.87 fm ]
+
+  o Central potential - type=2 => Woods-Saxon derivative
+   [V0=   0.00 MeV, Rr= 0.00 fm, ar= 0.00 fm,  W0=  -4.90 MeV, Ri= 4.95 fm, ai= 0.54 fm,  Rc= 0.00 fm ]
+
+
+  ***  PROJECTILE WAVEFUNCTIONS *** 
+
+    Set  1  Jpi= 0.0+ => 11 state(s)
+        #  1  Ex= -2.2174
+        #  2  Ex=  0.0068
+        #  3  Ex=  0.0327
+        #  4  Ex=  0.2253
+        #  5  Ex=  0.5629
+        #  6  Ex=  1.0892
+        #  7  Ex=  1.8700
+        #  8  Ex=  2.9382
+        #  9  Ex=  4.3363
+        # 10  Ex=  6.1756
+        # 11  Ex=  8.6418
+
+    Set  2  Jpi= 2.0+ => 13 state(s)
+        #  1  Ex=  0.0000
+  Namelist bmlambda not present
+
+
+     ******  REACTION CALCULATION ******
+
+     Projectile: Mass=   2.014 amu   Z=   1.0
+     Target:     Mass=  58.000 amu   Z=  28.0
+
+     Nb. of target states:  1
+     o state #  1   J/pi=0.0+    Ex= 0.000
+     [using transition subroutine for spin-zero target]
+
+     *********** COUPLING POTENTIALS  *********** 
+  [ coups=0=> All transitions will be considered]
+  [ ncoul=0 => C+N couplings ]
+
+  ** CORE-TARGET potential:
+
+
+  ***  PROJECTILE WAVEFUNCTIONS *** 
+
+    Set  1  Jpi= 0.0+ => 11 state(s)
+        #  1  Ex= -2.2174
+        #  2  Ex=  0.0707
+
+  o Central potential - type=1 => Woods-Saxon
+   [V0= -44.70 MeV, Rr= 4.61 fm, ar= 0.66 fm,  W0=  -3.95 MeV, Ri= 4.61 fm, ai= 0.66 fm,  Rc= 3.87 fm ]
+     [adding monopole Coulomb with Rc= 3.871]
+        #  3  Ex=  0.2871
+        #  2  Ex=  0.0068
+
+  o Central potential - type=2 => Woods-Saxon derivative
+   [V0=   0.00 MeV, Rr= 0.00 fm, ar= 0.00 fm,  W0=  -5.32 MeV, Ri= 4.96 fm, ai= 0.55 fm,  Rc= 0.00 fm ]
+        #  4  Ex=  0.6697
+        #  3  Ex=  0.0327
+        #  5  Ex=  1.2827
+        #  4  Ex=  0.2253
+        #  6  Ex=  2.0991
+        #  5  Ex=  0.5629
+        #  7  Ex=  3.1460
+        #  6  Ex=  1.0892
+        #  8  Ex=  4.4849
+        #  7  Ex=  1.8700
+        #  9  Ex=  6.2110
+        #  8  Ex=  2.9382
+        # 10  Ex=  8.4727
+        #  9  Ex=  4.3363
+        # 11  Ex= 11.5052
+        # 10  Ex=  6.1756
+        # 12  Ex= 15.6894
+        # 11  Ex=  8.6418
+        # 13  Ex= 21.6640
+
+    Set  2  Jpi= 2.0+ => 13 state(s)
+        #  1  Ex=  0.0000
+
+     => 24 state(s) in  2 set(s)
+        #  2  Ex=  0.0707
+
+  o Quantum numbers limits:
+     - Core multipoles: 0-0
+     - K: 0- 2
+     - Proj.-target multipoles: 0-2
+
+  ** FORMFACTORS **
+      [ formfactors need    8.3 Mbytes ]
+        #  3  Ex=  0.2871
+        #  4  Ex=  0.6697
+        #  5  Ex=  1.2827
+        #  6  Ex=  2.0991
+
+  ** VALENCE-TARGET potential:
+        #  7  Ex=  3.1460
+
+  o Central potential - type=1 => Woods-Saxon
+   [V0= -39.50 MeV, Rr= 4.61 fm, ar= 0.66 fm,  W0=  -3.95 MeV, Ri= 4.61 fm, ai= 0.66 fm,  Rc= 3.87 fm ]
+
+  o Central potential - type=2 => Woods-Saxon derivative
+   [V0=   0.00 MeV, Rr= 0.00 fm, ar= 0.00 fm,  W0=  -4.90 MeV, Ri= 4.95 fm, ai= 0.54 fm,  Rc= 0.00 fm ]
+        #  8  Ex=  4.4849
+        #  9  Ex=  6.2110
+        # 10  Ex=  8.4727
+        # 11  Ex= 11.5052
+        # 12  Ex= 15.6894
+        # 13  Ex= 21.6640
+
+     => 24 state(s) in  2 set(s)
+
+  o V^{K,Q}(r,R) 
+  o Quantum numbers limits:
+     - Core multipoles: 0-0
+     - K: 0- 2
+     - Proj.-target multipoles: 0-2
+
+  ** FORMFACTORS **
+      [ formfactors need    8.3 Mbytes ]
+
+  o V^{K,Q}(r,R) 
+
+  ***  PROJECTILE WAVEFUNCTIONS *** 
+
+    Set  1  Jpi= 0.0+ => 11 state(s)
+        #  1  Ex= -2.2174
+        #  2  Ex=  0.0068
+        #  3  Ex=  0.0327
+        #  4  Ex=  0.2253
+        #  5  Ex=  0.5629
+        #  6  Ex=  1.0892
+        #  7  Ex=  1.8700
+        #  8  Ex=  2.9382
+        #  9  Ex=  4.3363
+        # 10  Ex=  6.1756
+        # 11  Ex=  8.6418
+
+    Set  2  Jpi= 2.0+ => 13 state(s)
+        #  1  Ex=  0.0000
+        #  2  Ex=  0.0707
+        #  3  Ex=  0.2871
+        #  4  Ex=  0.6697
+        #  5  Ex=  1.2827
+        #  6  Ex=  2.0991
+        #  7  Ex=  3.1460
+        #  8  Ex=  4.4849
+        #  9  Ex=  6.2110
+        # 10  Ex=  8.4727
+        # 11  Ex= 11.5052
+        # 12  Ex= 15.6894
+        # 13  Ex= 21.6640
+
+     => 24 state(s) in  2 set(s)
+
+  o Quantum numbers limits:
+     - Core multipoles: 0-0
+     - K: 0- 2
+     - Proj.-target multipoles: 0-2
+
+  ** FORMFACTORS **
+      [ formfactors need    8.3 Mbytes ]
+
+  o V^{K,Q}(r,R)     [  0.66 secs ]
+
+     [Radial grid: Rmin= 0.200 fm, Rmax=  60.0 fm, Step= 0.200 fm]
+
+     0.0+ ->  0.0+  with LAM= 0  NK=  1  non-zero P(K)  (  0.11 secs )
+     0.0+ ->  2.0+  with LAM= 2  NK=  1  non-zero P(K)      [  0.61 secs ]
+
+     [Radial grid: Rmin= 0.200 fm, Rmax=  60.0 fm, Step= 0.200 fm]
+
+     0.0+ ->  0.0+  with LAM= 0  NK=  1  non-zero P(K)      [  0.61 secs ]
+
+     [Radial grid: Rmin= 0.200 fm, Rmax=  60.0 fm, Step= 0.200 fm]
+
+     0.0+ ->  0.0+  with LAM= 0  NK=  1  non-zero P(K)  (  0.06 secs )
+     2.0+ ->  2.0+  with LAM= 0  NK=  1  non-zero P(K)  (  0.07 secs )
+     0.0+ ->  2.0+  with LAM= 2  NK=  1  non-zero P(K)  (  0.06 secs )
+     0.0+ ->  2.0+  with LAM= 2  NK=  1  non-zero P(K)  (  0.06 secs )
+     0.0+ ->  2.0+  with LAM= 2  NK=  1  non-zero P(K)  (  0.06 secs )
+     2.0+ ->  2.0+  with LAM= 0  NK=  1  non-zero P(K)  (  0.06 secs )
+     2.0+ ->  2.0+  with LAM= 0  NK=  1  non-zero P(K)  (  0.08 secs )
+     2.0+ ->  2.0+  with LAM= 2  NK=  1  non-zero P(K)  (  0.06 secs )
+     2.0+ ->  2.0+  with LAM= 0  NK=  1  non-zero P(K)  (  0.07 secs )
+
+     -> [    602 formfactors generated in     0.9 secs ]
+
+  Output files:
+  ff.fr:  COUL+NUC couplings for Fresco
+(  0.08 secs )
+     2.0+ ->  2.0+  with LAM= 2  NK=  1  non-zero P(K)  (  0.08 secs )
+     2.0+ ->  2.0+  with LAM= 2  NK=  1  non-zero P(K)  (  0.08 secs )
+     2.0+ ->  2.0+  with LAM= 2  NK=  1  non-zero P(K)  (  0.07 secs )
+
+     -> [    602 formfactors generated in     1.0 secs ]
+
+  Output files:
+  ff.fr:  COUL+NUC couplings for Fresco
+(  0.07 secs )
+
+     -> [    602 formfactors generated in     0.9 secs ]
+
+  Output files:
+  ff.fr:  COUL+NUC couplings for Fresco
+
+(  0.07 secs )
+
+     -> [    602 formfactors generated in     0.9 secs ]
+
+  Output files:
+  ff.fr:  COUL+NUC couplings for Fresco
+
+
+
+
+
+     ******  CC SOLUTIONS ******
+
+
+     ******  CC SOLUTIONS ******
+
+
+     ******  CC SOLUTIONS ******
+
+
+     ******  CC SOLUTIONS ******
+     J interval [min,max]=   0.0  30.0
+     -Method of solution: Modified ENA (fresco)                                       
+     -Radial grid: Step 0.050 fm and matching at   60.00 fm
+
+   => there are   24 states
+    [Gs is state # 1 and has spin/parity=0.0+ ]
+
+     J interval [min,max]=   0.0  30.0
+     -Method of solution: Modified ENA (fresco)                                       
+     -Radial grid: Step 0.050 fm and matching at   60.00 fm
+
+   => there are   24 states
+    [Gs is state # 1 and has spin/parity=0.0+ ]
+
+     J interval [min,max]=   0.0  30.0
+     -Method of solution: Modified ENA (fresco)                                       
+     -Radial grid: Step 0.050 fm and matching at   60.00 fm
+
+   => there are   24 states
+    [Gs is state # 1 and has spin/parity=0.0+ ]
+
+     J interval [min,max]=   0.0  30.0
+     -Method of solution: Modified ENA (fresco)                                       
+     -Radial grid: Step 0.050 fm and matching at   60.00 fm
+
+   => there are   24 states
+    [Gs is state # 1 and has spin/parity=0.0+ ]
+
+
+        => Number of CC sets=    62
+        => Max number of chans =   50
+        => Max L=    31
+        => Max Jp =    2.0
+        => Max Jlp =   30.0
+        => Max Jt =    0.0
+        => Max JTOT =    30.0
+
+
+   ** INTERPOLATE FORMFACTORS **
+
+        => Number of CC sets=    62
+        => Max number of chans =   50
+        => Max L=    31
+        => Max Jp =    2.0
+        => Max Jlp =   30.0
+        => Max Jt =    0.0
+        => Max JTOT =    30.0
+
+
+   ** INTERPOLATE FORMFACTORS **
+
+        => Number of CC sets=    62
+        => Max number of chans =   50
+
+        => Number of CC sets=    62
+        => Max L=    31
+        => Max number of chans =   50
+        => Max L=    31
+        => Max Jp =    2.0
+        => Max Jp =    2.0
+        => Max Jlp =   30.0
+        => Max Jlp =   30.0
+        => Max Jt =    0.0
+        => Max JTOT =    30.0
+        => Max Jt =    0.0
+        => Max JTOT =    30.0
+
+
+   ** INTERPOLATE FORMFACTORS **
+
+
+   ** INTERPOLATE FORMFACTORS **
+
+     =>  Interpolating F(R) in grid with       1201 points:  [ Rmin= 0.05   Rmax=  60.0  Step= 0.050 fm ]
+
+
+     =>  Interpolating F(R) in grid with       1201 points:  [ Rmin= 0.05   Rmax=  60.0  Step= 0.050 fm ]
+
+
+     =>  Interpolating F(R) in grid with       1201 points:  [ Rmin= 0.05   Rmax=  60.0  Step= 0.050 fm ]
+
+
+     =>  Interpolating F(R) in grid with       1201 points:  [ Rmin= 0.05   Rmax=  60.0  Step= 0.050 fm ]
+
+     [MPI:   4 processes,     62 CC sets]
+
+     *********************************** CC SET     1 J/pi=  0.0+  ***********************************
+
+     *********************************** CC SET     2 J/pi=  0.0-  ***********************************
+   [no channels for this J/pi]
+
+     *********************************** CC SET     6 J/pi=  2.0-  ***********************************
+
+     *********************************** CC SET     4 J/pi=  1.0-  ***********************************
+ === Numerov will calculate S-matrix ===
+
+     *********************************** CC SET     3 J/pi=  1.0+  ***********************************
+          For incoming chan. 1 => unitarity=  0.04095210
+ === Numerov will calculate S-matrix ===
+ Numerov ch 1: S=(  -0.06787   0.17464) |S|=  0.187368
+     o X-sections: Reac=   4.210      Inel+BU=   0.026      Abs=   4.185 mb
+
+     *********************************** CC SET     5 J/pi=  2.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.04102151
+ Numerov ch 1: S=(   0.14620   0.11738) |S|=  0.187490
+     o X-sections: Reac=  12.630      Inel+BU=   0.077      Abs=  12.553 mb
+          For incoming chan. 1 => unitarity=  0.04117201
+ Numerov ch 1: S=(   0.18682  -0.01627) |S|=  0.187527
+     o X-sections: Reac=  21.049      Inel+BU=   0.131      Abs=  20.918 mb
+
+     *********************************** CC SET     9 J/pi=  4.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.04168392
+ Numerov ch 1: S=(   0.06446  -0.17381) |S|=  0.185377
+     o X-sections: Reac=  37.920      Inel+BU=   0.287      Abs=  37.633 mb
+
+     *********************************** CC SET    13 J/pi=  6.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.04231027
+ Numerov ch 1: S=(  -0.11413  -0.13399) |S|=  0.176013
+     o X-sections: Reac=  54.965      Inel+BU=   0.643      Abs=  54.323 mb
+
+     *********************************** CC SET    17 J/pi=  8.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.04272759
+ Numerov ch 1: S=(  -0.14538   0.05699) |S|=  0.156154
+     o X-sections: Reac=  72.367      Inel+BU=   1.361      Abs=  71.006 mb
+
+     *********************************** CC SET    21 J/pi= 10.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.04306930
+ Numerov ch 1: S=(   0.05819   0.12499) |S|=  0.137870
+     o X-sections: Reac=  89.887      Inel+BU=   2.205      Abs=  87.682 mb
+
+     *********************************** CC SET    25 J/pi= 12.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.04714988
+ Numerov ch 1: S=(   0.09570  -0.11789) |S|=  0.151844
+     o X-sections: Reac= 106.567      Inel+BU=   2.628      Abs= 103.939 mb
+
+     *********************************** CC SET    29 J/pi= 14.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.05206530
+ Numerov ch 1: S=(  -0.10741  -0.01074) |S|=  0.107947
+     o X-sections: Reac= 125.061      Inel+BU=   5.114      Abs= 119.947 mb
+
+     *********************************** CC SET    33 J/pi= 16.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.23841463
+ Numerov ch 1: S=(   0.25226   0.29117) |S|=  0.385245
+     o X-sections: Reac= 122.618      Inel+BU=  12.959      Abs= 109.659 mb
+
+     *********************************** CC SET    37 J/pi= 18.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.59708505
+ Numerov ch 1: S=(   0.67027   0.23219) |S|=  0.709343
+     o X-sections: Reac=  80.209      Inel+BU=  15.162      Abs=  65.047 mb
+
+     *********************************** CC SET    41 J/pi= 20.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.82190251
+ Numerov ch 1: S=(   0.86445   0.12235) |S|=  0.873062
+     o X-sections: Reac=  42.535      Inel+BU=  10.674      Abs=  31.861 mb
+
+     *********************************** CC SET    45 J/pi= 22.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.92561844
+ Numerov ch 1: S=(   0.94442   0.05839) |S|=  0.946225
+     o X-sections: Reac=  20.549      Inel+BU=   5.945      Abs=  14.605 mb
+
+     *********************************** CC SET    49 J/pi= 24.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.96928738
+ Numerov ch 1: S=(   0.97721   0.02692) |S|=  0.977579
+     o X-sections: Reac=   9.480      Inel+BU=   2.913      Abs=   6.566 mb
+
+     *********************************** CC SET    53 J/pi= 26.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.98724712
+ Numerov ch 1: S=(   0.99051   0.01223) |S|=  0.990586
+     o X-sections: Reac=   4.333      Inel+BU=   1.384      Abs=   2.949 mb
+
+     *********************************** CC SET    57 J/pi= 28.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.99459949
+ Numerov ch 1: S=(   0.99597   0.00558) |S|=  0.995981
+     o X-sections: Reac=   1.995      Inel+BU=   0.652      Abs=   1.343 mb
+
+     *********************************** CC SET    61 J/pi= 30.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.99767819
+ Numerov ch 1: S=(   0.99825   0.00258) |S|=  0.998250
+     o X-sections: Reac=   0.930      Inel+BU=   0.313      Abs=   0.618 mb
+
+     *********************************** CC SET     7 J/pi=  3.0+  ***********************************
+
+     *********************************** CC SET     8 J/pi=  3.0-  ***********************************
+
+     *********************************** CC SET    10 J/pi=  4.0-  ***********************************
+
+     *********************************** CC SET    11 J/pi=  5.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.04140696
+ Numerov ch 1: S=(   0.14524  -0.11785) |S|=  0.187042
+     o X-sections: Reac=  29.474      Inel+BU=   0.196      Abs=  29.278 mb
+
+     *********************************** CC SET    12 J/pi=  5.0-  ***********************************
+
+     *********************************** CC SET    14 J/pi=  6.0-  ***********************************
+
+     *********************************** CC SET    15 J/pi=  7.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.04204581
+ Numerov ch 1: S=(  -0.03002  -0.17954) |S|=  0.182037
+     o X-sections: Reac=  46.406      Inel+BU=   0.428      Abs=  45.978 mb
+
+     *********************************** CC SET    16 J/pi=  7.0-  ***********************************
+
+     *********************************** CC SET    18 J/pi=  8.0-  ***********************************
+
+     *********************************** CC SET    19 J/pi=  9.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.04266320
+ Numerov ch 1: S=(  -0.16097  -0.04642) |S|=  0.167528
+     o X-sections: Reac=  63.612      Inel+BU=   0.955      Abs=  62.657 mb
+
+     *********************************** CC SET    20 J/pi=  9.0-  ***********************************
+
+     *********************************** CC SET    22 J/pi= 10.0-  ***********************************
+
+     *********************************** CC SET    23 J/pi= 11.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.04289192
+ Numerov ch 1: S=(  -0.06106   0.13133) |S|=  0.144831
+     o X-sections: Reac=  81.163      Inel+BU=   1.817      Abs=  79.346 mb
+
+     *********************************** CC SET    24 J/pi= 11.0-  ***********************************
+
+     *********************************** CC SET    26 J/pi= 12.0-  ***********************************
+
+     *********************************** CC SET    27 J/pi= 13.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.04276036
+ Numerov ch 1: S=(   0.13536   0.01967) |S|=  0.136778
+     o X-sections: Reac=  98.478      Inel+BU=   2.414      Abs=  96.064 mb
+
+     *********************************** CC SET    28 J/pi= 13.0-  ***********************************
+
+     *********************************** CC SET    30 J/pi= 14.0-  ***********************************
+
+     *********************************** CC SET    31 J/pi= 15.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.05165540
+ Numerov ch 1: S=(  -0.03687  -0.14985) |S|=  0.154324
+     o X-sections: Reac= 115.003      Inel+BU=   3.280      Abs= 111.723 mb
+
+     *********************************** CC SET    32 J/pi= 15.0-  ***********************************
+
+     *********************************** CC SET    34 J/pi= 16.0-  ***********************************
+
+     *********************************** CC SET    35 J/pi= 17.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.09958533
+ Numerov ch 1: S=(   0.00841   0.18615) |S|=  0.186344
+     o X-sections: Reac= 130.565      Inel+BU=   8.773      Abs= 121.791 mb
+
+     *********************************** CC SET    36 J/pi= 17.0-  ***********************************
+
+     *********************************** CC SET    38 J/pi= 18.0-  ***********************************
+
+     *********************************** CC SET    39 J/pi= 19.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.42520383
+ Numerov ch 1: S=(   0.49263   0.28655) |S|=  0.569904
+     o X-sections: Reac= 103.114      Inel+BU=  15.335      Abs=  87.780 mb
+
+     *********************************** CC SET    40 J/pi= 19.0-  ***********************************
+
+     *********************************** CC SET    42 J/pi= 20.0-  ***********************************
+
+     *********************************** CC SET    43 J/pi= 21.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.72895247
+ Numerov ch 1: S=(   0.78833   0.17218) |S|=  0.806910
+     o X-sections: Reac=  59.371      Inel+BU=  13.247      Abs=  46.124 mb
+
+     *********************************** CC SET    44 J/pi= 21.0-  ***********************************
+
+     *********************************** CC SET    46 J/pi= 22.0-  ***********************************
+
+     *********************************** CC SET    47 J/pi= 23.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.88454250
+ Numerov ch 1: S=(   0.91320   0.08504) |S|=  0.917151
+     o X-sections: Reac=  29.801      Inel+BU=   8.138      Abs=  21.662 mb
+
+     *********************************** CC SET    48 J/pi= 23.0-  ***********************************
+
+     *********************************** CC SET    50 J/pi= 24.0-  ***********************************
+
+     *********************************** CC SET    51 J/pi= 25.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.95219048
+ Numerov ch 1: S=(   0.96443   0.03977) |S|=  0.965248
+     o X-sections: Reac=  14.006      Inel+BU=   4.201      Abs=   9.804 mb
+
+     *********************************** CC SET    52 J/pi= 25.0-  ***********************************
+
+     *********************************** CC SET    54 J/pi= 26.0-  ***********************************
+
+     *********************************** CC SET    55 J/pi= 27.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.98024647
+ Numerov ch 1: S=(   0.98534   0.01815) |S|=  0.985504
+     o X-sections: Reac=   6.405      Inel+BU=   2.009      Abs=   4.396 mb
+
+     *********************************** CC SET    56 J/pi= 27.0-  ***********************************
+
+     *********************************** CC SET    58 J/pi= 28.0-  ***********************************
+
+     *********************************** CC SET    59 J/pi= 29.0+  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.99172190
+ Numerov ch 1: S=(   0.99383   0.00825) |S|=  0.993860
+     o X-sections: Reac=   2.938      Inel+BU=   0.951      Abs=   1.987 mb
+
+     *********************************** CC SET    60 J/pi= 29.0-  ***********************************
+
+     *********************************** CC SET    62 J/pi= 30.0-  ***********************************
+ === Numerov will calculate S-matrix ===
+          For incoming chan. 1 => unitarity=  0.99646406
+ Numerov ch 1: S=(   0.99735   0.00379) |S|=  0.997357
+     o X-sections: Reac=   1.359      Inel+BU=   0.449      Abs=   0.910 mb
+ icc          62
+ icc          62
+ icc          62
+ icc          62
+ lpmax,jpmax,istatemax=          32   2.0000000000000000               24
+ lpmax,jpmax,istatemax=          32   2.0000000000000000               24
+ lpmax,jpmax,istatemax=          32   2.0000000000000000               24
+ lpmax,jpmax,istatemax=          32   2.0000000000000000               24
+
+                    ** All CC sets done in       27.41secs ** 
+
+                    ** All CC sets done in       27.39secs ** 
+
+                    ** All CC sets done in       27.40secs ** 
+
+                    ** All CC sets done in       27.44secs ** 
+
+     *** SCATTERING AMPLITUDES AND X-SECTIONS ***
+
+   Elab=  80.00     Ecm=  77.315     Kcm= 2.683    Eta param. = 0.6997
+
+   o Jtmin= 0.0   Jtmax= 30.0
+
+
+     *** SCATTERING AMPLITUDES AND X-SECTIONS ***
+
+   Elab=  80.00     Ecm=  77.315     Kcm= 2.683    Eta param. = 0.6997
+
+   o Jtmin= 0.0   Jtmax= 30.0
+
+
+     *** SCATTERING AMPLITUDES AND X-SECTIONS ***
+
+   Elab=  80.00     Ecm=  77.315     Kcm= 2.683    Eta param. = 0.6997
+
+   o Jtmin= 0.0   Jtmax= 30.0
+
+
+     *** SCATTERING AMPLITUDES AND X-SECTIONS ***
+
+   Elab=  80.00     Ecm=  77.315     Kcm= 2.683    Eta param. = 0.6997
+
+   o Jtmin= 0.0   Jtmax= 30.0
+
+      J/pi=  0.0+    xs(inel)=   0.000E+00 mb reac=   0.436E+01
+      J/pi=  0.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  1.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  1.0-    xs(inel)=   0.000E+00 mb reac=   0.131E+02
+      J/pi=  2.0+    xs(inel)=   0.000E+00 mb reac=   0.218E+02
+      J/pi=  2.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  3.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  3.0-    xs(inel)=   0.000E+00 mb reac=   0.305E+02
+      J/pi=  4.0+    xs(inel)=   0.000E+00 mb reac=   0.393E+02
+      J/pi=  4.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  5.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  5.0-    xs(inel)=   0.000E+00 mb reac=   0.480E+02
+      J/pi=  6.0+    xs(inel)=   0.000E+00 mb reac=   0.567E+02
+      J/pi=  6.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  7.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  0.0+    xs(inel)=   0.000E+00 mb reac=   0.436E+01
+      J/pi=  0.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  1.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  7.0-    xs(inel)=   0.000E+00 mb reac=   0.654E+02
+      J/pi=  8.0+    xs(inel)=   0.000E+00 mb reac=   0.742E+02
+      J/pi=  8.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  9.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  1.0-    xs(inel)=   0.000E+00 mb reac=   0.131E+02
+      J/pi=  2.0+    xs(inel)=   0.000E+00 mb reac=   0.218E+02
+      J/pi=  9.0-    xs(inel)=   0.000E+00 mb reac=   0.829E+02
+      J/pi=  2.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  3.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 10.0+    xs(inel)=   0.000E+00 mb reac=   0.916E+02
+      J/pi= 10.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  3.0-    xs(inel)=   0.000E+00 mb reac=   0.305E+02
+      J/pi= 11.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  4.0+    xs(inel)=   0.000E+00 mb reac=   0.393E+02
+      J/pi=  4.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  5.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 11.0-    xs(inel)=   0.000E+00 mb reac=   0.100E+03
+      J/pi= 12.0+    xs(inel)=   0.000E+00 mb reac=   0.109E+03
+      J/pi=  5.0-    xs(inel)=   0.000E+00 mb reac=   0.480E+02
+      J/pi=  6.0+    xs(inel)=   0.000E+00 mb reac=   0.567E+02
+      J/pi=  6.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 12.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 13.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  7.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  7.0-    xs(inel)=   0.000E+00 mb reac=   0.654E+02
+      J/pi= 13.0-    xs(inel)=   0.000E+00 mb reac=   0.118E+03
+      J/pi= 14.0+    xs(inel)=   0.000E+00 mb reac=   0.127E+03
+      J/pi= 14.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  8.0+    xs(inel)=   0.000E+00 mb reac=   0.742E+02
+      J/pi=  8.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  9.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 15.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 15.0-    xs(inel)=   0.000E+00 mb reac=   0.135E+03
+      J/pi=  9.0-    xs(inel)=   0.000E+00 mb reac=   0.829E+02
+      J/pi= 10.0+    xs(inel)=   0.000E+00 mb reac=   0.916E+02
+      J/pi= 16.0+    xs(inel)=   0.000E+00 mb reac=   0.144E+03
+      J/pi= 16.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 17.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 10.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 11.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 17.0-    xs(inel)=   0.000E+00 mb reac=   0.153E+03
+      J/pi= 11.0-    xs(inel)=   0.000E+00 mb reac=   0.100E+03
+      J/pi= 18.0+    xs(inel)=   0.000E+00 mb reac=   0.161E+03
+      J/pi= 18.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 19.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 12.0+    xs(inel)=   0.000E+00 mb reac=   0.109E+03
+      J/pi= 12.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 13.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 19.0-    xs(inel)=   0.000E+00 mb reac=   0.170E+03
+      J/pi= 13.0-    xs(inel)=   0.000E+00 mb reac=   0.118E+03
+      J/pi= 14.0+    xs(inel)=   0.000E+00 mb reac=   0.127E+03
+      J/pi= 14.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 20.0+    xs(inel)=   0.000E+00 mb reac=   0.179E+03
+      J/pi= 20.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 21.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 15.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 15.0-    xs(inel)=   0.000E+00 mb reac=   0.135E+03
+      J/pi= 21.0-    xs(inel)=   0.000E+00 mb reac=   0.188E+03
+      J/pi= 22.0+    xs(inel)=   0.000E+00 mb reac=   0.196E+03
+      J/pi= 16.0+    xs(inel)=   0.000E+00 mb reac=   0.144E+03
+      J/pi= 16.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 17.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 22.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 23.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 23.0-    xs(inel)=   0.000E+00 mb reac=   0.205E+03
+      J/pi= 17.0-    xs(inel)=   0.000E+00 mb reac=   0.153E+03
+      J/pi= 18.0+    xs(inel)=   0.000E+00 mb reac=   0.161E+03
+      J/pi= 24.0+    xs(inel)=   0.000E+00 mb reac=   0.214E+03
+      J/pi= 24.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 25.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 18.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 19.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 25.0-    xs(inel)=   0.000E+00 mb reac=   0.223E+03
+      J/pi= 19.0-    xs(inel)=   0.000E+00 mb reac=   0.170E+03
+      J/pi= 20.0+    xs(inel)=   0.000E+00 mb reac=   0.179E+03
+      J/pi= 20.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 26.0+    xs(inel)=   0.000E+00 mb reac=   0.231E+03
+      J/pi= 26.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 27.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 21.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 21.0-    xs(inel)=   0.000E+00 mb reac=   0.188E+03
+      J/pi= 27.0-    xs(inel)=   0.000E+00 mb reac=   0.240E+03
+      J/pi= 28.0+    xs(inel)=   0.000E+00 mb reac=   0.249E+03
+      J/pi= 28.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 22.0+    xs(inel)=   0.000E+00 mb reac=   0.196E+03
+      J/pi= 22.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 23.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 29.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 29.0-    xs(inel)=   0.000E+00 mb reac=   0.257E+03
+      J/pi= 23.0-    xs(inel)=   0.000E+00 mb reac=   0.205E+03
+      J/pi= 24.0+    xs(inel)=   0.000E+00 mb reac=   0.214E+03
+      J/pi= 30.0+    xs(inel)=   0.000E+00 mb reac=   0.266E+03
+      J/pi= 30.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 24.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 25.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+
+
+    INTEGRATED CROSS SECTIONS:
+      o Reaction cross section  =4193.108 mb
+      o Total inel+bu x-section =   0.000 mb
+      J/pi= 25.0-    xs(inel)=   0.000E+00 mb reac=   0.223E+03
+      J/pi= 26.0+    xs(inel)=   0.000E+00 mb reac=   0.231E+03
+      o Absorption cross section=4193.108 mb
+
+
+  o Angle-integrated xs for each state:
+      J/pi= 26.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 27.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 27.0-    xs(inel)=   0.000E+00 mb reac=   0.240E+03
+      J/pi= 28.0+    xs(inel)=   0.000E+00 mb reac=   0.249E+03
+      J/pi= 28.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 29.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 29.0-    xs(inel)=   0.000E+00 mb reac=   0.257E+03
+        #   1     0.0+    -2.217->    0.000000 mb
+        #   2     0.0+     0.007->    0.000000 mb
+      J/pi= 30.0+    xs(inel)=   0.000E+00 mb reac=   0.266E+03
+      J/pi= 30.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+        #   3     0.0+     0.033->    0.000000 mb
+        #   4     0.0+     0.225->    0.000000 mb
+        #   5     0.0+     0.563->    0.000000 mb
+
+
+    INTEGRATED CROSS SECTIONS:
+      o Reaction cross section  =4193.108 mb
+      o Total inel+bu x-section =   0.000 mb
+        #   6     0.0+     1.089->    0.000000 mb
+        #   7     0.0+     1.870->    0.000000 mb
+        #   8     0.0+     2.938->    0.000000 mb
+      o Absorption cross section=4193.108 mb
+
+
+  o Angle-integrated xs for each state:
+        #   9     0.0+     4.336->    0.000000 mb
+        #  10     0.0+     6.176->    0.000000 mb
+        #  11     0.0+     8.642->    0.000000 mb
+        #  12     2.0+     0.000->    0.000000 mb
+        #  13     2.0+     0.071->    0.000000 mb
+        #   1     0.0+    -2.217->    0.000000 mb
+        #   2     0.0+     0.007->    0.000000 mb
+        #  14     2.0+     0.287->    0.000000 mb
+        #  15     2.0+     0.670->    0.000000 mb
+        #  16     2.0+     1.283->    0.000000 mb
+        #   3     0.0+     0.033->    0.000000 mb
+        #   4     0.0+     0.225->    0.000000 mb
+        #   5     0.0+     0.563->    0.000000 mb
+        #  17     2.0+     2.099->    0.000000 mb
+        #  18     2.0+     3.146->    0.000000 mb
+        #  19     2.0+     4.485->    0.000000 mb
+        #   6     0.0+     1.089->    0.000000 mb
+        #   7     0.0+     1.870->    0.000000 mb
+        #   8     0.0+     2.938->    0.000000 mb
+        #  20     2.0+     6.211->    0.000000 mb
+        #  21     2.0+     8.473->    0.000000 mb
+        #   9     0.0+     4.336->    0.000000 mb
+        #  10     0.0+     6.176->    0.000000 mb
+        #  11     0.0+     8.642->    0.000000 mb
+        #  22     2.0+    11.505->    0.000000 mb
+        #  23     2.0+    15.689->    0.000000 mb
+        #  24     2.0+    21.664->    0.000000 mb
+        #  12     2.0+     0.000->    0.000000 mb
+        #  13     2.0+     0.071->    0.000000 mb
+        #  14     2.0+     0.287->    0.000000 mb
+        #  15     2.0+     0.670->    0.000000 mb
+        #  16     2.0+     1.283->    0.000000 mb
+        #  17     2.0+     2.099->    0.000000 mb
+        #  18     2.0+     3.146->    0.000000 mb
+        #  19     2.0+     4.485->    0.000000 mb
+        #  20     2.0+     6.211->    0.000000 mb
+        #  21     2.0+     8.473->    0.000000 mb
+        #  22     2.0+    11.505->    0.000000 mb
+        #  23     2.0+    15.689->    0.000000 mb
+        #  24     2.0+    21.664->    0.000000 mb
+
+
+   ** DOUBLE DIFFERENTIAL CROSS SECTIONS **
+
+  ** USING NON-RELATIVISTIC KINEMATICS **
+
+
+   ** DOUBLE DIFFERENTIAL CROSS SECTIONS **
+
+  ** USING NON-RELATIVISTIC KINEMATICS **
+  ds/dE for bins sets: thcut(min,max)=  0.10000000000000001        179.09999999999999     
+  ds/dE for bins sets: thcut(min,max)=  0.10000000000000001        179.09999999999999     
+      J/pi=  0.0+    xs(inel)=   0.000E+00 mb reac=   0.436E+01
+      J/pi=  0.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  1.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  1.0-    xs(inel)=   0.768E-01 mb reac=   0.126E+02
+      J/pi=  2.0+    xs(inel)=   0.000E+00 mb reac=   0.218E+02
+      J/pi=  2.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  3.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  3.0-    xs(inel)=   0.196E+00 mb reac=   0.295E+02
+      J/pi=  4.0+    xs(inel)=   0.000E+00 mb reac=   0.393E+02
+      J/pi=  4.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  5.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  5.0-    xs(inel)=   0.428E+00 mb reac=   0.464E+02
+      J/pi=  6.0+    xs(inel)=   0.000E+00 mb reac=   0.567E+02
+      J/pi=  6.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  7.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  7.0-    xs(inel)=   0.955E+00 mb reac=   0.636E+02
+      J/pi=  8.0+    xs(inel)=   0.000E+00 mb reac=   0.742E+02
+      J/pi=  8.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  9.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  9.0-    xs(inel)=   0.182E+01 mb reac=   0.812E+02
+      J/pi= 10.0+    xs(inel)=   0.000E+00 mb reac=   0.916E+02
+      J/pi= 10.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 11.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 11.0-    xs(inel)=   0.241E+01 mb reac=   0.985E+02
+      J/pi= 12.0+    xs(inel)=   0.000E+00 mb reac=   0.109E+03
+      J/pi= 12.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 13.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 13.0-    xs(inel)=   0.328E+01 mb reac=   0.115E+03
+      J/pi= 14.0+    xs(inel)=   0.000E+00 mb reac=   0.127E+03
+      J/pi= 14.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 15.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  0.0+    xs(inel)=   0.255E-01 mb reac=   0.421E+01
+      J/pi= 15.0-    xs(inel)=   0.877E+01 mb reac=   0.131E+03
+      J/pi=  0.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  1.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 16.0+    xs(inel)=   0.000E+00 mb reac=   0.144E+03
+      J/pi= 16.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 17.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 17.0-    xs(inel)=   0.153E+02 mb reac=   0.103E+03
+      J/pi=  1.0-    xs(inel)=   0.768E-01 mb reac=   0.126E+02
+      J/pi= 18.0+    xs(inel)=   0.000E+00 mb reac=   0.161E+03
+      J/pi= 18.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 19.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  2.0+    xs(inel)=   0.131E+00 mb reac=   0.210E+02
+      J/pi= 19.0-    xs(inel)=   0.132E+02 mb reac=   0.594E+02
+      J/pi=  2.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  3.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 20.0+    xs(inel)=   0.000E+00 mb reac=   0.179E+03
+      J/pi= 20.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 21.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  3.0-    xs(inel)=   0.196E+00 mb reac=   0.295E+02
+      J/pi= 21.0-    xs(inel)=   0.814E+01 mb reac=   0.298E+02
+      J/pi= 22.0+    xs(inel)=   0.000E+00 mb reac=   0.196E+03
+      J/pi=  4.0+    xs(inel)=   0.287E+00 mb reac=   0.379E+02
+      J/pi= 22.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 23.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  4.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  5.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 23.0-    xs(inel)=   0.420E+01 mb reac=   0.140E+02
+      J/pi= 24.0+    xs(inel)=   0.000E+00 mb reac=   0.214E+03
+      J/pi= 24.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 25.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  5.0-    xs(inel)=   0.428E+00 mb reac=   0.464E+02
+      J/pi= 25.0-    xs(inel)=   0.201E+01 mb reac=   0.640E+01
+      J/pi=  6.0+    xs(inel)=   0.643E+00 mb reac=   0.550E+02
+      J/pi= 26.0+    xs(inel)=   0.000E+00 mb reac=   0.231E+03
+      J/pi= 26.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 27.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  6.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  7.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 27.0-    xs(inel)=   0.951E+00 mb reac=   0.294E+01
+      J/pi=  7.0-    xs(inel)=   0.955E+00 mb reac=   0.636E+02
+      J/pi= 28.0+    xs(inel)=   0.000E+00 mb reac=   0.249E+03
+      J/pi= 28.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 29.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  8.0+    xs(inel)=   0.136E+01 mb reac=   0.724E+02
+      J/pi= 29.0-    xs(inel)=   0.449E+00 mb reac=   0.136E+01
+      J/pi= 30.0+    xs(inel)=   0.000E+00 mb reac=   0.266E+03
+      J/pi=  8.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi=  9.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 30.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+
+
+    INTEGRATED CROSS SECTIONS:
+      J/pi=  9.0-    xs(inel)=   0.182E+01 mb reac=   0.812E+02
+      o Reaction cross section  =2958.508 mb
+      o Total inel+bu x-section =  62.270 mb
+      o Absorption cross section=2896.238 mb
+
+
+  o Angle-integrated xs for each state:
+      J/pi= 10.0+    xs(inel)=   0.220E+01 mb reac=   0.899E+02
+      J/pi= 10.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 11.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+        #   1     0.0+    -2.217->    0.000000 mb
+        #   2     0.0+     0.007->    0.023828 mb
+        #   3     0.0+     0.033->    0.197246 mb
+        #   4     0.0+     0.225->    1.246298 mb
+      J/pi= 11.0-    xs(inel)=   0.241E+01 mb reac=   0.985E+02
+        #   5     0.0+     0.563->    2.065834 mb
+        #   6     0.0+     1.089->    3.180042 mb
+        #   7     0.0+     1.870->    3.517324 mb
+      J/pi= 12.0+    xs(inel)=   0.263E+01 mb reac=   0.107E+03
+        #   8     0.0+     2.938->    3.226230 mb
+        #   9     0.0+     4.336->    2.498847 mb
+        #  10     0.0+     6.176->    1.871039 mb
+      J/pi= 12.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 13.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+        #  11     0.0+     8.642->    2.134218 mb
+        #  12     2.0+     0.000->    0.000160 mb
+        #  13     2.0+     0.071->    0.017990 mb
+      J/pi= 13.0-    xs(inel)=   0.328E+01 mb reac=   0.115E+03
+        #  14     2.0+     0.287->    0.046585 mb
+        #  15     2.0+     0.670->    0.390331 mb
+        #  16     2.0+     1.283->    1.262190 mb
+        #  17     2.0+     2.099->    2.447401 mb
+        #  18     2.0+     3.146->    3.712703 mb
+      J/pi= 14.0+    xs(inel)=   0.511E+01 mb reac=   0.125E+03
+      J/pi= 14.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+        #  19     2.0+     4.485->    4.628028 mb
+        #  20     2.0+     6.211->    5.534035 mb
+      J/pi= 15.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+        #  21     2.0+     8.473->    5.642244 mb
+        #  22     2.0+    11.505->    5.639629 mb
+        #  23     2.0+    15.689->    6.422157 mb
+        #  24     2.0+    21.664->    6.565441 mb
+      J/pi= 15.0-    xs(inel)=   0.877E+01 mb reac=   0.131E+03
+      J/pi= 16.0+    xs(inel)=   0.130E+02 mb reac=   0.123E+03
+      J/pi= 16.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 17.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 17.0-    xs(inel)=   0.153E+02 mb reac=   0.103E+03
+      J/pi= 18.0+    xs(inel)=   0.152E+02 mb reac=   0.802E+02
+      J/pi= 18.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 19.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+
+
+   ** DOUBLE DIFFERENTIAL CROSS SECTIONS **
+
+      J/pi= 19.0-    xs(inel)=   0.132E+02 mb reac=   0.594E+02
+  ** USING NON-RELATIVISTIC KINEMATICS **
+      J/pi= 20.0+    xs(inel)=   0.107E+02 mb reac=   0.425E+02
+      J/pi= 20.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 21.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 21.0-    xs(inel)=   0.814E+01 mb reac=   0.298E+02
+      J/pi= 22.0+    xs(inel)=   0.594E+01 mb reac=   0.205E+02
+      J/pi= 22.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 23.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 23.0-    xs(inel)=   0.420E+01 mb reac=   0.140E+02
+      J/pi= 24.0+    xs(inel)=   0.291E+01 mb reac=   0.948E+01
+      J/pi= 24.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 25.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 25.0-    xs(inel)=   0.201E+01 mb reac=   0.640E+01
+      J/pi= 26.0+    xs(inel)=   0.138E+01 mb reac=   0.433E+01
+      J/pi= 26.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 27.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 27.0-    xs(inel)=   0.951E+00 mb reac=   0.294E+01
+      J/pi= 28.0+    xs(inel)=   0.652E+00 mb reac=   0.200E+01
+      J/pi= 28.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 29.0+    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+      J/pi= 29.0-    xs(inel)=   0.449E+00 mb reac=   0.136E+01
+      J/pi= 30.0+    xs(inel)=   0.313E+00 mb reac=   0.930E+00
+      J/pi= 30.0-    xs(inel)=   0.000E+00 mb reac=   0.000E+00
+
+
+    INTEGRATED CROSS SECTIONS:
+      o Reaction cross section  =1588.999 mb
+      o Total inel+bu x-section = 124.665 mb
+      o Absorption cross section=1464.334 mb
+
+
+  o Angle-integrated xs for each state:
+        #   1     0.0+    -2.217->    0.000000 mb
+        #   2     0.0+     0.007->    0.048110 mb
+        #   3     0.0+     0.033->    0.397684 mb
+        #   4     0.0+     0.225->    2.501619 mb
+        #   5     0.0+     0.563->    4.145298 mb
+        #   6     0.0+     1.089->    6.368142 mb
+        #   7     0.0+     1.870->    7.034977 mb
+        #   8     0.0+     2.938->    6.454855 mb
+        #   9     0.0+     4.336->    4.999150 mb
+        #  10     0.0+     6.176->    3.744141 mb
+        #  11     0.0+     8.642->    4.268801 mb
+        #  12     2.0+     0.000->    0.000322 mb
+        #  13     2.0+     0.071->    0.036188 mb
+        #  14     2.0+     0.287->    0.094804 mb
+        #  15     2.0+     0.670->    0.790335 mb
+        #  16     2.0+     1.283->    2.546034 mb
+        #  17     2.0+     2.099->    4.919837 mb
+        #  18     2.0+     3.146->    7.434905 mb
+        #  19     2.0+     4.485->    9.255018 mb
+        #  20     2.0+     6.211->   11.073070 mb
+        #  21     2.0+     8.473->   11.295402 mb
+        #  22     2.0+    11.505->   11.283649 mb
+        #  23     2.0+    15.689->   12.844661 mb
+        #  24     2.0+    21.664->   13.128285 mb
+
+
+   ** DOUBLE DIFFERENTIAL CROSS SECTIONS **
+
+  ** USING NON-RELATIVISTIC KINEMATICS **
+  ds/dE for bins sets: thcut(min,max)=  0.10000000000000001        179.09999999999999     
+  ds/dE for bins sets: thcut(min,max)=  0.10000000000000001        179.09999999999999     
+   => Double diff. x-sections for final core state  1 with energy=  0.000 MeV
+   => Double diff. x-sections for final core state  1 with energy=  0.000 MeV
+   => Double diff. x-sections for final core state  1 with energy=  0.000 MeV
+   => Double diff. x-sections for final core state  1 with energy=  0.000 MeV
+  Integrated dsigma/dEx=   0.0000000000000000     
+
+  The following files have been created:
+  44: Fragment-target potentials.              45: Phase-shifts.                           
+  46: Eigenphases.                             79: List of full H matrix eigenvalues.      
+ 101: Channel WFs of H eigenvalues.           105: Channel WFs of H eigenvalues.           
+ 137: Scattering amplitudes.                  170: Elastic S-matrix elements.              
+ 300: All diff. x-sections.                   301: Separate diff. x-sections.              
+ 302: Separate diff. x-sections.              303: Separate diff. x-sections.              
+ 304: Separate diff. x-sections.              305: Separate diff. x-sections.              
+ 306: Separate diff. x-sections.              307: Separate diff. x-sections.              
+ 308: Separate diff. x-sections.              309: Separate diff. x-sections.              
+ 
+ Timings:
+  CC integration :   27.386438000000002       secs
+  Matching :   4.1839999999879751E-003  secs
+  Integrated dsigma/dEx=   0.0000000000000000     
+
+  The following files have been created:
+  44: Fragment-target potentials.              45: Phase-shifts.                           
+  46: Eigenphases.                             79: List of full H matrix eigenvalues.      
+ 101: Channel WFs of H eigenvalues.           105: Channel WFs of H eigenvalues.           
+ 137: Scattering amplitudes.                  170: Elastic S-matrix elements.              
+ 300: All diff. x-sections.                   301: Separate diff. x-sections.              
+ 302: Separate diff. x-sections.              303: Separate diff. x-sections.              
+ 304: Separate diff. x-sections.              305: Separate diff. x-sections.              
+ 306: Separate diff. x-sections.              307: Separate diff. x-sections.              
+ 308: Separate diff. x-sections.              309: Separate diff. x-sections.              
+ 
+ Timings:
+  CC integration :   27.408220000000000       secs
+  Matching :   4.1339999999969734E-003  secs
+  Integrated dsigma/dEx=   62.162008600848353     
+
+  The following files have been created:
+  44: Fragment-target potentials.              45: Phase-shifts.                           
+  46: Eigenphases.                             79: List of full H matrix eigenvalues.      
+ 101: Channel WFs of H eigenvalues.           105: Channel WFs of H eigenvalues.           
+ 137: Scattering amplitudes.                  170: Elastic S-matrix elements.              
+ 300: All diff. x-sections.                   301: Separate diff. x-sections.              
+ 302: Separate diff. x-sections.              303: Separate diff. x-sections.              
+ 304: Separate diff. x-sections.              305: Separate diff. x-sections.              
+ 306: Separate diff. x-sections.              307: Separate diff. x-sections.              
+ 308: Separate diff. x-sections.              309: Separate diff. x-sections.              
+ 
+ Timings:
+  CC integration :   27.403542000000002       secs
+  Matching :  0.39333899999993349       secs
+  Integrated dsigma/dEx=   124.74421154608267     
+
+  The following files have been created:
+  44: Fragment-target potentials.              45: Phase-shifts.                           
+  46: Eigenphases.                             79: List of full H matrix eigenvalues.      
+ 101: Channel WFs of H eigenvalues.           105: Channel WFs of H eigenvalues.           
+ 137: Scattering amplitudes.                  170: Elastic S-matrix elements.              
+ 300: All diff. x-sections.                   301: Separate diff. x-sections.              
+ 302: Separate diff. x-sections.              303: Separate diff. x-sections.              
+ 304: Separate diff. x-sections.              305: Separate diff. x-sections.              
+ 306: Separate diff. x-sections.              307: Separate diff. x-sections.              
+ 308: Separate diff. x-sections.              309: Separate diff. x-sections.              
+ 
+ Timings:
+  CC integration :   27.436935999999999       secs
+  Matching :  0.40618100000001434       secs

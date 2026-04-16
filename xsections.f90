@@ -13,12 +13,6 @@ c *** --------------------------------------------------------------
       use nmrv,     only: hort
       use wfs,      only: nr,dr,energ,rvec,wfr
       implicit none
-#ifdef MPI
-      include 'mpif.h'
-      integer mpirank, mpi_ierr
-      call MPI_COMM_RANK(MPI_COMM_WORLD, mpirank, mpi_ierr)
-      if (mpirank.ne.0) return
-#endif
       logical :: doublexs,triplexs,phixs,jsets(maxsets),kinset(maxsets)
       logical :: alphaxs
 c     ---------------------------------------------------------
@@ -64,6 +58,12 @@ c PLM
       integer,allocatable :: interpJ(:)
       real*8 ljmax
 
+#ifdef MPI
+      include 'mpif.h'
+      integer mpirank, mpi_ierr
+      call MPI_COMM_RANK(MPI_COMM_WORLD, mpirank, mpi_ierr)
+      if (mpirank.ne.0) return
+#endif
 
       namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,phixs,jsets,
      &                    ermin,ermax,ner,icore,thcut,
