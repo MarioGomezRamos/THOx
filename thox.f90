@@ -144,6 +144,8 @@ c *** Calculate & store factorials
 
 c *** Read main input
       kin=5
+      kin=10
+      open(10,file="thox.in",status="unknown")
 
 c *** Pre-read input to set arrays dimensions
       call preread(kin)
@@ -173,7 +175,7 @@ c *** Output trace
       cdccwf     =.false.
       froverlaps =0
       
-      read(*,nml=output)
+      read(kin,nml=output)
       do i=1,10
        if (wfout(i)>0) wfprint(wfout(i))=.true.
       enddo

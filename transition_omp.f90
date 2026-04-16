@@ -87,7 +87,7 @@ c      integer, allocatable:: np(:)
       call cpu_time(start)
       debug=.false.
       xi=(0.d0,1.d0)
-      kin=5
+!      kin=5
       kread=84
       kfr=4
       ken=8

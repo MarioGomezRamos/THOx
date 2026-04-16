@@ -71,7 +71,7 @@
          3=Raynal
          4=Modified Numerov used in Fresco
 
-&numerov hcm=0.05 rmaxcc=60  hort=0 method=4 jtmin=20 jtmax=30 skip=f /   
+&numerov hcm=0.05 rmaxcc=60  hort=0 method=4 jtmin=0 jtmax=30 skip=f /   
 
 
 ######################### TRIPLE DIFFERENTIAL CROSS SECTINS ##############################
