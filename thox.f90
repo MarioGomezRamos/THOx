@@ -143,11 +143,9 @@ c *** Calculate & store factorials
       call factorialgen(1000) 
 
 c *** Read main input
-      kin=5
       kin=10
-      open(10,file="thox.in",status="unknown")
-
 c *** Pre-read input to set arrays dimensions
+      open(kin,file="thox.in",status="unknown")
       call preread(kin)
 
 c *** Actual read

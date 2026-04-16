@@ -1,11 +1,11 @@
 # If compiled with gfortran and MPI
-FC=gfortran
+FC=mpifort
 
 # For debugging (-g -founds ..)
 PARALLEL=-fopenmp
 #PARALLEL =
-FFLAGS= -g -O0 -Wall -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL) -fbacktrace -DMPI -I/usr/include/x86_64-linux-gnu/mpich
-FFLAGS1= -g -O0 -Wall -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL) -fbacktrace -DMPI -I/usr/include/x86_64-linux-gnu/mpich
+FFLAGS= -cpp -g -O0 -Wall -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL) -fbacktrace -DMPI
+FFLAGS1= -cpp -g -O0 -Wall -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL) -fbacktrace -DMPI
 
 #FFLAGS= -g -O2 -Wtabs  -ffixed-form -fno-align-commons
 #FFLAGS1= -O2 -Wtabs  -ffixed-form -fno-align-commons

@@ -15,10 +15,13 @@ c *** ---------------------------------------------------
       use memory   , only: tcc
       use trace   , only: cdccwf
       use writecdccwf ! JLei for IAV-CDCC calculations
+      implicit none
+#ifdef MPI
+      include 'mpif.h'
+#endif
 !#ifdef _OPENMP
 !      use omp_lib
 !#endif
-      implicit none
 c     ----------------------------------------------------------------
       logical:: dry,skip
       character*5 jpi 
@@ -40,7 +43,18 @@ c *** Variables for CC (move to a module?)
 c     OPENMP----------------------------------------------------------------
       integer:: num_threads,OMP_GET_NUM_THREADS,omp_get_thread_num
       logical:: omp_in_parallel
-c     ---------------------------------------------------------------
+c     MPI variables --------------------------------------------------------
+#ifdef MPI
+      integer:: mpirank, mpisize, mpi_ierr
+      integer:: mpi_status(MPI_STATUS_SIZE)
+      integer:: icc_start, icc_end, icc_local, icc_collect
+      complex*16, allocatable:: smats_recv(:,:)
+#else
+      integer:: mpirank, mpisize, mpi_ierr
+      integer:: mpi_status(1)
+      integer:: icc_start, icc_end, icc_local, icc_collect
+      complex*16, allocatable:: smats_recv(:,:)
+#endif
 
 c     ---------------------------------------------------------------
       complex*16 smat
@@ -67,10 +81,23 @@ c ... initialize variables --------------------------------------------------
       dry=.true.
       skip=.false.
       jtmin=-1; jtmax=-1
-      jump=0; jbord=0; 
-c ----------------------------------------------------------------------------
-
-      if ((mp+mt).lt.1e-6) return      
+      jump=0; jbord=0;
+c ... Initialize MPI if compiled with MPI support -------------------------
+#ifdef MPI
+      call MPI_INIT(mpi_ierr)
+      call MPI_COMM_RANK(MPI_COMM_WORLD, mpirank, mpi_ierr)
+      call MPI_COMM_SIZE(MPI_COMM_WORLD, mpisize, mpi_ierr)
+#else
+      mpirank = 0
+      mpisize = 1
+#endif
+c ---------------------------------------------------------------------------
+      if ((mp+mt).lt.1e-6) then
+C#ifdef MPI
+C        call MPI_FINALIZE(mpi_ierr)
+C#endif
+        return
+      endif
       ecmi=elab*mt/(mp+mt)
       mupt=mp*mt/(mp+mt)*amu
       kcmi=sqrt(2*mupt*ecmi)/hc
@@ -346,6 +373,15 @@ c ***
       allocate(smats(ncc,nchmax,nchmax)) 
       call cpu_time(start)
       smats=0d0
+c ... MPI load balancing: distribute J/parity sets across processes ---------
+#ifdef MPI
+      ! Simple load balancing: distribute icc sets round-robin across processes
+      icc_start = mpirank + 1
+      icc_end   = ncc
+      if (mpirank.eq.0) write(*,'(5x,"[MPI: ",i3," processes, ",i6,
+     &  " CC sets]")') mpisize, ncc
+#endif
+c ---------------------------------------------------------------------------
 !     do icc=1,ncc
       icc=0
       xsr=0
@@ -356,6 +392,10 @@ c ***
       do partot=1,-1,-2
         jtot=jtmin+dble(ijt-1)
         icc=icc+1    
+#ifdef MPI
+        ! Check if this J/parity set belongs to this process
+        if (mod(icc-1, mpisize).ne.mpirank) cycle
+#endif
         nch=jptset(icc)%nchan   ! number of channels for this J/pi set     
         if (jtot.ne.jptset(icc)%jtot) then
           print*,'internal error: solvecc'
@@ -432,6 +472,16 @@ c ... Solve CC equations for each incoming channel
         enddo  
         if (.not. incch) then
         deallocate(incvec,vcoup)
+#ifdef MPI
+        ! Send empty result for this J/parity set
+        if (mpirank.ne.0) then
+          allocate(smats_recv(nchmax,nchmax))
+          smats_recv = 0.0d0
+          call MPI_SEND(smats_recv, nchmax*nchmax, 
+     &      MPI_COMPLEX16, 0, icc, MPI_COMM_WORLD, mpi_ierr)
+          deallocate(smats_recv)
+        endif
+#endif
         cycle
         endif 
         
@@ -501,6 +551,20 @@ c ... Compute integrated cross sections without target spin
 320    format(5x,"o X-sections: Reac=", 1f8.3,5x,
      &   " Inel+BU=",1f8.3, 5x," Abs=",1f8.3," mb")
 
+#ifdef MPI
+c ... MPI: Send S-matrix results from worker processes to master
+       if (mpirank.ne.0) then
+         if (nch.gt.0) then
+           allocate(smats_recv(nchmax,nchmax))
+           smats_recv = 0.0d0
+           smats_recv(1:nch,1:nch) = smats(icc,1:nch,1:nch)
+           call MPI_SEND(smats_recv, nchmax*nchmax, 
+     &      MPI_COMPLEX16, 0, icc, MPI_COMM_WORLD, mpi_ierr)
+           deallocate(smats_recv)
+         endif
+       endif
+#endif
+
        enddo ! par
 c       write(157,'(1x,1f6.1,a1,2x,3f12.6)') jtot, parity(partot+2),
 c     &    xsrj-xsinelj,xsrj,xsinelj
@@ -511,6 +575,32 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
        call flush(156)
        call flush(6) 
 330    enddo !ijt
+
+#ifdef MPI
+c ... MPI: Master process collects results from all workers
+      if (mpirank.eq.0) then
+        icc_local = 0
+        do icc_collect=1,ncc
+          ! Skip J/parity sets handled by master process
+          if (mod(icc_collect-1, mpisize).eq.0) cycle
+          
+          icc_local = icc_local + 1
+          nch = jptset(icc_collect)%nchan
+          if (nch.eq.0) cycle
+          
+          allocate(smats_recv(nchmax,nchmax))
+          ! Determine which process has this icc
+          call MPI_RECV(smats_recv, nchmax*nchmax, 
+     &      MPI_COMPLEX16, MPI_ANY_SOURCE, icc_collect, 
+     &      MPI_COMM_WORLD, mpi_status, mpi_ierr)
+          
+          ! Store received results
+          smats(icc_collect,1:nch,1:nch) = smats_recv(1:nch,1:nch)
+          deallocate(smats_recv)
+        enddo
+      endif
+      call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierr)
+#endif
       lpmax=0
       jpmax=0.0d0
       istatemax=0
@@ -621,6 +711,10 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
          call flush(6)
        tcc=end-start
 !      call xsecs(kin,ncc,iexgs)
+#ifdef MPI
+      if (allocated(smats_recv)) deallocate(smats_recv)
+      call MPI_FINALIZE(mpi_ierr)
+#endif
       end subroutine
 
 
