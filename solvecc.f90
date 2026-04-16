@@ -84,7 +84,6 @@ c ... initialize variables --------------------------------------------------
       jump=0; jbord=0;
 c ... Initialize MPI if compiled with MPI support -------------------------
 #ifdef MPI
-      call MPI_INIT(mpi_ierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, mpirank, mpi_ierr)
       call MPI_COMM_SIZE(MPI_COMM_WORLD, mpisize, mpi_ierr)
 #else
@@ -714,7 +713,6 @@ c ... MPI: Master process collects results from all workers
 !      call xsecs(kin,ncc,iexgs)
 #ifdef MPI
       if (allocated(smats_recv)) deallocate(smats_recv)
-      call MPI_FINALIZE(mpi_ierr)
 #endif
       end subroutine
 

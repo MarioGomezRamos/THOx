@@ -42,6 +42,10 @@ c v2.6 AMM: calculation of core+valence eigenphases
       use cdccchannels
       use writecdccwf
       implicit none
+#ifdef MPI
+      include 'mpif.h'
+      integer mpi_ierr
+#endif
       logical ehat
       integer :: lmax,i,ncc,bastype,nk
       real*8 eps
@@ -119,6 +123,10 @@ c Input namelists -------------------------
 c     ------------------------------------------------------------
 
       debug=.false.
+
+#ifdef MPI
+      call MPI_INIT(mpi_ierr)
+#endif
 
 c *** Defined global constants
       call initialize()
@@ -325,6 +333,10 @@ c *** Scattering amplitudes and cross sections
       call fkind(written,kout)
 
       call timings()
+
+#ifdef MPI
+      call MPI_FINALIZE(mpi_ierr)
+#endif
 
       end program
 

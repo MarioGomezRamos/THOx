@@ -61,8 +61,6 @@ c PLM
 #ifdef MPI
       include 'mpif.h'
       integer mpirank, mpi_ierr
-      call MPI_COMM_RANK(MPI_COMM_WORLD, mpirank, mpi_ierr)
-      if (mpirank.ne.0) return
 #endif
 
       namelist/xsections/ thmin,thmax,dth,fileamp,doublexs,phixs,jsets,
@@ -71,6 +69,10 @@ c PLM
      &                    triplexs,rel,alphaxs!GR
 
 c initialize -------------------------------------------------
+#ifdef MPI
+      call MPI_COMM_RANK(MPI_COMM_WORLD, mpirank, mpi_ierr)
+      if (mpirank.ne.0) return
+#endif
       written(kamp)=.false.
       written(kxs)=.true.
       written(kfam)=.true.
