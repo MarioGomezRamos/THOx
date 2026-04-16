@@ -5,9 +5,8 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "by-gdb",
             "request": "launch",
-            "name": "Launch(gdb)",
+            "name": "Launch()",
             "program": "${workspaceRoot}/thox",
             "cwd": "${workspaceRoot}"
         }
