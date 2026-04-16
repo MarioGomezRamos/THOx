@@ -47,12 +47,12 @@ c     MPI variables --------------------------------------------------------
 #ifdef MPI
       integer:: mpirank, mpisize, mpi_ierr
       integer:: mpi_status(MPI_STATUS_SIZE)
-      integer:: icc_start, icc_end, icc_local, icc_collect
+      integer:: icc_start, icc_end, icc_local, icc_collect, sender_rank
       complex*16, allocatable:: smats_recv(:,:)
 #else
       integer:: mpirank, mpisize, mpi_ierr
       integer:: mpi_status(1)
-      integer:: icc_start, icc_end, icc_local, icc_collect
+      integer:: icc_start, icc_end, icc_local, icc_collect, sender_rank
       complex*16, allocatable:: smats_recv(:,:)
 #endif
 
@@ -590,8 +590,9 @@ c ... MPI: Master process collects results from all workers
           
           allocate(smats_recv(nchmax,nchmax))
           ! Determine which process has this icc
+          sender_rank = mod(icc_collect-1, mpisize)
           call MPI_RECV(smats_recv, nchmax*nchmax, 
-     &      MPI_COMPLEX16, MPI_ANY_SOURCE, icc_collect, 
+     &      MPI_COMPLEX16, sender_rank, icc_collect, 
      &      MPI_COMM_WORLD, mpi_status, mpi_ierr)
           
           ! Store received results
@@ -604,9 +605,9 @@ c ... MPI: Master process collects results from all workers
       lpmax=0
       jpmax=0.0d0
       istatemax=0
-      write(*,*) 'icc',icc
+      write(*,*) 'ncc',ncc
       
-      do jcc=1,icc
+      do jcc=1,ncc
       nch=jptset(jcc)%nchan
       if (nch.eq.0) cycle
       lpmax=max(lpmax,maxval(jptset(jcc)%l(1:nch)))
@@ -625,7 +626,7 @@ c ... MPI: Master process collects results from all workers
       endif
       
       xs_ch=0.0d0
-      do jcc=1,icc
+      do jcc=1,ncc
          if (jptset(jcc)%nchan.eq.0) cycle
         do ich=1,jptset(jcc)%nchan
           do inc=1,jptset(jcc)%nchan
