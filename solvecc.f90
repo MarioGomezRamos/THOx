@@ -379,6 +379,7 @@ c ... MPI load balancing: distribute J/parity sets across processes ---------
       icc_end   = ncc
       if (mpirank.eq.0) write(*,'(5x,"[MPI: ",i3," processes, ",i6,
      &  " CC sets]")') mpisize, ncc
+      allocate(smats_recv(nchmax,nchmax))
 #endif
 c ---------------------------------------------------------------------------
 !     do icc=1,ncc
@@ -474,11 +475,9 @@ c ... Solve CC equations for each incoming channel
 #ifdef MPI
         ! Send empty result for this J/parity set
         if (mpirank.ne.0) then
-          allocate(smats_recv(nchmax,nchmax))
           smats_recv = 0.0d0
           call MPI_SEND(smats_recv, nchmax*nchmax, 
      &      MPI_COMPLEX16, 0, icc, MPI_COMM_WORLD, mpi_ierr)
-          deallocate(smats_recv)
         endif
 #endif
         cycle
@@ -554,12 +553,10 @@ c ... Compute integrated cross sections without target spin
 c ... MPI: Send S-matrix results from worker processes to master
        if (mpirank.ne.0) then
          if (nch.gt.0) then
-           allocate(smats_recv(nchmax,nchmax))
            smats_recv = 0.0d0
            smats_recv(1:nch,1:nch) = smats(icc,1:nch,1:nch)
            call MPI_SEND(smats_recv, nchmax*nchmax, 
      &      MPI_COMPLEX16, 0, icc, MPI_COMM_WORLD, mpi_ierr)
-           deallocate(smats_recv)
          endif
        endif
 #endif
@@ -587,7 +584,6 @@ c ... MPI: Master process collects results from all workers
           nch = jptset(icc_collect)%nchan
           if (nch.eq.0) cycle
           
-          allocate(smats_recv(nchmax,nchmax))
           ! Determine which process has this icc
           sender_rank = mod(icc_collect-1, mpisize)
           call MPI_RECV(smats_recv, nchmax*nchmax, 
@@ -596,7 +592,6 @@ c ... MPI: Master process collects results from all workers
           
           ! Store received results
           smats(icc_collect,1:nch,1:nch) = smats_recv(1:nch,1:nch)
-          deallocate(smats_recv)
         enddo
       endif
       call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierr)
@@ -620,6 +615,9 @@ c ... MPI: Master process collects results from all workers
 
       call flush(6)
       if (.not. targdef) then
+#ifdef MPI
+      if (mpirank.eq.0) then
+#endif
       if (.not.allocated(xs_ch))then
       allocate(xs_ch(0:lpmax,istatemax,npmax,nincmax))
       endif
@@ -701,6 +699,9 @@ c ... MPI: Master process collects results from all workers
       enddo
 
       close(446)
+#ifdef MPI
+      endif
+#endif
 
       end if ! targdef
 
