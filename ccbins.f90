@@ -117,7 +117,7 @@ c *** We need to allocate this only for the first j/pi set
       binset(iset)%energy=energy
       deladd=0.
 
-      write(0,*)'makebins: energy=',energy, 'de=',de
+!      write(0,*)'makebins: energy=',energy, 'de=',de
 
       do ib=1,nbins
       tfac=1.
@@ -165,7 +165,7 @@ c < phi |H | phi>
       binset(iset)%nk(ib)  =nk
       binset(iset)%wbin(ib)=wbin
 
-      write(0,*)'ib=',ib,'ei-ef=',ei,ef,'ebin=',ebin,' tres=',tres
+!      write(0,*)'ib=',ib,'ei-ef=',ei,ef,'ebin=',ebin,' tres=',tres
          
       if (ei.lt.1e-3) ei=1e-3
       if (allocated(wfcont)) deallocate(wfcont)
