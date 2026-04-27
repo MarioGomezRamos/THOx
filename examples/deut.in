@@ -29,9 +29,9 @@
  &JPSET /
 
 
- &SCATWF ifcont=t  emin=0.01 emax=10.01  nk=50 inc=1 jset=1   /
+ &SCATWF ifcont=f  emin=0.01 emax=10.01  nk=50 inc=1 jset=1   /
 
- &belambda  ifbel=F uwfgsfile="" lambda=1 nk=100 emin=0.1 emax=20 jset=2 /
+ &belambda  ifbel=t uwfgsfile="" lambda=1 nk=100 emin=0.1 emax=20 jset=2 /
 
 
 ############################    REACTION       ####################################

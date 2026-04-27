@@ -6,7 +6,7 @@
  &corestates spin=0.0 parity=+1 ex=0.0 /
  &corestates /
 
- &output wfout(:)=1  verb=4 solapout(:)=0  /
+ &output wfout(:)=1 2 3  verb=2 solapout(:)=0  /
 
  &GRID  ng=0 rmin=0.0 rmax=50.0 dr=0.1 rint=100 rlast=20/
 
@@ -22,7 +22,7 @@
  &pauli n=0 /
 
 #Bound
-  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=20 nsp=0 exmin=-1 exmax=0.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=0 /
+  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=20 nsp=0 exmin=-50 exmax=50.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=0 /
 !  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=20  nsp=0 exmin=-15 exmax=0.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /
 
 #Cont

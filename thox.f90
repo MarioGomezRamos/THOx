@@ -42,7 +42,7 @@
       use cdccchannels
       use writecdccwf
       implicit none
-      logical ehat
+      logical ehat,energy
       integer :: lmax,i,ncc,bastype,nk
       real*8 eps
      
@@ -201,7 +201,7 @@
 !      nset=indjset(iset)
 !      call read_jpiset(iset,bastype,nk,tres,ehat,filename)
       call read_jpiset(nset,bastype,nk,tres,ehat,filename,nodes,        &
-     & changepot)
+     & changepot,energy)
 
       jtot    =jpiset(nset)%jtot
       partot  =jpiset(nset)%partot
@@ -236,7 +236,7 @@
         call solap
 !c *** ------------------------------------------------------------
       case(2,4) ! Bins   
-        call makebins(nset,nk,tres,ehat)
+        call makebins(nset,nk,tres,ehat,energy)
 
 !c *** Vertex functions
       if (froverlaps>0)  call vertex(nset,froverlaps)
@@ -472,7 +472,7 @@
       use wfs, only: energ,wfc,nr
 !      use potentials, only: vl0,vcp0
       implicit none
-      logical :: tres,ehat,merge
+      logical :: tres,ehat,merge,energy
       integer::l,lmin,lmax,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
       real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
@@ -490,7 +490,7 @@
      &                gamma,mlst,                                       &!THO Amos 
      &                nsp,                                              &! sp eigenvalues to keep for full diag
      &                bas2,                                             &
-     &                nk, nbins,inc,tres,ehat,filewf,wcut,merge,        &
+     &                nk, nbins,energy,inc,tres,ehat,filewf,wcut,merge, &
      &                vscale,                                           &
      &                r1,rnmax,nodes,changepot,st,lscoupl ! CG Basis 
 
@@ -515,6 +515,7 @@
       l=-1 ; j=-1; lmin=-1; lmax=-1;
       vscale=1;
       r1=0.0; rnmax=0.0
+      energy=.false.  ! by default, bins are uniform in momentum
       read(kin,nml=jpset) 
       if (bastype.lt.0) goto 350
       if (l.lt.0) l=0;
