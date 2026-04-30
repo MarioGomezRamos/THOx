@@ -107,13 +107,14 @@
 
       real*8 :: al,au,da,dar,alpha,alphad
       integer :: ios
+      real*8 :: ecmax,ecmin,evmax,evmin
 !------------------------------------------------------------------------
 ! ------------------------------------------------------------------------------
       namelist /framework/ sys,idet ! ,atarget not needed
       namelist /gridener/ Enlow,Enup,dEn
-      namelist /gridthetac/ tcl,tcu,dtc !used to cut in thetac
+      namelist /gridthetac/ tcl,tcu,dtc,ecmax,ecmin !used to cut in thetac
       namelist /gridthetaint/ al,au,da
-      namelist /gridthetav/ tvl,tvu,dtv !used to cut in thetav
+      namelist /gridthetav/ tvl,tvu,dtv,evmax,evmin !used to cut in thetav
       namelist /gridphi/ phil,phiu,dphi
       namelist /polarization/ polar
 ! ------------------------------------------------------------------------------
@@ -620,6 +621,10 @@
       tcu=0d0
       tvl=0.d0
       tvu=0.d0
+      ecmax=-1.d0
+      ecmin=-1.d0
+      evmax=-1.d0
+      evmin=-1.d0
       read(kin,nml=gridener)   !For alpha and beta this is the internal energy
       read(kin,nml=gridthetac,iostat=ios) !For alpha and beta this will be used for the cuts
       
@@ -967,15 +972,22 @@
       endif
       endif
 
-!      if (Ec.gt. 20d0 .or. Ec .lt. 10d0) then
-!         tmatsq=0d0
-!         goto 500
-!      endif
-
-!      if (Ev.gt. 18d0 .or. Ev .lt. 8d0) then
-!         tmatsq=0d0
-!         goto 500
-!      endif
+      if (Ec.gt.ecmax.and. ecmax.gt.0d0)then
+         tmatsq=0d0
+         goto 500
+      endif
+      if (Ec.lt.ecmin.and. ecmin.gt.0d0)then
+         tmatsq=0d0
+         goto 500
+      endif
+      if (Ev.gt.evmax.and. evmax.gt.0d0)then
+         tmatsq=0d0
+         goto 500
+      endif
+      if (Ev.lt.evmin.and. evmin.gt.0d0)then
+         tmatsq=0d0
+         goto 500
+      endif
 
 !      eKb=kcmi**2/(2.d0*mupt)*hc**2+ebind-excore-En
 !      eks=En
