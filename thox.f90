@@ -90,19 +90,9 @@
       end interface
 
       interface 
-        subroutine cfival(lrf,lfv,gaux,nlf,alpha)
-        real*8 lrf,lfv(:),alpha
-        complex*16:: gaux(:)
-        integer nlf
-        end subroutine
       end interface
 
       interface 
-        subroutine test_cont(nset,nchan,inc,ecm,wf)
-        integer   :: nset,nchan,inc
-        real*8    :: ecm
-        complex*16:: wf(:,:)
-        end subroutine
       end interface 
       
 

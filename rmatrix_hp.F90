@@ -630,63 +630,6 @@ end subroutine cminv_nsym_hp
 !------------------------------------------------------------------------------
 ! wf_print: Print wave function on uniform mesh
 !------------------------------------------------------------------------------
-subroutine wf_print(nch, lval, qk, eta, rmax, nr, ns, cu, &
-                    ndim, nopen, cf, nwf1, nwf2, zrma, iv, nom, npoin, h, cwftab)
-  implicit none
-  integer, intent(in) :: nch, nr, ns, ndim, nopen, nwf1, nwf2, nom, iv, npoin
-  integer, intent(in) :: lval(nch)
-  real*8, intent(in) :: qk(nch), eta(nch), rmax, zrma(ns*nr), h
-  complex*16, intent(in) :: cu(ndim, ndim), cf(nwf1, nwf2, nom)
-  complex*16, intent(out) :: cwftab(npoin)
-
-  integer :: nsr, nop, nclo, iw, i, ll, ifail, jw
-  real*8 :: r, wfr, wfi, xl, yp1, yp2
-  real*8 :: xfr(ns*nr), xfi(ns*nr), y2r(ns*nr), y2i(ns*nr)
-  real*8 :: fc(500), dfc(500), gc(500), dgc(500)
-  complex*16 :: co, cfx
-
-  yp1 = 1.0d30
-  yp2 = 1.0d30
-
-  nsr = ns * nr
-  nop = 0
-  nclo = nopen
-
-  do iw = 1, iv
-    if (qk(iw) > 0) nop = nop + 1
-    if (qk(iw) < 0) nclo = nclo + 1
-  end do
-
-  xfr(1:nsr) = real(cf(1:nsr, iv, nom))
-  xfi(1:nsr) = aimag(cf(1:nsr, iv, nom))
-
-  call spline(zrma, xfr, nsr, yp1, yp2, y2r)
-  call spline(zrma, xfi, nsr, yp1, yp2, y2i)
-
-  do i = 1, npoin
-    r = i * h
-    if (r <= rmax) then
-      call splint(zrma, xfr, y2r, nsr, r, wfr)
-      call splint(zrma, xfi, y2i, nsr, r, wfi)
-      cwftab(i) = dcmplx(wfr, wfi)
-    else
-      ll = lval(iv)
-      if (qk(iv) > 0) then
-        xl = lval(iv)
-        call coulfg(qk(iv)*r, eta(iv), xl, xl, fc, gc, dfc, dgc, 1, 0, ifail)
-        co = dcmplx(gc(ll+1), fc(ll+1)) * sqrt(qk(nom)/qk(iv))
-        cfx = -cu(nop, nom) * co
-        if (iv == nom) cfx = cfx + conjg(co)
-      else
-        jw = 0
-        call whit(eta(iv), r, -qk(iv), -qk(iv)**2, ll, fc, dfc, jw)
-        cfx = cu(nclo, nom) * fc(ll+1)
-      end if
-      cwftab(i) = cfx
-    end if
-  end do
-
-end subroutine wf_print
 
 !------------------------------------------------------------------------------
 ! Auxiliary routines (from Pierre's original code)

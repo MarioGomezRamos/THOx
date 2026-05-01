@@ -2237,59 +2237,6 @@
 
 
 !c *** Calculates approximate energy distribution from PS's
-      subroutine budist(enex,nset,sigset)
-      implicit real*8(a-h,o-z)
-      parameter (nmax=500)
-      integer nb
-      real*8  enex(1:nset),sigset(1:nset)
-      real*8 d1,di,dnex,be
-      be=0.0
-!c     -----------------------------------------------
-      nb=0
-      do ia=1,nset
-!      write(*,*)'ia=',ia
-      if(enex(ia).lt.0) nb=nb+1 ! bound states
-      enddo
-
-!      print*,'budist: nb=',nb
-
-      if (nset-nb.lt.3) return
-      open(15,file='dsde_ps.xs') 
-!      d1=2.d0*ENEX(2) - 1.5d0*ENEX(1) - 0.5d0*ENEX(3)
-      d1=enex(nb+1)
-!      print*,'d1=',d1
-      write(15,50) ENEX(nb+1)-be,sigset(nb+1)/d1,enex(1)+d1/2.d0 
-      write(18,50) ENEX(nb+1)-be,sigset(nb+1),                          &
-     &     enex(nb+1)+d1/2.d0 
-
-!c     Interpolation for 1<=IA<NEX-1
-      do IA=nb+2,nset-1
-         if (enex(ia).lt.enex(ia-1)) write(15,*)'&'
-         di=(ENEX(IA+1)-ENEX(IA-1))/2.d0
-         write(15,50) ENEX(IA)-be,sigset(IA)/di,                        &
-     &           enex(ia)+di/2.d0,di
-         write(18,50) ENEX(IA)-be,sigset(IA),                           &
-     &           enex(ia)+di/2.d0
-      enddo
-!c     Interpolation for IA=NSET
-      dnex=-2.d0*ENEX(NSET-1)+1.5d0*ENEX(NSET)+0.5d0*ENEX(NSET-2)
-      write(15,50) ENEX(NSET)-be,sigset(NSET)/dnex,                     &
-     &        enex(nset)+dnex/2.d0,dnex
-      write(18,50) ENEX(NSET)-be,sigset(NSET),                          &
-     &        enex(nset)+dnex/2.d0
-
- 50   format(6f12.4)
-      sig=0
-      do i=1,nset
-         sig=sig+sigset(i)
-      enddo
-      write(*,*) ' => Total inel+bu x-section=',sig
-      write(*,*)  '------------------------------------'
-      write(15,*) '&'
-      write(18,*) '&'
-      close(15)
-      return
-      end
 
 
 !MGR amplitudes with target excitation or spin of target

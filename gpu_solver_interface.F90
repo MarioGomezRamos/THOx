@@ -19,16 +19,9 @@ module gpu_solver_interface
 
   ! Public interface
   public :: gpu_solver_init
-  public :: gpu_solver_finalize
-  public :: gpu_solve_mixed
-  public :: gpu_solve_double
   public :: gpu_solve_tf32
   public :: gpu_is_available
-  public :: gpu_get_info
   public :: gpu_get_device_count
-  public :: gpu_multi_init
-  public :: gpu_multi_finalize
-  public :: gpu_solve_multi
   public :: gpu_solve_auto
 
   ! Module state
@@ -163,92 +156,15 @@ contains
   !---------------------------------------------------------
   ! Finalize GPU solver
   !---------------------------------------------------------
-  subroutine gpu_solver_finalize(ierr)
-    implicit none
-    integer, intent(out) :: ierr
-
-    integer(c_int) :: c_ierr
-
-    if (.not. gpu_initialized) then
-       ierr = 0
-       return
-    end if
-
-    c_ierr = gpu_solver_finalize_c()
-    ierr = c_ierr
-    gpu_initialized = .false.
-  end subroutine gpu_solver_finalize
 
   !---------------------------------------------------------
   ! Solve using mixed precision (FP32 LU + refinement)
   ! This is the recommended solver for consumer GPUs
   !---------------------------------------------------------
-  subroutine gpu_solve_mixed(A, B, n, nrhs, max_refine, tol, ierr)
-    implicit none
-    complex(dp), intent(in) :: A(n, n)
-    complex(dp), intent(inout) :: B(n, nrhs)
-    integer, intent(in) :: n, nrhs, max_refine
-    real(dp), intent(in) :: tol
-    integer, intent(out) :: ierr
-
-    integer(c_int) :: c_n, c_nrhs, c_max_refine, c_info, c_ret
-    real(c_double) :: c_tol
-    integer :: init_err
-
-    ! Auto-initialize GPU on first call
-    if (.not. gpu_initialized) then
-       call gpu_solver_init(0, init_err)
-    end if
-
-    ! If GPU not available, fall back to CPU
-    if (.not. gpu_available) then
-       call cpu_fallback_solve(A, B, n, nrhs, ierr)
-       return
-    end if
-
-    c_n = n
-    c_nrhs = nrhs
-    c_max_refine = max_refine
-    c_tol = tol
-
-    c_ret = gpu_solve_mixed_c(A, B, c_n, c_nrhs, c_max_refine, c_tol, c_info)
-    ierr = c_info
-
-    if (c_ret /= 0) then
-       write(*,*) "GPU solve failed, falling back to CPU"
-       call cpu_fallback_solve(A, B, n, nrhs, ierr)
-    end if
-  end subroutine gpu_solve_mixed
 
   !---------------------------------------------------------
   ! Solve using double precision
   !---------------------------------------------------------
-  subroutine gpu_solve_double(A, B, n, nrhs, ierr)
-    implicit none
-    complex(dp), intent(in) :: A(n, n)
-    complex(dp), intent(inout) :: B(n, nrhs)
-    integer, intent(in) :: n, nrhs
-    integer, intent(out) :: ierr
-
-    integer(c_int) :: c_n, c_nrhs, c_info, c_ret
-
-    ! If GPU not available, fall back to CPU
-    if (.not. gpu_available) then
-       call cpu_fallback_solve(A, B, n, nrhs, ierr)
-       return
-    end if
-
-    c_n = n
-    c_nrhs = nrhs
-
-    c_ret = gpu_solve_double_c(A, B, c_n, c_nrhs, c_info)
-    ierr = c_info
-
-    if (c_ret /= 0) then
-       write(*,*) "GPU solve failed, falling back to CPU"
-       call cpu_fallback_solve(A, B, n, nrhs, ierr)
-    end if
-  end subroutine gpu_solve_double
 
   !---------------------------------------------------------
   ! Solve using TF32 (TensorFloat-32) precision
@@ -305,24 +221,6 @@ contains
   !---------------------------------------------------------
   ! Get GPU info string
   !---------------------------------------------------------
-  subroutine gpu_get_info(info_str)
-    implicit none
-    character(len=*), intent(out) :: info_str
-
-    character(kind=c_char) :: c_str(256)
-    integer(c_int) :: c_len
-    integer :: i
-
-    c_len = 256
-    call gpu_get_info_c(c_str, c_len)
-
-    ! Convert C string to Fortran
-    info_str = ''
-    do i = 1, 255
-       if (c_str(i) == c_null_char) exit
-       info_str(i:i) = c_str(i)
-    end do
-  end subroutine gpu_get_info
 
   !---------------------------------------------------------
   ! Get number of available GPUs
@@ -337,55 +235,14 @@ contains
   !---------------------------------------------------------
   ! Initialize multi-GPU solver
   !---------------------------------------------------------
-  subroutine gpu_multi_init(ngpu, ierr)
-    implicit none
-    integer, intent(inout) :: ngpu
-    integer, intent(out) :: ierr
-
-    integer(c_int) :: c_ngpu, c_ret
-
-    c_ngpu = ngpu
-    c_ret = gpu_multi_init_c(c_ngpu)
-    ngpu = c_ngpu
-    ierr = c_ret
-  end subroutine gpu_multi_init
 
   !---------------------------------------------------------
   ! Finalize multi-GPU solver
   !---------------------------------------------------------
-  subroutine gpu_multi_finalize(ierr)
-    implicit none
-    integer, intent(out) :: ierr
-
-    integer(c_int) :: c_ret
-
-    c_ret = gpu_multi_finalize_c()
-    ierr = c_ret
-  end subroutine gpu_multi_finalize
 
   !---------------------------------------------------------
   ! Multi-GPU solver
   !---------------------------------------------------------
-  subroutine gpu_solve_multi(A, B, n, nrhs, ierr)
-    implicit none
-    complex(dp), intent(in) :: A(n, n)
-    complex(dp), intent(inout) :: B(n, nrhs)
-    integer, intent(in) :: n, nrhs
-    integer, intent(out) :: ierr
-
-    integer(c_int) :: c_n, c_nrhs, c_info, c_ret
-
-    c_n = n
-    c_nrhs = nrhs
-
-    c_ret = gpu_solve_multi_c(A, B, c_n, c_nrhs, c_info)
-    ierr = c_info
-
-    if (c_ret /= 0) then
-       write(*,*) "Multi-GPU solve failed, falling back to CPU"
-       call cpu_fallback_solve(A, B, n, nrhs, ierr)
-    end if
-  end subroutine gpu_solve_multi
 
   !---------------------------------------------------------
   ! Auto solver (automatically chooses single/multi GPU)

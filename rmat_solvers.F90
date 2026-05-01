@@ -31,53 +31,16 @@ module rmat_solvers
   public :: solve_rmatrix_woodbury   ! solver_type=3
   public :: solve_rmatrix_gpu        ! solver_type=4
   public :: solve_rmatrix_tf32       ! solver_type=5
-  public :: solve_rmatrix            ! Unified interface with solver selection
 
   ! Public propagation routine
-  public :: rmatrix_propagation
 
   ! Public utility
-  public :: compute_smatrix
 
 contains
 
 !------------------------------------------------------------------------------
 ! Unified solver interface with solver type selection
 !------------------------------------------------------------------------------
-subroutine solve_rmatrix(cmat, B_vector, nch, nlag, normfac, Rmat, solver_type, K_pure)
-  implicit none
-  integer, intent(in) :: nch, nlag
-  real(dp), intent(in) :: normfac
-  complex(dp), intent(in) :: cmat(nch*nlag, nch*nlag), B_vector(nlag)
-  complex(dp), intent(out) :: Rmat(nch, nch)
-  integer, intent(in), optional :: solver_type
-  real(dp), intent(in), optional :: K_pure(nlag, nlag)
-
-  integer :: stype
-
-  stype = 1  ! Default to dense LAPACK
-  if (present(solver_type)) stype = solver_type
-
-  select case (stype)
-  case (1)
-    call solve_rmatrix_dense(cmat, B_vector, nch, nlag, normfac, Rmat)
-  case (2)
-    call solve_rmatrix_mixed(cmat, B_vector, nch, nlag, normfac, Rmat)
-  case (3)
-    if (present(K_pure)) then
-      call solve_rmatrix_woodbury(cmat, B_vector, nch, nlag, normfac, Rmat, K_pure)
-    else
-      call solve_rmatrix_woodbury(cmat, B_vector, nch, nlag, normfac, Rmat)
-    end if
-  case (4)
-    call solve_rmatrix_gpu(cmat, B_vector, nch, nlag, normfac, Rmat)
-  case (5)
-    call solve_rmatrix_tf32(cmat, B_vector, nch, nlag, normfac, Rmat)
-  case default
-    call solve_rmatrix_dense(cmat, B_vector, nch, nlag, normfac, Rmat)
-  end select
-
-end subroutine solve_rmatrix
 
 !------------------------------------------------------------------------------
 ! Dense LAPACK ZGESV Solver (solver_type=1) - Reference Implementation
@@ -633,104 +596,11 @@ end subroutine solve_rmatrix_tf32
 ! For ns > 1 (multiple intervals), the R-matrix needs to be propagated
 ! from the inner region to the outer boundary.
 !------------------------------------------------------------------------------
-subroutine rmatrix_propagation(cmat, B0, B1, nch, nlag, normfac, ins, rmax, Rmat0, Rmat)
-  implicit none
-  integer, intent(in) :: nch, nlag, ins
-  real(dp), intent(in) :: normfac, rmax
-  complex(dp), intent(in) :: cmat(nch*nlag, nch*nlag), B0(nlag), B1(nlag)
-  complex(dp), intent(in) :: Rmat0(nch, nch)
-  complex(dp), intent(out) :: Rmat(nch, nch)
-
-  complex(dp) :: R00(nch, nch), R01(nch, nch), R10(nch, nch), R11(nch, nch)
-  complex(dp) :: inv_matrix(nch, nch)
-  complex(dp), allocatable :: A_work(:,:), X_vector(:,:)
-  integer, allocatable :: IPIV(:)
-  integer :: ich, ichp, ir, ntotal, INFO
-
-  ntotal = nch * nlag
-
-  allocate(A_work(ntotal, ntotal))
-  allocate(X_vector(ntotal, 2*nch))
-  allocate(IPIV(ntotal))
-
-  A_work = cmat
-
-  ! Setup RHS for both B0 and B1
-  X_vector = (0.0_dp, 0.0_dp)
-  do ich = 1, nch
-    do ir = 1, nlag
-      X_vector((ich-1)*nlag + ir, ich) = B0(ir)
-      X_vector((ich-1)*nlag + ir, ich + nch) = B1(ir)
-    end do
-  end do
-
-  call ZGESV(ntotal, 2*nch, A_work, ntotal, IPIV, X_vector, ntotal, INFO)
-  if (INFO /= 0) then
-    write(*,*) 'ERROR in propagation ZGESV, INFO =', INFO
-    Rmat = (0.0_dp, 0.0_dp)
-    deallocate(A_work, X_vector, IPIV)
-    return
-  end if
-
-  ! Compute the four R-matrices
-  R00 = (0.0_dp, 0.0_dp)
-  R01 = (0.0_dp, 0.0_dp)
-  R10 = (0.0_dp, 0.0_dp)
-  R11 = (0.0_dp, 0.0_dp)
-
-  do ichp = 1, nch
-    do ich = 1, nch
-      do ir = 1, nlag
-        R00(ich, ichp) = R00(ich, ichp) + B0(ir) * X_vector(ir + (ich-1)*nlag, ichp) * normfac
-        R01(ich, ichp) = R01(ich, ichp) + B0(ir) * X_vector(ir + (ich-1)*nlag, ichp + nch) * normfac
-        R10(ich, ichp) = R10(ich, ichp) + B1(ir) * X_vector(ir + (ich-1)*nlag, ichp) * normfac
-        R11(ich, ichp) = R11(ich, ichp) + B1(ir) * X_vector(ir + (ich-1)*nlag, ichp + nch) * normfac
-      end do
-    end do
-  end do
-
-  ! Propagate: Rmat = (R11 - R10 * inv(R00 + (ins-1)*rmax*Rmat0) * R01) / (ins*rmax)
-  inv_matrix = R00 + (ins - 1.0_dp) * rmax * Rmat0
-
-  deallocate(IPIV)
-  allocate(IPIV(nch))
-  call ZGESV(nch, nch, inv_matrix, nch, IPIV, R01, nch, INFO)
-  if (INFO /= 0) then
-    write(*,*) 'ERROR in propagation inversion, INFO =', INFO
-    Rmat = (0.0_dp, 0.0_dp)
-    deallocate(A_work, X_vector, IPIV)
-    return
-  end if
-
-  Rmat = (R11 - matmul(R10, R01)) / (ins * rmax)
-
-  deallocate(A_work, X_vector, IPIV)
-
-end subroutine rmatrix_propagation
 
 !------------------------------------------------------------------------------
 ! Compute S-matrix from Z-matrices
 !
 ! Using Eq.(16) of Pierre's paper: Z_O * S = Z_I
 !------------------------------------------------------------------------------
-subroutine compute_smatrix(nch, Zmat_I, Zmat_O, Smat)
-  implicit none
-  integer, intent(in) :: nch
-  complex(dp), intent(in) :: Zmat_I(nch, nch), Zmat_O(nch, nch)
-  complex(dp), intent(out) :: Smat(nch, nch)
-
-  complex(dp) :: Z_work(nch, nch)
-  integer :: IPIV(nch), INFO
-
-  Z_work = Zmat_O
-  Smat = Zmat_I
-
-  call ZGESV(nch, nch, Z_work, nch, IPIV, Smat, nch, INFO)
-  if (INFO /= 0) then
-    write(*,*) 'ERROR in S-matrix computation, INFO =', INFO
-    Smat = (0.0_dp, 0.0_dp)
-  end if
-
-end subroutine compute_smatrix
 
 end module rmat_solvers
