@@ -1,3 +1,7 @@
+      module telp_mod
+      logical :: iftelp_val = .false.
+      integer :: rank_telp = 0
+      end module
       module nmrv
       logical:: debug    ! if true,print debug information
       integer:: verb     ! determines the amount of trace output
@@ -4919,7 +4923,10 @@ c ------------------------------------------------------
       use factorials
       use constants , only: e2
       use memory
+      use telp_mod, only: iftelp_val, rank_telp
       implicit none
+      complex*16 :: vtelp
+      character(len=30) :: telpfile
       logical:: copen(nch),orto,info
       integer:: nch,klog,npt,ql(nch)
       integer:: ir,irmin,is,isp,ich,inc,l,lmax
@@ -5322,6 +5329,30 @@ c Using two adjacent points
       call matching3(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,info) ! gauss5
       endif
       smats(icc,inc,1:nch)=smat(1:nch) 
+c Calculate TELP if requested
+      if (iftelp_val) then
+        print*, "DEBUG: Rank", rank_telp, " set", icc, " chan", ich
+        write(telpfile, '("telp_rank", i3.3, ".out")') rank_telp
+        open(unit=448, file=telpfile, status='unknown', 
+     &   position='append')
+        write(448,'("# CC set:", i6, " Inc. chan:", i3)') icc, ich
+        write(448,'("# R (fm)  Re(Vtelp) (MeV)  Im(Vtelp) (MeV)")')
+        do ir=1,nr
+          vtelp = (0d0, 0d0)
+          do is=1,nch
+            if (is .ne. ich) vtelp=vtelp + vcoup(ich, is, ir)*wf(is, ir)
+          enddo
+          if (abs(wf(ich, ir)) .gt. 1e-15) then
+            vtelp = vtelp / wf(ich, ir)
+            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), dble(vtelp), 
+     &       dimag(vtelp)
+          else
+            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), 0.0d0, 0.0d0
+          endif
+        enddo
+        write(448,*) '&'
+        close(448)
+      endif
       enddo
 
       call cpu_time(finish)
@@ -5346,7 +5377,10 @@ c ...
       use constants , only: e2
       use memory
       use trace , only: cdccwf
+      use telp_mod, only: iftelp_val, rank_telp
       implicit none
+      complex*16 :: vtelp
+      character(len=30) :: telpfile
       integer:: method
       logical:: copen(nch),orto,raynal,info
       integer:: nch,klog,npt,ql(nch)
@@ -5682,6 +5716,30 @@ c
      &  ') |S|=',abs(smat(1))
       endif
             smats(icc,inc,1:nch)=smat(1:nch)
+c Calculate TELP if requested
+      if (iftelp_val) then
+        print*, "DEBUG: Rank", rank_telp, " set", icc, " chan", ich
+        write(telpfile, '("telp_rank", i3.3, ".out")') rank_telp
+        open(unit=448, file=telpfile, status='unknown', 
+     &   position='append')
+        write(448,'("# CC set:", i6, " Inc. chan:", i3)') icc, ich
+        write(448,'("# R (fm)  Re(Vtelp) (MeV)  Im(Vtelp) (MeV)")')
+        do ir=1,nr
+          vtelp = (0d0, 0d0)
+          do is=1,nch
+            if (is .ne. ich) vtelp=vtelp + vcoup(ich, is, ir)*wf(is, ir)
+          enddo
+          if (abs(wf(ich, ir)) .gt. 1e-15) then
+            vtelp = vtelp / wf(ich, ir)
+            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), dble(vtelp), 
+     &       dimag(vtelp)
+          else
+            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), 0.0d0, 0.0d0
+          endif
+        enddo
+        write(448,*) '&'
+        close(448)
+      endif
       enddo
        call cpu_time(finish)
        tmatch=tmatch+finish-start
@@ -5727,7 +5785,10 @@ c ------------------------------------------------------
       use factorials
       use constants , only: e2
       use memory
+      use telp_mod, only: iftelp_val, rank_telp
       implicit none
+      complex*16 :: vtelp
+      character(len=30) :: telpfile
       integer:: method
       logical:: copen(nch),orto,raynal,info
       integer:: nch,klog,npt,ql(nch)
@@ -6062,6 +6123,30 @@ c
       inc=ich
       call matching3(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,info) ! gauss5 + 2 points
             smats(icc,inc,1:nch)=smat(1:nch) 
+c Calculate TELP if requested
+      if (iftelp_val) then
+        print*, "DEBUG: Rank", rank_telp, " set", icc, " chan", ich
+        write(telpfile, '("telp_rank", i3.3, ".out")') rank_telp
+        open(unit=448, file=telpfile, status='unknown', 
+     &   position='append')
+        write(448,'("# CC set:", i6, " Inc. chan:", i3)') icc, ich
+        write(448,'("# R (fm)  Re(Vtelp) (MeV)  Im(Vtelp) (MeV)")')
+        do ir=1,nr
+          vtelp = (0d0, 0d0)
+          do is=1,nch
+            if (is .ne. ich) vtelp=vtelp + vcoup(ich, is, ir)*wf(is, ir)
+          enddo
+          if (abs(wf(ich, ir)) .gt. 1e-15) then
+            vtelp = vtelp / wf(ich, ir)
+            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), dble(vtelp), 
+     &       dimag(vtelp)
+          else
+            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), 0.0d0, 0.0d0
+          endif
+        enddo
+        write(448,*) '&'
+        close(448)
+      endif
       endif
       enddo
        call cpu_time(finish)

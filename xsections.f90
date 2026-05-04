@@ -13,6 +13,10 @@ c *** --------------------------------------------------------------
       use nmrv,     only: hort
       use wfs,      only: nr,dr,energ,rvec,wfr
       implicit none
+#ifdef MPI
+      include 'mpif.h'
+      integer mpirank, mpi_ierr
+#endif
       logical :: doublexs,triplexs,phixs,jsets(maxsets),kinset(maxsets)
       logical :: alphaxs
 c     ---------------------------------------------------------
@@ -77,6 +81,11 @@ c initialize -------------------------------------------------
       written(kxs)=.true.
       written(kfam)=.true.
       
+#ifdef MPI
+      call MPI_COMM_RANK(MPI_COMM_WORLD, mpirank, mpi_ierr)
+      if (mpirank.ne.0) return
+#endif
+
 !      written(ksj)=.false.
       written(kxs+1:kxs+min(nex,9))=.true.
       pi=acos(-1d0)

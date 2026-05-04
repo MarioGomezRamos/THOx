@@ -1,25 +1,13 @@
 # If compiled with gfortran and MPI
 FC=mpifort
 
-# For debugging (-g -founds ..)
+# For OpenMP support (used in other parts of the code)
 PARALLEL=-fopenmp
-#PARALLEL =
-FFLAGS= -cpp -g -O0 -Wall -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL) -fbacktrace -DMPI
-FFLAGS1= -cpp -g -O0 -Wall -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL) -fbacktrace -DMPI
+#PARALLEL = 
 
-#FFLAGS= -g -O2 -Wtabs  -ffixed-form -fno-align-commons
-#FFLAGS1= -O2 -Wtabs  -ffixed-form -fno-align-commons
+# Optimized compilation flags with MPI preprocessor macro
+FFLAGS= -cpp -O3 -march=native -ffixed-form -fno-align-commons $(PARALLEL) -DMPI
+FFLAGS1= -cpp -O3 -march=native -ffixed-form -fno-align-commons $(PARALLEL) -DMPI
 
-#FFLAGS=  -O3  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL)
-#FFLAGS1=  -O3  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL)
-
-
-#FFLAGS= -g -O0 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) -pg
-#FFLAGS1= -g -O0 -Wtabs -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) -pg
-
-
-#FFLAGS= -g -O0 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero,overflow,underflow,invalid $(PARALLEL)
-#FFLAGS1= -g -O0 -Wtabs -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero,overflow,underflow,invalid $(PARALLEL)
-
-# LAPACK/BLAS from OpenBLAS (with OpenMP support)
-LFLAGS = -lopenblas -fopenmp -L/usr/lib/x86_64-linux-gnu/mpich/lib -lmpich -lmpl -lopa -lpthread
+# LAPACK/BLAS from OpenBLAS (mpifort wrapper handles the MPI linking)
+LFLAGS = -lopenblas -fopenmp

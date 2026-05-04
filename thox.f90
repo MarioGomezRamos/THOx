@@ -1,30 +1,30 @@
-c THOx: A CDCC code with core and target excitations 
-c
-c by A.M. Moro, J.A. Lay, M.Gomez-Ramos, R. de Diego (2011-2016)
-c
+!c THOx: A CDCC code with core and target excitations 
+!c
+!c by A.M. Moro, J.A. Lay, M.Gomez-Ramos, R. de Diego (2011-2016)
+!c
 
-c v1.1 adding B(Elambda) 8/7/11
-c v1.2 B(El) sum rule, named changed to thox on 15/6/2011 (original name:tho2frx)
-c v1.4 September 2011. Added calculation of scattering states (bincc)   ! last stable version
-c v1.5 B(El) for continuum states, B(El) folded added on 26/9/2011
-c v1.5 Also core E2 contribution to B(El) and general makeup
-c v1.6 Print PS wfs for XCDCC                                           ! minor mistakes but good for non multiple 0+'s
-c v1.7 phaseshifts & widths 26/11/2011 (Not implemented yet)            ! totally crashed...
-c v1.8 Pauli hindrance + Correction in B(El) for multiple 0+ cores 31/01/12
+!c v1.1 adding B(Elambda) 8/7/11
+!c v1.2 B(El) sum rule, named changed to thox on 15/6/2011 (original name:tho2frx)
+!c v1.4 September 2011. Added calculation of scattering states (bincc)   ! last stable version
+!c v1.5 B(El) for continuum states, B(El) folded added on 26/9/2011
+!c v1.5 Also core E2 contribution to B(El) and general makeup
+!c v1.6 Print PS wfs for XCDCC                                           ! minor mistakes but good for non multiple 0+'s
+!c v1.7 phaseshifts & widths 26/11/2011 (Not implemented yet)            ! totally crashed...
+!c v1.8 Pauli hindrance + Correction in B(El) for multiple 0+ cores 31/01/12
 
-c v2.0 Stable, B(El), Solap and writting fort.79 errors corrected + Change in core index 3/02/12
-c v2.0.3 core spin orbit (l.jc) implemented + read potentials from transition densities (fort.30)
-c v2.0.5c change bincc by scatcc for scattering states calculation + Corrections in belambda
-c         we get back to core index definitions previous to v2.0
-c v2.1 general makeup 9/4/2013 !stable
-c v2.1c Includes spin.spin central potential (PS and continuum wfs)
-c v2.2 April 2014: allow for several j/pi sets on same input and calculates coupling potentials
-c                  for (X)CDCC calculations, using DCE subroutine
-c v2.2e Problems with reading fort.30 potentials solved, continue to read core+target potentials
-c v2.3 AMM: CC bins included for the first time!
-c           Change input ordering 
-c v2.4 AMM: 3-body observables with CC bins implemented
-c v2.6 AMM: calculation of core+valence eigenphases
+!c v2.0 Stable, B(El), Solap and writting fort.79 errors corrected + Change in core index 3/02/12
+!c v2.0.3 core spin orbit (l.jc) implemented + read potentials from transition densities (fort.30)
+!c v2.0.5c change bincc by scatcc for scattering states calculation + Corrections in belambda
+!c         we get back to core index definitions previous to v2.0
+!c v2.1 general makeup 9/4/2013 !stable
+!c v2.1c Includes spin.spin central potential (PS and continuum wfs)
+!c v2.2 April 2014: allow for several j/pi sets on same input and calculates coupling potentials
+!c                  for (X)CDCC calculations, using DCE subroutine
+!c v2.2e Problems with reading fort.30 potentials solved, continue to read core+target potentials
+!c v2.3 AMM: CC bins included for the first time!
+!c           Change input ordering 
+!c v2.4 AMM: 3-body observables with CC bins implemented
+!c v2.6 AMM: calculation of core+valence eigenphases
       program thox
       use globals
       use sistema
@@ -46,7 +46,7 @@ c v2.6 AMM: calculation of core+valence eigenphases
       include 'mpif.h'
       integer mpi_ierr
 #endif
-      logical ehat
+      logical ehat,energy
       integer :: lmax,i,ncc,bastype,nk
       real*8 eps
      
@@ -64,10 +64,10 @@ c v2.6 AMM: calculation of core+valence eigenphases
 !      real*8 ecm
 
 
-c Input namelists -------------------------
+!c Input namelists -------------------------
       namelist/system/ Zc,Ac,Zv,Av,egs,sn
-      namelist/output/ wfout,checkort,verb,ifphase,solapout,
-     &                 cdccwf,froverlaps,
+      namelist/output/ wfout,checkort,verb,ifphase,solapout,            &
+     &                 cdccwf,froverlaps,                               &
      &                 xcdcc
 
       DATA PSIGN / '-','?','+' /, BLANK / ' ' /
@@ -94,25 +94,15 @@ c Input namelists -------------------------
       end interface
 
       interface 
-        subroutine cfival(lrf,lfv,gaux,nlf,alpha)
-        real*8 lrf,lfv(:),alpha
-        complex*16:: gaux(:)
-        integer nlf
-        end subroutine
       end interface
 
       interface 
-        subroutine test_cont(nset,nchan,inc,ecm,wf)
-        integer   :: nset,nchan,inc
-        real*8    :: ecm
-        complex*16:: wf(:,:)
-        end subroutine
       end interface 
       
 
 
       interface
-        subroutine wfrange(iset,nchan,inc,emin,emax,
+        subroutine wfrange(iset,nchan,inc,emin,emax,                    &
      &             ncont,energy,wfcont,smate,psh)
         integer :: iset,nchan,inc,ncont
         logical :: energy
@@ -120,7 +110,7 @@ c Input namelists -------------------------
         real*8 emin,emax,psh(:)
         end subroutine
       end interface
-c     ------------------------------------------------------------
+!c     ------------------------------------------------------------
 
       debug=.false.
 
@@ -128,50 +118,55 @@ c     ------------------------------------------------------------
       call MPI_INIT(mpi_ierr)
 #endif
 
-c *** Defined global constants
+!c *** Defined global constants
       call initialize()
 !      if (cdccwf) call alpha_cdcc_in()
       write(*,'(50("*"))')
       write(*,'(" ***",8x,"THOx+DCE+CC code: version 2.6",8x, "***")')
       write(*,'(50("*"),/)')
 
-c *** Print physical constants
+!c *** Print physical constants
       write(*,*)'***************** CONSTANTS **********************'
-      write(*,'(" * hbarc=",1f9.5," MeV.fm",5x,
+      write(*,'(" * hbarc=",1f9.5," MeV.fm",5x,                         &
      & "e^2=",1f8.5," MeV.fm *")') hc,e2
       write(*,'(" * so, alpha= 1/",1f9.5,$)')hc/e2
       write(*,'(7x,"amu=",1f8.4, " MeV  *")') amu
       write(*,*)'**************************************************'
 
 
-c *** Calculate memory sizes for memory allocation
+!c *** Calculate memory sizes for memory allocation
       call memory_sizes()
 
-c *** Calculate & store factorials
+!c *** Calculate & store factorials
       call factorialgen(1000) 
 
-c *** Read main input
-      kin=10
-c *** Pre-read input to set arrays dimensions
-      open(kin,file="thox.in",status="unknown")
+!c *** Read main input
+#ifdef MPI
+       kin=10
+       open(kin,file="thox.in",status="unknown")
+#else
+       kin=5
+#endif
+
+!c *** Pre-read input to set arrays dimensions
       call preread(kin)
 
-c *** Actual read
+!c *** Actual read
       read(kin,nml=system)
       mu12=amu*ac*av/(ac+av)
       kgs=sqrt(2d0*mu12*abs(egs))/hc
 
       write(*,200)Ac,Zc,Av,Zv 
       write(*,'(/,1x,"- Reduced mass:",1f9.3," MeV/c2")') mu12
-200   format(' - COMPOSITE:',/,5x, 'Core:    Ac=',1f8.4,2x,'Zc=',1f6.2,
+200   format(' - COMPOSITE:',/,5x, 'Core:    Ac=',1f8.4,2x,'Zc=',1f6.2, &
      &      /,5x,'Valence: Av=',1f8.4,2x,'Zv=',f6.2)
 
        
-c *** Read core states (last state followed an empty namelist)
+!c *** Read core states (last state followed an empty namelist)
       call readcorex(kin)
  
  
-c *** Output trace
+!c *** Output trace
       wfprint(:) =.false.
       ifbel      =.false.
       checkort   =.false.
@@ -192,13 +187,13 @@ c *** Output trace
       if (cdccwf) call abar_cdcc()
 
 
-c *** Radial grid (quadratures?)
+!c *** Radial grid (quadratures?)
       call readgrid(kin)
 
-c *** Read potential parameters
+!c *** Read potential parameters
       call readpot(kin)
 
-c Pauli-forbidden states to be removed
+!c Pauli-forbidden states to be removed
       call pauli_forbidden(kin)
 
       nst=0 ! total number of selected eigenvalues
@@ -208,8 +203,8 @@ c Pauli-forbidden states to be removed
       nset=iset
 !      nset=indjset(iset)
 !      call read_jpiset(iset,bastype,nk,tres,ehat,filename)
-      call read_jpiset(nset,bastype,nk,tres,ehat,filename,nodes,
-     & changepot)
+      call read_jpiset(nset,bastype,nk,tres,ehat,filename,nodes,        &
+     & changepot,energy)
 
       jtot    =jpiset(nset)%jtot
       partot  =jpiset(nset)%partot
@@ -218,7 +213,7 @@ c Pauli-forbidden states to be removed
       nchsp   =jpiset(nset)%nchsp
       cindex(1:nchan)=jpiset(nset)%cindex(1:nchan)  !Lay: trying to recover fort.30
 
-c these variables could be used to replace qspl, qspj, qjc(nsp)
+!c these variables could be used to replace qspl, qspj, qjc(nsp)
 !      qspl(:) =jpiset(nset)%lsp(:)  
 !      qspj(:) =jpiset(nset)%jsp(:)
 !      qjc (:) =jpiset(nset)%jc(:)
@@ -228,29 +223,29 @@ c these variables could be used to replace qspl, qspj, qjc(nsp)
 
       select case(bastype)
       case(0,1,3,7) ! HO, THO cTHO -----------------------------------------
-c *** Build and diagonalize s.p. Hamiltonian for each j/pi set
+!c *** Build and diagonalize s.p. Hamiltonian for each j/pi set
         if (bas2.eq.0) call hsp(nset,nchsp,nho)
 
-c *** Build and diagonalize FULL VALENCE+CORE Hamiltonian 
+!c *** Build and diagonalize FULL VALENCE+CORE Hamiltonian 
         call fullham(nset,nho)
         
-c *** Vertex functions
+!c *** Vertex functions
       if (froverlaps>0)  call vertex(nset,froverlaps)        
 
-c *** Check orthonormality
+!c *** Check orthonormality
         if (checkort) call orthonorm ! ham.f90
 
-c *** Overlap between THO and scattering wfs
+!c *** Overlap between THO and scattering wfs
         call solap
-c *** ------------------------------------------------------------
+!c *** ------------------------------------------------------------
       case(2,4) ! Bins   
-        call makebins(nset,nk,tres,ehat)
+        call makebins(nset,nk,tres,ehat,energy)
 
-c *** Vertex functions
+!c *** Vertex functions
       if (froverlaps>0)  call vertex(nset,froverlaps)
 	  
 
-c *** ------------------------------------------------------------
+!c *** ------------------------------------------------------------
       case(5) ! External   
        call readwfs(filename,nset,nchan)
 
@@ -263,18 +258,18 @@ c *** ------------------------------------------------------------
       
       call write_states()
 
-c *** Continuum WFS (scatwf namelist)
+!c *** Continuum WFS (scatwf namelist)
 !      call continuum!(nchan)
       call continuum_range
 
 
-c *** B(E;lambda)      
+!c *** B(E;lambda)      
       call belam ! (kin,jtot,partot)
       
-c *** B(M;lambda)      
+!c *** B(M;lambda)      
       call bmlam ! (kin,jtot,partot)      
 
-c *** Phase-shifts
+!c *** Phase-shifts
 !      if (ifphase) call phase
 
 
@@ -286,30 +281,30 @@ c *** Phase-shifts
 !      call test_cont(iset,jpiset(iset)%nchan,inc,ecm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-C *** Capture x-sections and S-factors (unfinished)
+!C *** Capture x-sections and S-factors (unfinished)
 !!!      if (ifbel) call capture(jtot,partot)
 
 
 !Make sure Reid93 potential is not used for target potentials
       
 
-c *** Define reaction (projectile, target, energy)
+!c *** Define reaction (projectile, target, energy)
       call partition()
 
-c *** Coupling potentials (includes DCE routines)
+!c *** Coupling potentials (includes DCE routines)
       reid93=.false.
       if (.not. targdef) then
-      write(*,'(5x,a)') 
+      write(*,'(5x,a)')                                                 &
      & '[using transition subroutine for spin-zero target]'
       call transition_omp
 !       call transition  
       else
-      write(*,'(5x,a)') '[using transition_targdef subroutine 
+      write(*,'(5x,a)') '[using transition_targdef subroutine           &
      & with target excitation]'
       call transition_targdef
       endif
 
-c *** Build & solve CDCC equations
+!c *** Build & solve CDCC equations
       iexgs=1 !assume that the incident channel is the first state!!!!
       ncc  =0
       call recoupling()
@@ -319,7 +314,7 @@ c *** Build & solve CDCC equations
       if(cdccwf) call cdcc_wf_smoothie_out()
 
 
-c *** Scattering amplitudes and cross sections
+!c *** Scattering amplitudes and cross sections
       if (.not. targdef) then
       call xsecs(kin,ncc,iexgs)
       else
@@ -341,9 +336,9 @@ c *** Scattering amplitudes and cross sections
       end program
 
 
-c *** ---------------------------------------
-c *** Define PROJECTILE and TARGET properties 
-c *** ----------------------------------------
+!c *** ---------------------------------------
+!c *** Define PROJECTILE and TARGET properties 
+!c *** ----------------------------------------
       subroutine partition()
       use xcdcc
       use sistema
@@ -355,10 +350,10 @@ c *** ----------------------------------------
       real*8 :: ecmi,mupt,conv,etai,kcmi,It,et,jt,K !MGR
       character*1::pchar !MGR
       character*5:: jpi
-      namelist /reaction/ elab,namep,namet,mp,mt,zt,jt,par,ntex,nphon,
+      namelist /reaction/ elab,namep,namet,mp,mt,zt,jt,par,ntex,nphon,  &
      & K,notgdef !MGR
       namelist /targstates/ et,It,part,nphon,K,inc !MGR
-c           
+!c           
       write(*,'(//,5x,"******  REACTION CALCULATION ******")')
       jt=0.0; zt=0.0; mt=0.0 
       ntex=0; nphon=0; K=0; inc=0;par=1 !MGR
@@ -424,7 +419,7 @@ c
       endif
 
       write(*,340) mp,zp,mt,zt !,mupt/amu
-340   format(/,5x,"Projectile: Mass=",1f8.3," amu   Z=",1f6.1,3x,
+340   format(/,5x,"Projectile: Mass=",1f8.3," amu   Z=",1f6.1,3x,       &
      & /      ,5x,"Target:     Mass=",1f8.3," amu   Z=",1f6.1,/)
 !     & /,"Reduced mass"," mu=",f8.3, ")
 
@@ -432,8 +427,8 @@ c
       do itex=1,ntex+1
       if (tset(itex)%partarg.eq.1) pchar='+'
       if (tset(itex)%partarg.eq.-1) pchar='-'
-      write(*,'(5x,"o state #",i3,3x, "J/pi=",a5,3x, "Ex=",1f6.3)')
-     &  itex, 
+      write(*,'(5x,"o state #",i3,3x, "J/pi=",a5,3x, "Ex=",1f6.3)')     &
+     &  itex,                                                           &
      & jpi(tset(itex)%jtarg,tset(itex)%partarg),tset(itex)%extarg
 !      write(*,*) 'State #',itex,': J/pi',tset(itex)%jtarg,pchar,
 !     & ' E:',tset(itex)%extarg
@@ -456,7 +451,7 @@ c
       end subroutine
 
 
-c *** Check memory required by real*8 and complex*16
+!c *** Check memory required by real*8 and complex*16
       subroutine memory_sizes()
       use memory
       implicit none
@@ -474,9 +469,9 @@ c *** Check memory required by real*8 and complex*16
 
 
 
-c
-c Pre-read input to set dimensions
-c
+!c
+!c Pre-read input to set dimensions
+!c
       subroutine preread(kin)
       use channels 
       use parameters, only: maxl,maxeset,maxchan
@@ -484,7 +479,7 @@ c
       use wfs, only: energ,wfc,nr
 !      use potentials, only: vl0,vcp0
       implicit none
-      logical :: tres,ehat,merge
+      logical :: tres,ehat,merge,energy
       integer::l,lmin,lmax,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
       real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
@@ -493,18 +488,19 @@ c
       integer:: nk,nbins,inc,nodes
       logical changepot,lscoupl
       character*40 filewf
+      integer :: max_actual_eset
 
       namelist /grid/ ng, rmin,rmax,dr,rlast,rint
             
-      namelist/jpset/ jtot,parity,l,j,lmin,lmax,
-     &                bastype,nfmax,exmin,exmax,
-     &                nho,bosc,     ! HO
-     &                gamma,mlst,   !THO Amos 
-     &                nsp,  ! sp eigenvalues to keep for full diag
-     &                bas2,
-     &                nk, nbins,inc,tres,ehat,filewf,wcut,merge,
-     &                vscale,
-     &                r1,rnmax,nodes,changepot,st,lscoupl ! CG Basis
+      namelist/jpset/ jtot,parity,l,j,lmin,lmax,                        &
+     &                bastype,nfmax,exmin,exmax,                        &
+     &                nho,bosc,                                         &! HO
+     &                gamma,mlst,                                       &!THO Amos 
+     &                nsp,                                              &! sp eigenvalues to keep for full diag
+     &                bas2,                                             &
+     &                nk, nbins,energy,inc,tres,ehat,filewf,wcut,merge, &
+     &                vscale,                                           &
+     &                r1,rnmax,nodes,changepot,st,lscoupl ! CG Basis 
 
       
       jpsets=0; inpsets=0
@@ -513,6 +509,7 @@ c
       merge=.false.
       r1=0.0
       rnmax=0.0
+      max_actual_eset=0
 
       write(*,*)'Pre-reading input to set dimensions'
 
@@ -527,11 +524,14 @@ c
       l=-1 ; j=-1; lmin=-1; lmax=-1;
       vscale=1;
       r1=0.0; rnmax=0.0
+      energy=.false.  ! by default, bins are uniform in momentum
+      nho=0; nbins=0
       read(kin,nml=jpset) 
       if (bastype.lt.0) goto 350
       if (l.lt.0) l=0;
       lmin=l;
       if (lmax.lt.lmin) lmax=lmin
+      max_actual_eset = max(max_actual_eset, max(nsp, nho+1), nbins)
 !      if (bastype.eq.2) realwf=.false. ! complex bins
       inpsets=inpsets+1
       if (inpsets.eq.1) then
@@ -542,8 +542,8 @@ c
          indjset(inpsets)=1
          jpsets=1
       else
-         if ((jtold.eq.jtot).and.(parity.eq.parold).and.
-     x     (bastype.eq.basold).and.(inc.eq.incold)) then
+         if ((jtold.eq.jtot).and.(parity.eq.parold).and.                &
+     &     (bastype.eq.basold).and.(inc.eq.incold)) then
             write(0,*)'Set',jpsets,' could be merged with previous one!'
             jpsets=jpsets+1 ! temporary
          else
@@ -579,8 +579,11 @@ c
 
       if (.not.allocated(wfc)) then
         nchmax=0
-        allocate(wfc(jpsets,maxeset,maxchan,nr))
-        allocate(energ(jpsets,maxeset))
+        if (max_actual_eset == 0) max_actual_eset = 1
+        if (max_actual_eset > maxeset) max_actual_eset = maxeset
+
+        allocate(wfc(jpsets,max_actual_eset,maxchan,nr))
+        allocate(energ(jpsets,max_actual_eset))
       endif
 
       write(*,*)' Pre-read finished'
@@ -594,9 +597,9 @@ c
       end subroutine
 
 
-c ***
-c *** Read core states
-c ***
+!c ***
+!c *** Read core states
+!c ***
       subroutine readcorex(kin)
        use channels
        implicit none
@@ -623,12 +626,12 @@ c ***
        write(*,*) 'Changing kband=0 to kband=0.5'
        kband=0.5d0
        endif
-c backward compatibility (deprecated)
+!c backward compatibility (deprecated)
        jc(nce)=spin
        parc(nce)=parity
        exc1(nce)=ex
        nphon(nce)=nph
-c new derived variable
+!c new derived variable
        qnc(nce)%jc   = spin
        qnc(nce)%parc = parity
        qnc(nce)%exc  = ex
@@ -645,7 +648,7 @@ c new derived variable
        end subroutine
 
 
-c *** Read radial grid, nb of quadrature points,etc
+!c *** Read radial grid, nb of quadrature points,etc
        subroutine readgrid(kin)
        use globals, only:kgs
        use wfs,only:rvec,rmin,rmax,dr,rlast,rweight,ng,nr,rint
@@ -681,12 +684,12 @@ c *** Read radial grid, nb of quadrature points,etc
 	   allocate(rweight(nr))
 	   rvec(:)=0d0
 	   rweight(:)=0d0
-c	   write(*,*)rmin,rmax,nr
+!c	   write(*,*)rmin,rmax,nr
 	   call factorialgen(1000)
 	   al=0
 	   call qualag(rvec,rweight,nr,al)
-c	   lambda=1
-c	   lambda=rvec(nr)/rmax
+!c	   lambda=1
+!c	   lambda=rvec(nr)/rmax
 	   lambda=0.6/kgs
 	   do ir=1,nr
 	      r=rvec(ir)
@@ -694,18 +697,18 @@ c	   lambda=rvec(nr)/rmax
 	      rvec(ir)=rvec(ir)/lambda
 	      write(20,*)rvec(ir),rweight(ir)
 	   enddo
-c	   dr=(rmax-rmin)/(nr-1)               !provisional
-c	   do ir=1,nr
-c              rvec(ir)=rmin+(ir-1)*dr          !provisional
-c           enddo
+!c	   dr=(rmax-rmin)/(nr-1)               !provisional
+!c	   do ir=1,nr
+!c              rvec(ir)=rmin+(ir-1)*dr          !provisional
+!c           enddo
         else
              write(*,170) nr, rmin,rmax,dr
-170     format(1x,"- Using uniform grid with ",i4, ' points:',
-     &           2x,"[ Rmin=",1f6.3,2x," Rmax=",
+170     format(1x,"- Using uniform grid with ",i4, ' points:',          &
+     &           2x,"[ Rmin=",1f6.3,2x," Rmax=",                        &
      &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
          if ((rint>0).and.(rint.gt.rmax)) then
           write(*,172)rint, rmax
-172       format(1x,"[ WFS calculated up to",1f6.1,
+172       format(1x,"[ WFS calculated up to",1f6.1,                     &
      & " fm and extrapolated up to ", 1f6.1," fm ]",//)
          endif
 	endif
@@ -716,9 +719,9 @@ c           enddo
 
 
 
-c *** ------------------------------------------------------
-c *** Set value of global constants
-c *** ------------------------------------------------------
+!c *** ------------------------------------------------------
+!c *** Set value of global constants
+!c *** ------------------------------------------------------
         subroutine initialize()
           use globals
           use constants
@@ -749,7 +752,7 @@ c *** ------------------------------------------------------
 
 
 
-c Write output files units and names
+!c Write output files units and names
        subroutine fkind(written,KO)
        character*40 flkind(600)
        integer writf(399),nwrit
@@ -806,17 +809,17 @@ c Write output files units and names
 	 endif
 	enddo
 	write(*,990) (writf(i),flkind(writf(i)),i=1,nwrit)
-990	format(/'  The following files have been created:',
-     X	/(1x,2(i3,':',1x,a40)))
+990	format(/'  The following files have been created:',               &
+     &	/(1x,2(i3,':',1x,a40)))
 	return
 	end
 
 
 
 
-c ---------------------------------------------------------------
-c Calculates overlap between scattering states and PS eigenstates
-c ----------------------------------------------------------------
+!c ---------------------------------------------------------------
+!c Calculates overlap between scattering states and PS eigenstates
+!c ----------------------------------------------------------------
       subroutine solap
       use globals, only: written,verb,mu12
       use wfs
@@ -970,9 +973,9 @@ c ----------------------------------------------------------------
 
 
 
-c     -----------------------------------------------------------
-c     Write states & energies in Fresco format
-c     ----------------------------------------------------------- 
+!c     -----------------------------------------------------------
+!c     Write states & energies in Fresco format
+!c     ----------------------------------------------------------- 
        subroutine write_states()
        use wfs, only: energ,nst
        use channels, only: jpsets,jpiset
@@ -1010,7 +1013,7 @@ c     -----------------------------------------------------------
  1153 format('         jt=',f4.1,' ptyt=',i2,' et=',f8.4,' /')
  1154 format('         copyt=',i2,' /')
  1155 format(' Skipping state #',i3,' J/pi',f4.1,i2,' and Ex=',f8.4)
-c     ----------------------------------------------------------------
+!c     ----------------------------------------------------------------
  
        close(kst)
        end subroutine 

@@ -227,7 +227,7 @@ c       for all j/pi sets
       end module wfs
 
       module xcdcc
-      logical iftrans,realwf,rel
+      logical iftrans,realwf,rel,iftelp
       integer nrad1,nquad,nex,numfilmax,nrad2,nrad3
       real*8 rin,dr, hin, rstep
       real*8, allocatable:: rvin(:),rvcc(:)

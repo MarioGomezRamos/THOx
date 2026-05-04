@@ -792,7 +792,7 @@ c *** ---------------------------------------------------------
       use wfs, only: wfr,wfc,energ,idx
       use xcdcc,only:nquad,rquad,frad,exch,parch,jpch,nex,elab
       use wfs, only:  wfeig,ebin,nr,rvec,dr,rmin
-      use parameters, only: maxeset
+      use parameters, only: maxchan
       use trace, only: cdccwf
       implicit none
       integer:: jset,j,nchan,ne,nst,iq,ie,ich,iparity
@@ -807,7 +807,7 @@ c changed in v2.3
 
 !      write(*,*)'jpsets=',jpsets,' nquad=',nquad,' nchmax=',nchmax
 !      allocate(frad(jpsets,nener,nquad,nchmax),chann(nchmax,4,jpsets))
-      allocate(frad(jpsets,maxeset,nquad,nchmax))
+      allocate(frad(jpsets,max(1,maxval(jpiset(:)%nex)),nquad,nchmax))
       write(*,'(//,2x,"***  PROJECTILE WAVEFUNCTIONS *** ")')
       
       nst=0

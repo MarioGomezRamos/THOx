@@ -4,8 +4,8 @@ FC=gfortran
 # For debugging (-g -founds ..)
 PARALLEL=-fopenmp
 #PARALLEL = 
-FFLAGS= -g -O0 -Wall -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL) -fbacktrace
-FFLAGS1= -g -O0 -Wall -Wtabs  -ffixed-form -fno-align-commons -fbounds-check $(PARALLEL) -fbacktrace
+FFLAGS= -cpp -O3 -march=native -ffixed-form -fno-align-commons $(PARALLEL)
+FFLAGS1= -cpp -O3 -march=native -ffixed-form -fno-align-commons $(PARALLEL)
 
 #FFLAGS= -g -O2 -Wtabs  -ffixed-form -fno-align-commons 
 #FFLAGS1= -O2 -Wtabs  -ffixed-form -fno-align-commons 
