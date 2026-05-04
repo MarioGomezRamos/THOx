@@ -581,18 +581,6 @@ c ... write channels quantum numbers in CDCC file
 	endif 
 	
        call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)    
-       
-      !write S matrices to fort.67
-      if (partot.eq. 1) par_read="+"
-      if (partot.eq. -1) par_read="-"
-      do inc=1,nch
-         do ich=1,nch
-            if (abs(smats(icc,inc,ich)).gt.1e-15) then
-            write(67,*) jtot,par_read,inc,ich,                          &
-     &         real(smats(icc,inc,ich)),imag(smats(icc,inc,ich))
-            endif
-         enddo
-      enddo 
 
        endif ! skip calculation if S-matrix read from file
           
@@ -686,6 +674,28 @@ c ... MPI: Master process collects results from all workers
         enddo
       endif
       call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierr)
+      if (mpirank.eq.0) then
+#endif
+c ... Write all S-matrices to fort.67 in sequential J order
+      do jcc=1,icc
+        nch=jptset(jcc)%nchan
+        if (nch.eq.0) cycle
+        if (jptset(jcc)%interp) cycle
+        jtot=jptset(jcc)%jtot
+        partot=jptset(jcc)%partot
+        if (partot.eq. 1) par_read="+"
+        if (partot.eq. -1) par_read="-"
+        do inc=1,nch
+          do ich=1,nch
+            if (abs(smats(jcc,inc,ich)).gt.1e-15) then
+              write(67,*) jtot,par_read,inc,ich,                        &
+     &          real(smats(jcc,inc,ich)),imag(smats(jcc,inc,ich))
+            endif
+          enddo
+        enddo
+      enddo
+#ifdef MPI
+      endif ! mpirank.eq.0
 #endif
       lpmax=0
       jpmax=0.0d0
