@@ -638,7 +638,7 @@ c ----------------------------------------------------------------
       use sistema
       use constants
       use parameters, only:  maxchan,maxsets,maxeset
-      use globals,  only: debug,written,verb,kin
+      use globals,  only: debug,written,verb,kin,mpirank_g
       use wfs,      only: nr,dr,energ,rvec,wfc !,wbin
       use memory,   only: t3d,lr8
       use scattering, only: method,nbas,ns
@@ -856,7 +856,11 @@ c *** Sum discrete breakup angular distributions
          dsdew_b(:,:,:)=0
       endif
       
-      open(90,file='dsdw_bu.xs',status='unknown')
+      if (mpirank_g == 0) then
+        open(90,file='dsdw_bu.xs',status='unknown')
+      else
+        open(90,file='/dev/null',status='unknown')
+      endif
       do ith=1,nth
       xstot=0     
       do iset=1,jpsets
@@ -1139,9 +1143,15 @@ c v26 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 c Integrate in ENERGY, to get dsigma/dOmega for core state ICORE
-      open(90,file='dsdw_conv.xs',status='unknown')
-      open(91,file='dsdwe_conv.xs',status='unknown')
-      open(92,file='dsdwe_conv.gnu',status='unknown')
+      if (mpirank_g == 0) then
+        open(90,file='dsdw_conv.xs',status='unknown')
+        open(91,file='dsdwe_conv.xs',status='unknown')
+        open(92,file='dsdwe_conv.gnu',status='unknown')
+      else
+        open(90,file='/dev/null',status='unknown')
+        open(91,file='/dev/null',status='unknown')
+        open(92,file='/dev/null',status='unknown')
+      endif
       write(91,'("nel ", i5,2x, "ang ", i5)') ncont,nth 
       do ith=1,nth
       raux=0.
@@ -1163,7 +1173,11 @@ c Integrate in ENERGY, to get dsigma/dOmega for core state ICORE
 
 
 c Integrate in ANGLE, to get dsigma/dE  for core state ICORE
-      open(93,file='dsde_conv.xs',status='unknown')
+      if (mpirank_g == 0) then
+        open(93,file='dsde_conv.xs',status='unknown')
+      else
+        open(93,file='/dev/null',status='unknown')
+      endif
       xstot=0
       do iecv=1,ncont
       ecv=emin+(iecv-1)*dec

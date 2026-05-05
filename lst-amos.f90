@@ -16,7 +16,11 @@ c *** -----------------------------------------------
 	kbout=10
 
 
+!      if (mpirank_g == 0) then
 !        open(50,file='lst.out',status='unknown')                !uncoment to check local scale transformation
+!      else
+!        open(50,file='/dev/null',status='unknown')
+!      endif
 
 !        write(*,*)'Building THO wfs and writing in fort.10'
 !        write(*,*)'m=',m
@@ -108,6 +112,7 @@ c *** -----------------------------------------------
 
        subroutine cthobasis(l,m,bosc,gam,eta,nho)
         use wfs, only: wftho,rmin,rmax,dr,rvec,nr,rweight
+        use globals, only: mpirank_g
        implicit none
        integer:: l,nho,n,ir,m,kbout,ibas,nmin
        real*8:: r,wf,wfho,nu,bosc,gam,eps,eta
@@ -117,8 +122,13 @@ c *** -----------------------------------------------
        nu=1d0/bosc**2d0
        kbout=10
        rstart=rmin
-       open(50,file='clst.out',status='unknown')
-       open(51,file='dclst.out',status='unknown')
+       if (mpirank_g == 0) then
+         open(50,file='clst.out',status='unknown')
+         open(51,file='dclst.out',status='unknown')
+       else
+         open(50,file='/dev/null',status='unknown')
+         open(51,file='/dev/null',status='unknown')
+       endif
        !        write(*,*)'Building THO wfs and writing in fort.10'
        !        write(*,*)'m=',m
        if (dr>eps) then

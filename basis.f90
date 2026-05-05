@@ -372,7 +372,11 @@ c      ----------------------------------------------------
 251       format(" - HO basis with b=",1f5.2,2x,
      &           "and N=",i3," states")		
 	 
-		 open(unit_out, file='FuncionesBaseHO.dat', status='replace') !!!Añadido 15/05/24
+		 if (mpirank_g == 0) then
+		   open(unit_out, file='FuncionesBaseHO.dat', status='replace') !!!Añadido 15/05/24
+		 else
+		   open(unit_out, file='/dev/null', status='replace')
+		 endif
 		 
 
 c        if (dr>eps) then
@@ -408,7 +412,11 @@ c -------------------------------------------------------------
 252     format(" - CG basis with r1,rmax=",
      & 2f8.3,2x,"and N=",i3," states")
 
-	open(unit_out, file='FuncionesBaseCG.dat', status='replace') !!!Añadido 15/05/24
+	if (mpirank_g == 0) then
+	  open(unit_out, file='FuncionesBaseCG.dat', status='replace') !!!Añadido 15/05/24
+	else
+	  open(unit_out, file='/dev/null', status='replace')
+	endif
 		 
        allocate(wftho(nho,0:lmax,nr))
        do l=0,lmax

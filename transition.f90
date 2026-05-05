@@ -554,7 +554,13 @@ c subtract projectile-target monopole Coulomb
 c    -----------------------------------------------------------
 c    Write formfactors
 c    ----------------------------------------------------------- 
-      if (writeff) open(kfr,file="ff.fr",status='unknown')
+      if (writeff) then
+        if (mpirank_g == 0) then
+          open(kfr,file="ff.fr",status='unknown')
+        else
+          open(kfr,file="/dev/null",status='unknown')
+        endif
+      endif
       ttr=0.d0
       fscale=1.d0
       npa1=0
@@ -744,7 +750,11 @@ c ---------- nuclear + coulomb
 c     -----------------------------------------------------------
 c     Write states & energies in Fresco format
 c     ----------------------------------------------------------- 
-      open(ken,file="states.fr",status='unknown')     
+      if (mpirank_g == 0) then
+        open(ken,file="states.fr",status='unknown')     
+      else
+        open(ken,file="/dev/null",status='unknown')     
+      endif
       i=0
       icopyt=0
       icpot=1

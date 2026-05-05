@@ -123,6 +123,12 @@
       mpisize_g = 1
 #endif
 
+!c *** Silence output for worker nodes
+      if (mpirank_g .gt. 0) then
+        open(unit=6, file='/dev/null', status='unknown')
+        open(unit=0, file='/dev/null', status='unknown')
+      endif
+
 !c *** Defined global constants
       call initialize()
 !      if (cdccwf) call alpha_cdcc_in()
@@ -1015,7 +1021,11 @@
       integer, parameter:: kst=25
       integer i,ie,icopyt,ibandp,ibandt,icpot,n
       real*8:: et, jt,rjp,ep       
-      open(kst,file="states2.fr",status='unknown')     
+      if (mpirank_g == 0) then
+        open(kst,file="states2.fr",status='unknown')     
+      else
+        open(kst,file="/dev/null",status='unknown')     
+      endif
       i=0
       icopyt=0
       icpot=1

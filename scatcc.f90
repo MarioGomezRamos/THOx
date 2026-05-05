@@ -4531,10 +4531,7 @@ c ------------------------------------------------------
       use factorials
       use constants , only: e2
       use memory
-      use telp_mod, only: iftelp_val, rank_telp
       implicit none
-      complex*16 :: vtelp
-      character(len=30) :: telpfile
       logical:: copen(nch),orto,info
       integer:: nch,klog,npt,ql(nch)
       integer:: ir,irmin,is,isp,ich,inc,l,lmax
@@ -4938,29 +4935,7 @@ c Using two adjacent points
       endif
       smats(icc,inc,1:nch)=smat(1:nch) 
 c Calculate TELP if requested
-      if (iftelp_val) then
-        print*, "DEBUG: Rank", rank_telp, " set", icc, " chan", ich
-        write(telpfile, '("telp_rank", i3.3, ".out")') rank_telp
-        open(unit=448, file=telpfile, status='unknown', 
-     &   position='append')
-        write(448,'("# CC set:", i6, " Inc. chan:", i3)') icc, ich
-        write(448,'("# R (fm)  Re(Vtelp) (MeV)  Im(Vtelp) (MeV)")')
-        do ir=1,nr
-          vtelp = (0d0, 0d0)
-          do is=1,nch
-            if (is .ne. ich) vtelp=vtelp + vcoup(ich, is, ir)*wf(is, ir)
-          enddo
-          if (abs(wf(ich, ir)) .gt. 1e-15) then
-            vtelp = vtelp / wf(ich, ir)
-            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), dble(vtelp), 
-     &       dimag(vtelp)
-          else
-            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), 0.0d0, 0.0d0
-          endif
-        enddo
-        write(448,*) '&'
-        close(448)
-      endif
+      call calculate_telp(icc, ich, nch, nr, wf)
       enddo
 
       call cpu_time(finish)
@@ -4985,10 +4960,7 @@ c ...
       use constants , only: e2
       use memory
       use trace , only: cdccwf
-      use telp_mod, only: iftelp_val, rank_telp
       implicit none
-      complex*16 :: vtelp
-      character(len=30) :: telpfile
       integer:: method
       logical:: copen(nch),orto,raynal,info
       integer:: nch,klog,npt,ql(nch)
@@ -5325,29 +5297,7 @@ c
       endif
             smats(icc,inc,1:nch)=smat(1:nch)
 c Calculate TELP if requested
-      if (iftelp_val) then
-        print*, "DEBUG: Rank", rank_telp, " set", icc, " chan", ich
-        write(telpfile, '("telp_rank", i3.3, ".out")') rank_telp
-        open(unit=448, file=telpfile, status='unknown', 
-     &   position='append')
-        write(448,'("# CC set:", i6, " Inc. chan:", i3)') icc, ich
-        write(448,'("# R (fm)  Re(Vtelp) (MeV)  Im(Vtelp) (MeV)")')
-        do ir=1,nr
-          vtelp = (0d0, 0d0)
-          do is=1,nch
-            if (is .ne. ich) vtelp=vtelp + vcoup(ich, is, ir)*wf(is, ir)
-          enddo
-          if (abs(wf(ich, ir)) .gt. 1e-15) then
-            vtelp = vtelp / wf(ich, ir)
-            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), dble(vtelp), 
-     &       dimag(vtelp)
-          else
-            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), 0.0d0, 0.0d0
-          endif
-        enddo
-        write(448,*) '&'
-        close(448)
-      endif
+      call calculate_telp(icc, ich, nch, nr, wf)
       enddo
        call cpu_time(finish)
        tmatch=tmatch+finish-start
@@ -5393,10 +5343,7 @@ c ------------------------------------------------------
       use factorials
       use constants , only: e2
       use memory
-      use telp_mod, only: iftelp_val, rank_telp
       implicit none
-      complex*16 :: vtelp
-      character(len=30) :: telpfile
       integer:: method
       logical:: copen(nch),orto,raynal,info
       integer:: nch,klog,npt,ql(nch)
@@ -5732,29 +5679,7 @@ c
       call matching3(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,info) ! gauss5 + 2 points
             smats(icc,inc,1:nch)=smat(1:nch) 
 c Calculate TELP if requested
-      if (iftelp_val) then
-        print*, "DEBUG: Rank", rank_telp, " set", icc, " chan", ich
-        write(telpfile, '("telp_rank", i3.3, ".out")') rank_telp
-        open(unit=448, file=telpfile, status='unknown', 
-     &   position='append')
-        write(448,'("# CC set:", i6, " Inc. chan:", i3)') icc, ich
-        write(448,'("# R (fm)  Re(Vtelp) (MeV)  Im(Vtelp) (MeV)")')
-        do ir=1,nr
-          vtelp = (0d0, 0d0)
-          do is=1,nch
-            if (is .ne. ich) vtelp=vtelp + vcoup(ich, is, ir)*wf(is, ir)
-          enddo
-          if (abs(wf(ich, ir)) .gt. 1e-15) then
-            vtelp = vtelp / wf(ich, ir)
-            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), dble(vtelp), 
-     &       dimag(vtelp)
-          else
-            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), 0.0d0, 0.0d0
-          endif
-        enddo
-        write(448,*) '&'
-        close(448)
-      endif
+      call calculate_telp(icc, ich, nch, nr, wf)
       endif
       enddo
        call cpu_time(finish)
@@ -12213,4 +12138,45 @@ c
 
       call flush(6)
       end subroutine schcc_ena_tolsma
+
+c ------------------------------------------------------------------
+c   Subroutine to calculate the Trivially Equivalent Local Potential
+c   (TELP) from the coupled-channel wavefunctions.
+c ------------------------------------------------------------------
+      subroutine calculate_telp(icc, ich, nch, nr, wf)
+      use telp_mod, only: iftelp_val, rank_telp
+      use nmrv, only: vcoup, rvec
+      implicit none
+      integer, intent(in) :: icc, ich, nch, nr
+      complex*16, intent(in) :: wf(nch,nr)
+
+      complex*16 :: vtelp
+      character(len=30) :: telpfile
+      integer :: ir, is
+
+      if (iftelp_val) then
+        print*, "DEBUG: Rank", rank_telp, " set", icc, " chan", ich
+        write(telpfile, '("telp_rank", i3.3, ".out")') rank_telp
+        open(unit=448, file=telpfile, status='unknown', 
+     &   position='append')
+        write(448,'("# CC set:", i6, " Inc. chan:", i3)') icc, ich
+        write(448,'("# R (fm)  Re(Vtelp) (MeV)  Im(Vtelp) (MeV)")')
+        do ir=1,nr
+          vtelp = (0d0, 0d0)
+          do is=1,nch
+            if (is .ne. ich) vtelp=vtelp + vcoup(ich, is, ir)*wf(is, ir)
+          enddo
+          if (abs(wf(ich, ir)) .gt. 1e-15) then
+            vtelp = vtelp / wf(ich, ir)
+            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), dble(vtelp), 
+     &       dimag(vtelp)
+          else
+            write(448,'(1f10.4, 2x, 2f12.6)') rvec(ir), 0.0d0, 0.0d0
+          endif
+        enddo
+        write(448,*) '&'
+        close(448)
+      endif
+      end subroutine calculate_telp
+
 
