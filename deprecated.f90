@@ -1888,6 +1888,9 @@ c     .'system=',elapsed(2)
 
 
 ! From scatcc.f90
+!-------------------------------------------------------------------------------
+!  Auxiliary routine for calculation of scat. wf. for arbitrary jpi set and ecm
+!-------------------------------------------------------------------------------
       subroutine test_cont(nset,nchan,inc,ecm,wf)
       use nmrv,only:nch,ech,vcoup,hort
       use constants
@@ -1993,6 +1996,9 @@ c to get continuum wfs 'normalized' as <k|k'> = delta(k-k')
 
 
 ! From scatcc.f90
+c
+c ... Orthogonalization by QR factorization
+c
       subroutine qrerwin(yi,zi,zm,wi,wm,y,n,ir,irmin,nr)
       use nmrv, only: h,rvec
       implicit none
@@ -2320,6 +2326,18 @@ C					ALLOWS SKIPS IF ZERO COUPLING
 
 
 ! From scatcc.f90
+
+c -------------------------------------------------------------
+c Match with asymptotics solution to get wfs and S-matrix
+c The wfs are obtained as a linear combination of nchan independent
+c solutions, verifying: 
+c
+c f(r)_{n,inc} -> 0.5 i[H(-)_{li} delta(li,ln) + S_{n,i}H(+)_{l}]
+c 
+c Note that some authors include additional factor: e^{sigma_c }
+c in the definition of f(r). 
+c
+c ----------------------------------------------- --------------
       subroutine matching(ecm,z12,nch,ql,lmax,inc,
      & rmatch,y,wf,phase,smat,show)
       use nmrv, only: nr,mu,ech,h,conv

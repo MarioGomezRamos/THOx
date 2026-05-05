@@ -2,13 +2,13 @@ c
 c *** Calculate valence/core configurations compatible with Jtot/pi
 c     nchan={Ic,lsj} configurations  
       subroutine read_jpiset(iset,bastype,nk,tres,ehat,filewf,nodes,
-     & changepot)
+     & changepot,energy)
       use channels
       use globals,only: kin
       use wfs    ,only: exmin,exmax
       use potentials, only: vscale
       implicit none
-      logical fail3,tres,ehat,merge,lscoupl
+      logical fail3,tres,ehat,merge,lscoupl,energy
       integer l,lmin,lmax,bastype,mlst,nodes
       real*8:: xl,j,jn,jcore,ex,st,stot
       real*8:: bosc,gamma,r1,rnmax
@@ -25,7 +25,7 @@ c     nchan={Ic,lsj} configurations
 
 
       namelist/jpset/ jtot,parity,l,j,lmin,lmax,
-     &                bastype,nfmax,exmin,exmax,
+     &                bastype,nfmax,exmin,exmax,energy,
      &                nho,bosc,     ! HO
      &                gamma,mlst,   !THO Amos 
      &                eta,          !cTHO Lay
@@ -51,6 +51,7 @@ c     nchan={Ic,lsj} configurations
 c Initialize variables and assign default values
       nfmax=0; exmin=-1e-20; exmax=1e20; inc=1; tres=.false.; nho=0;
       ehat=.false. ; filewf=""
+      energy=.false.
       wcut(1:maxchan) = 0.0
       lmin=-1; lmax=-1; l=-1; j=-1; st=-1.
       gamma=0d0
@@ -100,6 +101,7 @@ c      endif
       jpiset(nset)%inc     = inc
       jpiset(nset)%bastype = bastype
       jpiset(nset)%vscale  = vscale
+      jpiset(nset)%energy  = energy
  
 !      write(0,*)'set',nset,'scaled by',vscale
 

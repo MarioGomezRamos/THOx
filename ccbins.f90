@@ -1,5 +1,5 @@
 c     Construct continuum single or multi-channel bins
-      subroutine makebins(iset,nk,tres,ifhat)
+      subroutine makebins(iset,nk,tres,ifhat,energy)
       use globals, only: mu12,egs,kin,written,verb
       use constants
       use sistema
@@ -16,7 +16,7 @@ c     ----------------------------------------------
       integer :: iset,inc,nbins,nchan,ib,ibp,ich,ik,ir,nk,li
       integer :: bastype,wftype
 c     .....................................................
-      real*8  :: emin,emax,ei,ef,ebin,excore,ehat,khatsq,wbin
+      real*8  :: emin,emax,ei,ef,de,ebin,excore,ehat,khatsq,wbin
       real*8  :: r,bnorm,raux,r2aux,bcoef,chnorm(maxchan),rms
       real*8  :: ddk,ki,kf,kmin,kmax,kstep,kmid,k
       real*8  :: psh_el(nk),deltap, deladd,deltai
@@ -44,7 +44,7 @@ c *** ----------------------------------------------
       fconv=hc**2/2/mu12 ! E=fconv*k^2
 
 c *** Initialize some variables ***********
-      energy  =.false.
+!      energy  =.false.
       debug   =.false.
       bincc   =.false.
       writewf =.false.
@@ -85,7 +85,8 @@ c *** Multichannel (complex) bins
       if (emin.lt.0) emin=0
       kmin=sqrt(2*mu12*emin)/hc
       if (nbins.gt.0) then
-       kstep=(kmax-kmin)/nbins
+       kstep=(kmax-kmin)/nbins   ! April 2026 check nbins or nbins-1??
+       de=(emax-emin)/(nbins)  ! if energy=T
       else
        write(*,*)'makebins: nbins=0!'; stop
       endif
@@ -113,19 +114,29 @@ c *** We need to allocate this only for the first j/pi set
       binset(iset)%kmax=kmax
       binset(iset)%nbins=nbins
       binset(iset)%ifhat=ifhat
+      binset(iset)%energy=energy
       deladd=0.
 
       do ib=1,nbins
       tfac=1.
       chnorm=0.
       bnorm=0.
+      if (energy) then      
+      ei=emin + de*(ib-1.)
+      ef=ei+de
+      ki=sqrt(ei/fconv)      
+      kf=sqrt(ef/fconv)            
+      else ! bins uniform in momentum (default)
       ki=kmin+(ib-1.)*kstep
       kf=ki+kstep
-      ddk=(kf-ki)/(nk-1)   !!!! CHECK!!!!!!!!!!!!
-      kmid=(kf+ki)/2.
       ei=fconv*ki**2
       ef=fconv*kf**2
 !!      ebin=fconv*kmid**2  
+      endif 
+
+      ddk=(kf-ki)/(nk-1)   !!!! CHECK!!!!!!!!!!!!
+      kmid=(kf+ki)/2.
+
 
 !! Modified in v2.6
 !!     wbin(iset,ib) =ef-ei   
@@ -161,7 +172,9 @@ c < phi |H | phi>
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       IF (.NOT.BINCC) THEN 
-      call wfrange(iset,nchan,inc,ei,ef,nk,energy,wfcont,smate,psh_el,
+! changed energy argument, since April 2026, since energy used for jpset namelist now
+!      call wfrange(iset,nchan,inc,ei,ef,nk,energy,wfcont,smate,psh_el,
+      call wfrange(iset,nchan,inc,ei,ef,nk,.false.,wfcont,smate,psh_el,
      &             writewf)
 
       if (bastype.eq.4) then ! Real multichannel WFS (Skip Phase-shift calculation)
