@@ -6,6 +6,7 @@
 thox
 examples/thox
 test/thox
+lixo*
 
 # Fortran output files
 fort.*
