@@ -116,11 +116,17 @@
 
 #ifdef MPI
       call MPI_INIT(mpi_ierr)
+      call MPI_COMM_RANK(MPI_COMM_WORLD, mpirank_g, mpi_ierr)
+      call MPI_COMM_SIZE(MPI_COMM_WORLD, mpisize_g, mpi_ierr)
+#else
+      mpirank_g = 0
+      mpisize_g = 1
 #endif
 
 !c *** Defined global constants
       call initialize()
 !      if (cdccwf) call alpha_cdcc_in()
+      if (mpirank_g.eq.0) then
       write(*,'(50("*"))')
       write(*,'(" ***",8x,"THOx+DCE+CC code: version 2.6",8x, "***")')
       write(*,'(50("*"),/)')
@@ -132,6 +138,7 @@
       write(*,'(" * so, alpha= 1/",1f9.5,$)')hc/e2
       write(*,'(7x,"amu=",1f8.4, " MeV  *")') amu
       write(*,*)'**************************************************'
+      end if ! mpirank_g.eq.0
 
 
 !c *** Calculate memory sizes for memory allocation
@@ -156,8 +163,10 @@
       mu12=amu*ac*av/(ac+av)
       kgs=sqrt(2d0*mu12*abs(egs))/hc
 
+      if (mpirank_g.eq.0) then
       write(*,200)Ac,Zc,Av,Zv 
       write(*,'(/,1x,"- Reduced mass:",1f9.3," MeV/c2")') mu12
+      end if ! mpirank_g.eq.0
 200   format(' - COMPOSITE:',/,5x, 'Core:    Ac=',1f8.4,2x,'Zc=',1f6.2, &
      &      /,5x,'Valence: Av=',1f8.4,2x,'Zv=',f6.2)
 
@@ -342,7 +351,7 @@
       subroutine partition()
       use xcdcc
       use sistema
-      use globals, only: kin
+      use globals, only: kin, mpirank_g
       use constants
       use channels, only: tset,targdef
       implicit none
@@ -354,7 +363,8 @@
      & K,notgdef !MGR
       namelist /targstates/ et,It,part,nphon,K,inc !MGR
 !c           
-      write(*,'(//,5x,"******  REACTION CALCULATION ******")')
+      if (mpirank_g.eq.0) write(*,
+     &  '(//,5x,"******  REACTION CALCULATION ******")')
       jt=0.0; zt=0.0; mt=0.0 
       ntex=0; nphon=0; K=0; inc=0;par=1 !MGR
       targdef=.false.                   !MGR
@@ -418,6 +428,7 @@
           stop
       endif
 
+      if (mpirank_g.eq.0) then
       write(*,340) mp,zp,mt,zt !,mupt/amu
 340   format(/,5x,"Projectile: Mass=",1f8.3," amu   Z=",1f6.1,3x,       &
      & /      ,5x,"Target:     Mass=",1f8.3," amu   Z=",1f6.1,/)
@@ -433,12 +444,15 @@
 !      write(*,*) 'State #',itex,': J/pi',tset(itex)%jtarg,pchar,
 !     & ' E:',tset(itex)%extarg
       enddo
+      end if ! mpirank_g.eq.0
 
       end subroutine
 
 
       subroutine timings()
       use memory
+      use globals, only: mpirank_g
+      if (mpirank_g.ne.0) return
       write(*,*)''
       write(*,*)'Timings:'
       if (tcc.gt.1e-4) write(*,*)' CC integration :',tcc,  ' secs'
@@ -454,14 +468,17 @@
 !c *** Check memory required by real*8 and complex*16
       subroutine memory_sizes()
       use memory
+      use globals, only: mpirank_g
       implicit none
       real*8 r8
       complex*16 c16
 !      integer lr8, lc16
       inquire(iolength=lr8) r8
-      write(*,*) '  A real*8 is ',lr8,' bytes'
       inquire(iolength=lc16) c16
+      if (mpirank_g.eq.0) then
+      write(*,*) '  A real*8 is ',lr8,' bytes'
       write(*,*) '  A complex*16 is ',lc16,' bytes'
+      end if
       end
 
 
@@ -473,6 +490,7 @@
 !c Pre-read input to set dimensions
 !c
       subroutine preread(kin)
+      use globals, only: mpirank_g
       use channels 
       use parameters, only: maxl,maxeset,maxchan
       use xcdcc, only: realwf
@@ -511,7 +529,8 @@
       rnmax=0.0
       max_actual_eset=0
 
-      write(*,*)'Pre-reading input to set dimensions'
+      if (mpirank_g.eq.0)
+     &  write(*,*)'Pre-reading input to set dimensions'
 
       read(kin,nml=grid)
       if (dr>0) then
@@ -561,6 +580,7 @@
 
 350   continue
 
+      if (mpirank_g.eq.0) then
       write(*,*)'' 
       if (jpsets.eq.0) then
         write(*,'(4x,"[No basis sets have been defined]")')
@@ -570,8 +590,12 @@
       write(*,*)' Dimensions for memory allocation'
       write(*,*)'   o J/pi sets:', inpsets,' merged into', jpsets
       write(*,*)'   o Maximum internal l:', maxl
-
       write(*,*)''
+      end if ! mpirank_g.eq.0
+      if (jpsets.eq.0) then
+        rewind(kin)
+        return
+      endif
 
 
       allocate(jpiset(jpsets)) ! sets, chans/set
@@ -586,7 +610,7 @@
         allocate(energ(jpsets,max_actual_eset))
       endif
 
-      write(*,*)' Pre-read finished'
+      if (mpirank_g.eq.0) write(*,*)' Pre-read finished'
 !      close(kin)
       rewind(kin, err=360)
       return
@@ -602,6 +626,7 @@
 !c ***
       subroutine readcorex(kin)
        use channels
+       use globals, only: mpirank_g
        implicit none
        integer:: kin
        integer:: nph,parity
@@ -613,7 +638,7 @@
 
 
        nce=0 ! number of core states
-       write(*,*) '- CORE states:'
+       if (mpirank_g.eq.0) write(*,*) '- CORE states:'
 50     ex=-100.
        parity=0
        nph=0
@@ -623,7 +648,7 @@
        nce=nce+1   
        if (parity.eq.0) parity=+1
        if (abs(spin-nint(spin)).gt.0.2d0 .and. kband.eq.0) then
-       write(*,*) 'Changing kband=0 to kband=0.5'
+       if (mpirank_g.eq.0) write(*,*) 'Changing kband=0 to kband=0.5'
        kband=0.5d0
        endif
 !c backward compatibility (deprecated)
@@ -638,19 +663,19 @@
        qnc(nce)%nphon= nph
        qnc(nce)%kband= kband
 
-       write(*,230) nce,spin,psign(parity+2),ex
+       if (mpirank_g.eq.0) write(*,230) nce,spin,psign(parity+2),ex
 230    format(5x,"#",i2,": J/pi=",f4.1,a1,3x,'Ex=',f5.2,' MeV')
        goto 50
 
 100    if (nce.eq.0) then
-	write(*,*)'No core states found!'
+	if (mpirank_g.eq.0) write(*,*)'No core states found!'
        endif       
        end subroutine
 
 
 !c *** Read radial grid, nb of quadrature points,etc
        subroutine readgrid(kin)
-       use globals, only:kgs
+       use globals, only: kgs, mpirank_g
        use wfs,only:rvec,rmin,rmax,dr,rlast,rweight,ng,nr,rint
        implicit none
        integer ir,kin
@@ -660,8 +685,10 @@
 
        ng=0
        rint=0.0
+       if (mpirank_g.eq.0) then
        write(*,*)
-       write(*,*)' RADIAL GRID FOR INTERNAL WFS:'       
+       write(*,*)' RADIAL GRID FOR INTERNAL WFS:'
+       end if       
        read(kin,nml=grid)
        if ((rlast<0).or.(rlast>rmax)) rlast=rmax 
 !       if (rlast<0) rlast=rmax 
@@ -677,7 +704,8 @@
 	   endif
         endif
         if (ng>0) then
-           write(*,*) '- Using', ng, 'quadrature points'
+           if (mpirank_g.eq.0)
+     &       write(*,*) '- Using', ng, 'quadrature points'
 	   nr=ng
 	   if (allocated(rvec)) deallocate(rvec)
 	   allocate(rvec(nr))
@@ -702,12 +730,12 @@
 !c              rvec(ir)=rmin+(ir-1)*dr          !provisional
 !c           enddo
         else
-             write(*,170) nr, rmin,rmax,dr
+             if (mpirank_g.eq.0) write(*,170) nr, rmin,rmax,dr
 170     format(1x,"- Using uniform grid with ",i4, ' points:',          &
      &           2x,"[ Rmin=",1f6.3,2x," Rmax=",                        &
      &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
          if ((rint>0).and.(rint.gt.rmax)) then
-          write(*,172)rint, rmax
+          if (mpirank_g.eq.0) write(*,172)rint, rmax
 172       format(1x,"[ WFS calculated up to",1f6.1,                     &
      & " fm and extrapolated up to ", 1f6.1," fm ]",//)
          endif

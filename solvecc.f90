@@ -424,6 +424,13 @@ c ... MPI load balancing: distribute J/parity sets across processes ---------
      &  " CC sets]")') mpisize, ncc
       allocate(smats_recv(nchmax,nchmax))
 #endif
+c ... Open rank-specific temp file for immediate S-matrix writing -------
+      block
+        character(len=40) :: tmpfile67
+        write(tmpfile67,'("fort.67.tmp.",i0)') mpirank
+        open(unit=967, file=trim(tmpfile67), status='replace',
+     &       action='write')
+      end block
 c ---------------------------------------------------------------------------
 !     do icc=1,ncc
       icc=0
@@ -584,6 +591,18 @@ c ... write channels quantum numbers in CDCC file
 
        endif ! skip calculation if S-matrix read from file
           
+c ... Write S-matrices for this CC set immediately to rank-specific temp file
+       if (partot.eq. 1) par_read="+"
+       if (partot.eq. -1) par_read="-"
+       do inc=1,nch
+         do ich=1,nch
+           if (abs(smats(icc,inc,ich)).gt.1e-15) then
+             write(967,*) jtot,par_read,inc,ich,
+     &         real(smats(icc,inc,ich)),imag(smats(icc,inc,ich))
+           endif
+         enddo
+       enddo
+       call flush(967)
 c ... Compute integrated cross sections without target spin
        do inc=1,nch
        if (.not. incvec(inc)) cycle
@@ -674,26 +693,50 @@ c ... MPI: Master process collects results from all workers
         enddo
       endif
       call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierr)
+#endif
+
+c ... Close rank-specific temp file (already flushed after each CC set)
+      close(967)
+
+#ifdef MPI
+      call MPI_BARRIER(MPI_COMM_WORLD, mpi_ierr)
       if (mpirank.eq.0) then
 #endif
-c ... Write all S-matrices to fort.67 in sequential J order
-      do jcc=1,icc
-        nch=jptset(jcc)%nchan
-        if (nch.eq.0) cycle
-        if (jptset(jcc)%interp) cycle
-        jtot=jptset(jcc)%jtot
-        partot=jptset(jcc)%partot
-        if (partot.eq. 1) par_read="+"
-        if (partot.eq. -1) par_read="-"
-        do inc=1,nch
-          do ich=1,nch
-            if (abs(smats(jcc,inc,ich)).gt.1e-15) then
-              write(67,*) jtot,par_read,inc,ich,                        &
-     &          real(smats(jcc,inc,ich)),imag(smats(jcc,inc,ich))
-            endif
+c ... Write final fort.67 in sequential J order by reading all temp files
+      block
+        character(len=40) :: tmpfile67
+        integer :: irank, tmpunit, tmp_ierr
+        real*8  :: jt_rd, re_rd, im_rd
+        integer :: inc_rd, ich_rd
+        character*1 :: par_rd
+        tmpunit = 968
+        do jcc=1,icc
+          nch=jptset(jcc)%nchan
+          if (nch.eq.0) cycle
+          if (jptset(jcc)%interp) cycle
+          jtot=jptset(jcc)%jtot
+          partot=jptset(jcc)%partot
+          if (partot.eq. 1) par_read="+"
+          if (partot.eq. -1) par_read="-"
+          do inc=1,nch
+            do ich=1,nch
+              if (abs(smats(jcc,inc,ich)).gt.1e-15) then
+                write(67,*) jtot,par_read,inc,ich,
+     &            real(smats(jcc,inc,ich)),imag(smats(jcc,inc,ich))
+              endif
+            enddo
           enddo
         enddo
-      enddo
+c ... Delete rank-specific temp files now that fort.67 is complete
+        do irank=0, mpisize-1
+          write(tmpfile67,'("fort.67.tmp.",i0)') irank
+          open(unit=tmpunit, file=trim(tmpfile67), status='old',
+     &         iostat=tmp_ierr)
+          if (tmp_ierr.eq.0) then
+            close(tmpunit, status='delete')
+          endif
+        enddo
+      end block
 #ifdef MPI
       endif ! mpirank.eq.0
 #endif

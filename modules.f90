@@ -4,6 +4,7 @@ c -------------------------------------------------------
       module globals
         logical:: debug,written(600)
         integer:: kin,kout,verb,nfacmax
+        integer:: mpirank_g, mpisize_g   ! global MPI rank/size (0 if non-MPI)
         real*8:: egs,mu12,kgs
       end module globals
 
