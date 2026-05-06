@@ -3,6 +3,8 @@ c     Build & solve CDCC equations
       subroutine cdcc(iexgs,ncc)
 c *** ---------------------------------------------------
       use channels, only:jpiset,jpsets,jptset,tset,targdef !MGR
+      use nmrv, only: hort,rmort,vcoup,rvec
+      use telp_mod, only: iftelp_val, rank_telp, sum_wU, sum_w
       use xcdcc   , only: nex,jpch,exch,parch,iftrans,
      &            lamax,hcm,nmatch,elab,ecm,smats,
      &            jtmin,jtmax,rvcc,rmaxcc,nrcc,method,
@@ -44,11 +46,17 @@ c     ---------------------------------------------------------------
 
 c     ---------------------------------------------------------------
       complex*16 smat
+      character*40 prevfile
+      logical   prevcalc,file_exists,jpiinfile
+      complex*16,allocatable:: smats_read(:,:,:,:)
+      real*8 jt_read,real_read,imag_read, mod_read
+      integer inc_read,ich_read,ijt_read,ipar_read,ier
+      character*1 par_read
 c     ---------------------------------------------------------------
 
 !MGR--------------------------------------------------------------------
       logical,allocatable:: incvec(:)
-      logical incch
+      logical incch, telpflag
       real*8 einc
       real*8,allocatable:: xs_ch(:,:,:,:)!l, state, jt-l,jt-l incoming
       real*8 jpmax
@@ -59,13 +67,15 @@ c     ---------------------------------------------------------------
       namelist /numerov/ method,
      &         hcm,rmaxcc,rcc,hort,rmort,
      &         jtmin,jtmax,jump,jbord,skip,
-     &         nlag,ns,solvertype ! R-matrix
+     &         nlag,ns,solvertype,prevfile,telpflag ! R-matrix
 c     ---------------------------------------------------------------
 
 
 c ... initialize variables --------------------------------------------------
       dry=.true.
       skip=.false.
+      prevcalc=.false.
+      prevfile=""
       jtmin=-1; jtmax=-1
       jump=0; jbord=0; 
 c ----------------------------------------------------------------------------
@@ -88,6 +98,7 @@ c ... Numerov specifications
       rmort =0
       nlag  =0; ns=1; solvertype=3
       read(kin,nml=numerov)
+      iftelp_val = telpflag
       solver_type = solvertype  ! pass to HPRMAT module
 
       if ((jtmin.lt.0).or.(skip)) then
@@ -294,6 +305,36 @@ c *** Channel energy
       write(*,'(8x,  "=> Max Jt =",f7.1)') maxval(jptset(icc)%jt(:))     
       write(*,'(8x,  "=> Max JTOT =",f8.1)') jtotmax 
       
+!!!!!! Check if prevfile exists
+      if (prevfile.ne."" ) then
+        inquire(file=prevfile, exist=file_exists)
+        if (file_exists) then
+        write(*,'(5x,"[Using previous calculations:",a60,"]")') prevfile
+          prevcalc=.true.
+          allocate(smats_read(0:ceiling(jtmax),2,nchmax,nchmax))
+          smats_read(:,:,:,:)=0d0
+          open(67, file=prevfile, status='old', access='sequential')
+          write(*,*) 'Reading S-matrices from previous calculations...'
+          do 
+       read(67,*,iostat=ier) jt_read,par_read,inc_read,ich_read,
+     &  real_read,imag_read
+          if (ier .ne. 0) exit
+       !write(*,*) jt_read,par_read,inc_read,ich_read,real_read,imag_read
+
+          if (par_read .eq. "+") then
+            smats_read(floor(jt_read),1,inc_read,ich_read)=             &
+     &       cmplx(real_read,imag_read)
+          else if(par_read .eq. "-") then
+            smats_read(floor(jt_read),2,inc_read,ich_read)=             &
+     &       cmplx(real_read,imag_read)
+          endif
+          enddo
+          close(67)
+        else
+          write(*,'(5x,"[File:",a60,"] does not exist")') prevfile
+        endif
+      endif 
+
 !!!! TEMPORARY SOLUTION
       if (ncc.gt.8000) then
         write(*,*)'too many J/pi sets!.Increase dim of jptset'
@@ -382,6 +423,58 @@ c ***
         rturn =(etai + SQRT(etai**2 + L*(L+1d0)))/kcmi
         if (verb.ge.2) write(*,310) nch,rturn
 310     format(5x,"[",i3," channels",4x,"Elastic R-turn=",1f6.2," fm ]")
+
+        allocate(incvec(nch))
+        einc=jptset(icc)%exc(iexgs)
+        incvec(:)=.false.
+        incch=.false.
+        ninc=0
+        do inc=1,nch  ! incoming channels are those with iex=iexgs
+          iex  = jptset(icc)%idx(inc)
+          if ((iex.eq.iexgs) .and. (jptset(icc)%idt(inc).eq.1)) then
+          incvec(inc)=.true.
+          incch=.true.
+          ninc=ninc+1
+          endif
+        enddo  
+        if (.not. incch) then
+        deallocate(incvec)
+        cycle
+        endif 
+
+!     Get the S matrices from file
+       jpiinfile=.false.
+       if (prevcalc) then
+         ijt_read=floor(jtot)
+         if (partot.eq.1) then
+            ipar_read=1
+         else if (partot.eq.-1) then
+            ipar_read=2
+         endif
+         mod_read=0d0
+         do inc_read=1, nchmax
+         do ich_read=1, nchmax
+            mod_read=mod_read                                           &
+     &   +abs(smats_read(ijt_read,ipar_read,inc_read,ich_read))**2
+         enddo
+         enddo
+         if (mod_read .lt. 1e-10) then
+            jpiinfile=.false.
+         else
+            jpiinfile=.true.
+         endif
+         if (jpiinfile) then
+            write(*,*) "J/pi set",jtot,partot," found in file"
+         do inc_read=1, nch
+         do ich_read=1, nch
+            smats(icc,inc_read,ich_read)=                               &
+     &       smats_read(ijt_read,ipar_read,inc_read,ich_read)
+         enddo
+         enddo    
+         endif
+       endif 
+
+      if(.not. (prevcalc.and.jpiinfile) .or. iftelp_val) then
    
 c ... construct < c| V | c'> matrix for this J/pi set from radial F(R)
         if (targdef) then !MGR
@@ -390,6 +483,10 @@ c ... construct < c| V | c'> matrix for this J/pi set from radial F(R)
           call makevcoup(icc,nch)  ! 
         endif
 
+        if (.not. incch) then
+        deallocate(vcoup)
+        cycle
+        endif 
 
 !c ... Solve CC equations for each incoming channel 
 !        do inc=1,nch  ! incoming channels are those with iex=iexgs
@@ -415,25 +512,6 @@ c ... construct < c| V | c'> matrix for this J/pi set from radial F(R)
 !        enddo ! ich
 !       enddo !inc
 
-!MGR--------------------------------------------------------------------
-c ... Solve CC equations for each incoming channel 
-        allocate(incvec(nch))
-        einc=jptset(icc)%exc(iexgs)
-        incvec(:)=.false.
-        incch=.false.
-        ninc=0
-        do inc=1,nch  ! incoming channels are those with iex=iexgs
-          iex  = jptset(icc)%idx(inc)
-          if ((iex.eq.iexgs) .and. (jptset(icc)%idt(inc).eq.1)) then
-          incvec(inc)=.true.
-          incch=.true.
-          ninc=ninc+1
-          endif
-        enddo  
-        if (.not. incch) then
-        deallocate(incvec,vcoup)
-        cycle
-        endif 
         
         
          
@@ -465,8 +543,21 @@ c ... write channels quantum numbers in CDCC file
         allocate(wfcdcc(ninc,nch,nrcc))
 	endif 
 	
-       call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)    
-          
+       call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)
+       
+      !write S matrices to file
+      if (partot.eq. 1) par_read="+"
+      if (partot.eq. -1) par_read="-"
+      do inc=1,nch
+         do ich=1,nch
+            if (abs(smats(icc,inc,ich)).gt.1e-15) then
+            write(67,*) jtot,par_read,inc,ich,                          &
+     &         real(smats(icc,inc,ich)),imag(smats(icc,inc,ich))
+           endif
+         enddo
+      enddo 
+
+      endif ! skip calculation if read    
 c ... Compute integrated cross sections without target spin
        do inc=1,nch
        if (.not. incvec(inc)) cycle
@@ -504,11 +595,12 @@ c ... Compute integrated cross sections without target spin
        enddo ! par
 c       write(157,'(1x,1f6.1,a1,2x,3f12.6)') jtot, parity(partot+2),
 c     &    xsrj-xsinelj,xsrj,xsinelj
-       if (jptset(icc)%interp) cycle 
-       write(156,'(1x,1f6.1,2x,3g14.5)') jtot, 
-     &    xsrj-xsinelj,xsrj,xsinelj
+       if (.not. jptset(icc)%interp) then
+         write(156,'(1x,1f6.1,2x,3g14.5)') jtot, 
+     &      xsrj-xsinelj,xsrj,xsinelj
+         call flush(156)
+       endif
 
-       call flush(156)
        call flush(6) 
 330    enddo !ijt
       lpmax=0
@@ -536,9 +628,10 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
       
       xs_ch=0.0d0
       do jcc=1,icc
-         if (jptset(jcc)%nchan.eq.0) cycle
-        do ich=1,jptset(jcc)%nchan
-          do inc=1,jptset(jcc)%nchan
+         nch = nint(jptset(jcc)%nchan)
+         if (nch.eq.0) cycle
+        do ich=1,nch
+          do inc=1,nch
             if (jptset(jcc)%idx(inc).ne.iexgs) cycle
             if (ich.eq.inc)cycle
             iex=jptset(jcc)%idx(ich)
@@ -627,6 +720,38 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
 c *** -----------------------------------------------------------
 c *** Write channels and CDCC radial functions for a given CC set
 c *** ------------------------------------------------------------
+      subroutine write_cdcc_wf(icc,wf,nch,nr)
+      use channels, only: jptset
+      implicit none
+      integer, parameter:: kwf=85
+      integer :: ich,nch,nr,ir,icc,partot
+      integer :: lsp,jsp,jc,parc,lpt,idx
+      real*8 :: jtot,exc,jp,ex,jlp,kcm
+      complex*16 wf(nch,nr)
+
+!     nch   =jptset(icc)%nchan  
+      partot=jptset(icc)%partot
+      jtot  =jptset(icc)%jtot  
+
+      write(kwf,350) icc,nch,jtot,partot
+350   format(2x,"CC set:", i4, " Chans:",i4,
+     &  " JTOT=",1f6.1, " Parity:",i2)
+
+      do ich=1,nch
+       idx   =jptset(icc)%idx(ich)
+       lpt   =jptset(icc)%l  (ich)
+       jp    =jptset(icc)%jp (ich)
+       jlp   =jptset(icc)%jlp(ich)
+       ex    =jptset(icc)%exc(ich)
+       kcm   =jptset(icc)%kcm(ich)
+  
+      write(kwf,354) ich,idx,lpt,jlp,jp,ex,kcm
+354   format(2x," Channel:",i4, " IEX: ",i3,
+     &       " QN:",i3,1f5.1,1f5.1, 
+     &       " Ex=",1f6.3," Kcm=",1f6.3)
+!      write(kwf,'(6g16.6)') (wf(nch,ir),ir=1,nr)
+      enddo !ich
+      end subroutine
 
 
 c *** -------------------------------------------------------
@@ -639,7 +764,8 @@ c c *** -----------------------------------------------------
       subroutine solvecc_MGR(icc,nch,incvec,nr,nlag,ns,einc)
       use xcdcc   ,  only: hcm,elab,smats,rvcc,method
       use channels,  only: jptset
-      use nmrv,      only: vcoup, ech,ql,hort,cutr
+      use telp_mod, only: iftelp_val, sum_wU, sum_w
+      use nmrv,      only: vcoup, ech,ql,hort,cutr, rvec
       use constants, only: hc,amu
       use sistema
       use globals  , only: verb,debug

@@ -1,3 +1,9 @@
+      module telp_mod
+      logical :: iftelp_val = .false.
+      integer :: rank_telp = 0
+      complex*16, allocatable :: sum_wU(:)
+      real*8, allocatable :: sum_w(:)
+      end module
       module nmrv
       logical:: debug    ! if true,print debug information
       integer:: verb     ! determines the amount of trace output
@@ -1171,6 +1177,7 @@ c   yp                                     r+h
 c ------------------------------------------------------
       subroutine schcc_ena(nch,ecm,z12,inc,ql,factor,dr,r0,
      & npt,wf,phase,smat,method,info)
+      use telp_mod, only: iftelp_val
       use nmrv,only: nr,h,vcoup,conv,ech,debug,rmin,hort,rvec,rmort
       use globals, only: verb
       use factorials
@@ -1361,7 +1368,7 @@ c
                          
 
 c calculate and store Y=(1-T)W  
-      if ((ir.ge.nr-8).or.(orto)) then      
+      if ((ir.ge.nr-8).or.(orto).or.iftelp_val) then      
         call w2y(wp,yp,ql,kch2,ir,nch)
         y(1:nch,1:nch,ip)=yp(1:nch,1:nch) 
       endif
@@ -1739,6 +1746,37 @@ c ----------------------------------------
 c  Calculates function y''(ri)=F[ri,y(ri)]=G(ri,yi)*y(ri)
 c  and stores result in zm(:,:) [= y''(ri)]
 c ----------------------------------------
+      subroutine zfun_clean(nch,ql,kch2,ir,ym,zm)
+      use nmrv,only   : conv,vcoup,h,debug,rvec
+      use memory, only: tzfun
+      implicit none
+      integer:: l,ir,ich,is,nch,ql(nch)
+      real*8 :: r,kch2(nch)
+      real*8 :: ti,tf
+      real,parameter:: eps=1e-6
+      complex*16,intent(in)  :: ym(nch,nch)
+      complex*16,intent(out) :: zm(nch,nch)
+      complex*16             :: gmat(nch,nch)
+      debug=.false.
+      gmat(:,:)=0d0
+      call cpu_time(ti)
+!      r=h*ir
+      r=rvec(ir)
+
+      if (r.lt.eps) r=eps
+      do ich=1,nch
+      l=ql(ich)
+      gmat(ich,ich)= kch2(ich)-l*(l+1)/r**2  
+      enddo
+      
+      gmat(1:nch,1:nch)=gmat(1:nch,1:nch)
+     &                 -conv*vcoup(1:nch,1:nch,ir)
+      zm=-matmul(gmat,ym)
+
+      call cpu_time(tf)
+      tzfun=tzfun+(tf-ti)
+      return
+      end
 
 
 
@@ -2554,8 +2592,8 @@ c ... Apply R^{-1} to ZI and ZM in-place
         do is=1,n
         write(*,'(5x,50g14.5)')
      &    ( abs(dot_product(zi(:,is),zi(:,ich)))
-     &      / sqrt(abs(dot_product(zi(:,is),zi(:,is))))
-     &      / sqrt(abs(dot_product(zi(:,ich),zi(:,ich)))), ich=1,n)
+     &      / abs(dot_product(zi(:,is),zi(:,is)))
+     &      / abs(dot_product(zi(:,ich),zi(:,ich))), ich=1,n) 
         enddo
         write(*,*)''
       endif
@@ -2586,10 +2624,396 @@ c Note that some authors include additional factor: e^{sigma_c }
 c in the definition of f(r). 
 c
 c ----------------------------------------------- --------------
+      subroutine matching(ecm,z12,nch,ql,lmax,inc,
+     & rmatch,y,wf,phase,smat,show)
+      use nmrv, only: nr,mu,ech,h,conv
+      use constants, only : e2,pi
+      use globals, only: verb,debug
+      implicit none
+      logical :: sing,show
+      integer ich,is,inc,ir,klog
+      integer nch,ql(nch),l,linc,lmax,ifail,ie,nmatch
+
+      real*8, dimension(0:lmax):: f,g,gp,fp
+      real*8, dimension(1:lmax+1):: f1,fp1
+      real*8 :: kron,rmatch
+      real*8 :: ecm,tkch,eta,krm,z12,kch(nch)
+      real*8 :: phr,cph(0:lmax) !!!! changed to lmax check !!!!
+      real*8 :: fpmax,small,acc8,flux,magn(nr)
+
+      complex*16:: wf(nch,nr)
+      complex*16:: yd(nch,nch),yaux(5)
+      complex*16:: y(nch,nch,nr)
+      complex*16:: ch,chd,mat(2*nch,2*nch+1),det
+      complex*16:: ci,test,yfac,tmat
+      complex*16:: phase(nch),phc
+      complex*16:: smat(nch),delta,scoul,anc,svel
+
+      acc8 = epsilon(acc8);
+      fpmax = huge(acc8)**0.8d0 
+      SMALL=1D0/FPMAX
+      ci=(0d0,1d0)
+      pi=acos(-1d0) 
+      debug=.false.
+!      show=.false.
+      klog=99
+      magn(:)=0      
+
+      if (nch.eq.0) then
+       write(*,*)'Matching: nch=0! Abort'; stop     
+      endif
+      mat(:,:)=0d0
+!      mat(1:nch,1:nch)=y(1:nch,1:nch,nr)
+      mat(1:nch,1:nch)=y(1:nch,1:nch,nr-2) ! matrix solution at r=rmatch
+      nmatch=nr-2                        ! matching done at ir=nr-2 
+
+c
+c derivatives at matching point
+c 
+      if (debug) write(99,*)'Derivatives at  rmatch=',rmatch
+      do ich=1,nch
+      do is=1,nch
+!      yaux(1:5)= y(ich,is,nr-2:nr+2)
+      yaux(1:5)= y(ich,is,nr-4:nr) ! use last 5 points for derivative
+!      yd(ich,is)=deriv1(yaux,h,nr+2,nr)
+      yd(ich,is)=(yaux(1)
+     &   -8*yaux(2)+8*yaux(4)-yaux(5))/(h*12)
+      mat(nch+ich,is)= yd(ich,is)
+c3      mat(nch+ich,is)= y(ich,is,nr-1)
+      enddo
+      if (debug) write(99,'(5x,50f12.6)') (yd(ich,is),is=1,nch) 
+      enddo
+      
+      linc=ql(inc)
+      do ich=1,nch
+      l=ql(ich) 
+      tkch=ecm+ech(inc)-ech(ich) 
+
+      kch(ich)=sqrt(conv*abs(tkch))
+      krm=kch(ich)*rmatch
+      eta=conv*z12*e2/kch(ich)/2.
+
+      if (tkch.gt.0d0) then   ! open channel
+       call coulph(eta,cph,linc)
+       phc=exp(ci*cph(linc))
+
+!       write(190,'(6f10.4)') tkch,kch(ich),eta,krm,cph(linc)
+       call coul90(krm,eta,0d0,l,f,g,fp,gp,0,IFAIL)
+
+
+       if (ifail.ne.0) then 
+       write(*,*) 'coul90: ifail=',ifail; stop
+       endif
+       ch  = dcmplx(g(l),f(l))  * (0.,.5)   ! outgoing (i/2) H(+)
+       chd = dcmplx(gp(l),fp(l)) * (0.,.5) ! (i/2) H'(+)
+c3      call coul90(kch(ich)*(rm-h),eta,0d0,l,f,g,fp,gp,0,IFAIL)
+c3      chd = dcmplx(g(l),f(l)) * (0.,.5) 
+c lhs
+      mat(ich,nch+ich)    = ch
+      mat(nch+ich,nch+ich)= chd*kch(ich)
+c rhs
+      mat(ich,2*nch+1)    =-kron(ich,inc)*conjg(ch) 
+      mat(nch+ich,2*nch+1)=-kron(ich,inc)*
+     &                    conjg(chd)*kch(ich) 
+      else                      ! closed channel
+       IE = 0  
+       call whit(eta,rmatch,kch(ich),tkch,l,f1,fp1,ie)
+       ch = -f1(l+1)  ! Whittaker
+       chd= -fp1(l+1) ! derivative 
+!       write(0,*) 'l,k,f',l,kch(ich),f1(l+1)
+c lhs
+      mat(ich,nch+ich)    = -ch
+      mat(nch+ich,nch+ich)= -chd*kch(ich)
+c rhs
+      mat(ich,2*nch+1)    =0. 
+      mat(nch+ich,2*nch+1)=0. 
+      endif
+c2       mat(ich,nch+ich)    = -(g(l)+ci*f(l))
+c2       mat(nch+ich,nch+ich)= -(gp(l)+ci*fp(l))*kch(ich)
+c3        mat(ich,nch+ich)    = ch
+c3        mat(nch+ich,nch+ich)    = chd
+c2      mat(ich,2*nch+1)    =kron(ich,inc)*f(l)
+c2      mat(nch+ich,2*nch+1)=kron(ich,inc)*fp(l)*kch(ich)
+c3      mat(ich,2*nch+1)    =-kron(ich,inc)*conjg(ch)
+c3      mat(nch+ich,2*nch+1)=-kron(ich,inc)*conjg(chd)
+
+      enddo
+      call GAUSS5(2*nch,2*nch,mat,1,sing,det,small,debug)
+      if (debug) write(klog,'(5x,"Coefficients:",100f8.3)') 
+     & (mat(ich,2*nch+1),ich=1,nch)
+
+!      IF(SING) then
+!      DO 605 Ir=1,nr
+!605   IF(MAGN(Ir).NE.0.0) MAGN(Ir) = LOG10(MAGN(Ir))
+!      WRITE(*,610) (MAGN(Ir),Ir=1,nr)
+!610   FORMAT(' Maximum magnitudes were (Log 10) ',/(1X,20F6.1))
+!      endif
+
+c
+c S-matrix and phase-shifts
+c 
+      flux=0d0
+      phase(1:nch)=0.
+      if (show.and.(verb.ge.1)) 
+!     &  write(*,'(8x,"S-matrix (wo/with velocity factors):")') 
+     &   write(*,'(a40,6x,a45)')
+     &   "S-matrix (WITHOUT velocity factors)", 
+     &   "S-matrix (WITH velocity factors)"
+      do ich=1,nch
+      tkch=ecm+ech(inc)-ech(ich) 
+c2      tmat=mat(nch+ich,2*nch+1)
+c2      smat(ich)=(tmat-1)*(0.,-0.5)
+      if (tkch.gt.0) then                                   ! open channel
+!commented v2.1b
+!      smat(ich)=mat(nch+ich,2*nch+1)*ci**(QL(INC)-QL(ICH))
+       smat(ich)=mat(nch+ich,2*nch+1)
+       svel=smat(ich)*sqrt(kch(ich)/kch(inc)) ! S-matrix with velocity factors
+       phase(ich)=(0.,-0.5) * LOG(mat(nch+ich,2*nch+1))
+       test=(0.,-0.5) * LOG(mat(nch+ich,2*nch+1)) 
+       if (((show).and.(ich.eq.inc)).or.(verb.ge.1)) then
+!       write(*,500) ich,smat(ich),svel,abs(svel),test*180/pi
+       write(*,500) ich,smat(ich),svel,abs(svel) !,test*180/pi
+       endif
+       flux=flux + abs(svel)**2
+500    format(10x,"Chan. #",i3,5x,
+     &    "S=(",1f10.6,",",1f10.6,")", 5x, 
+     &    "S=(",1f10.6,",",1f10.6,") ->  |S|=",1f9.6)
+!     &    ,"delta=(",1f8.3,",",1f8.3,")")
+
+      else                                                 ! closed channel
+        smat(ich)=mat(nch+ich,2*nch+1)
+        write(*,500) ich,smat(ich),svel,abs(svel),test*180/pi
+        if (verb.gt.3) then
+        anc=mat(nch+ich,2*nch+1)
+        if (debug)write(*,510) ich,anc,abs(anc)
+510     format(5x,"Channel",i3,3x,
+     &    "ANC=(",1g12.6,",",1g12.6,") -> |ANC|=",1g12.6)
+      endif
+      endif
+      enddo !ich
+
+      phase(1:nch)=phase(1:nch)*180/pi
+!      write(45,'(1f10.3,3x,10g14.6)') ecm,
+!    &  (phase(ich),ich=1,nch) 
+       
+      write(*,'(10x,"=> Unitarity=",1f12.8)')flux
+
+
+c
+c scattering wavefunctions
+c
+      wf(1:nch,1:nr)=(0d0,0d0)
+      if(abs(smat(inc)).gt.1e-20) then
+        phr = (0.,-0.5) * LOG(smat(inc))
+        yfac=exp(-ci*phr)
+      endif
+
+      do ich=1,nch
+      do is=1,nch
+      wf(ich,1:nr)=wf(ich,1:nr)+mat(is,2*nch+1)*y(ich,is,1:nr) 
+!      wf(ich,1:nr)=wf(ich,1:nr)+xmat(is,1)*y(ich,is,1:nr)
+      enddo
+      enddo
+
+!      wf(:,:)=dsqrt(2d0/pi)*phc*yfac*wf(:,:)
+ccc      wf(:,:)=dsqrt(2d0/pi)*yfac*wf(:,:)
+! TEST
+!      wf(:,:)=dsqrt(2d0/pi)*wf(:,:)
+! TO MATCH WITH FRESCO FORT.17 , NO FACTORS ARE NEEDED HERE!
+
+
+c      do ir=1,nr
+c      write(51,'(2x,1f6.3,2x,10f14.8)')ir*h,(wf(ich,ir),ich=1,nch)
+c      enddo
+
+      end subroutine
 
 
 
 c same as matching, but using LAPACK to solve system of eqns
+      subroutine matching2(ecm,z12,nch,ql,lmax,inc,
+     & rmatch,y,wf,phase,smat)
+      use nmrv, only: nr,mu,ech,h,conv
+      use constants, only : e2,pi
+      use globals, only: verb
+      implicit none
+!!!!!!!!!!!!!!!!!!!  LAPACK    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      integer  nch
+      integer  iter,info
+      integer,  parameter:: nrhs=1
+!      integer          ::  n=2*nch
+      integer    ipiv(2*nch)
+      double precision :: rwork(2*nch) 
+      complex    swork(2*nch*(2*nch+nrhs))
+      complex*16 mat(2*nch,2*nch),bmat(2*nch,nrhs),xmat(2*nch,nrhs),
+     &           work(2*nch)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      logical :: debug !sing,show
+      integer ich,is,inc,ir,klog
+      integer ql(nch),l,linc,lmax,ifail,ie
+
+      real*8, dimension(0:lmax):: f,g,gp,fp
+      real*8, dimension(1:lmax+1):: f1,fp1
+      real*8 :: kron,rmatch
+      real*8 :: ecm,tkch,eta,krm,z12,kch(nch)
+      real*8 :: phr,cph(0:lmax) !!!! changed to lmax check !!!!
+      real*8 :: fpmax,small,acc8,flux,magn(nr)
+
+      complex*16:: wf(nch,nr)
+      complex*16:: yd(nch,nch),yaux(5)
+      complex*16:: y(nch,nch,nr+2)
+      complex*16:: ch,chd,det
+      complex*16:: ci,test,yfac,tmat
+      complex*16:: phase(nch),phc
+      complex*16:: smat(nch),delta,scoul,anc,svel
+
+      acc8 = epsilon(acc8);
+      fpmax = huge(acc8)**0.8d0 
+      SMALL=1D0/FPMAX
+      ci=(0d0,1d0)
+      pi=acos(-1d0) 
+      debug=.false.
+      klog=99
+      magn(:)=0      
+
+      if (nch.eq.0) then
+       write(*,*)'Matching: nch=0! Abort'; stop     
+      endif
+      mat(:,:)=0d0
+      mat(1:nch,1:nch)=y(1:nch,1:nch,nr-2)
+
+c
+c derivatives at end point
+c 
+      if (debug) write(99,*)'Derivatives at end point rm=',rmatch
+      do ich=1,nch
+      do is=1,nch
+!      yaux(1:5)= y(ich,is,nr-2:nr+2)
+      yaux(1:5)= y(ich,is,nr-4:nr) ! use last 5 points for derivative
+!      yd(ich,is)=deriv1(yaux,h,nr+2,nr)
+      yd(ich,is)=(yaux(1)-
+     &   8*yaux(2)+8*yaux(4)-yaux(5))/(h*12)
+      mat(nch+ich,is)= yd(ich,is)
+c3      mat(nch+ich,is)= y(ich,is,nr-1)
+      enddo
+      if (debug) write(99,'(5x,50f12.6)') (yd(ich,is),is=1,nch) 
+      enddo
+      
+      linc=ql(inc)
+      do ich=1,nch
+      l=ql(ich) 
+      tkch=ecm+ech(inc)-ech(ich) 
+
+      kch(ich)=sqrt(conv*abs(tkch))
+      krm=kch(ich)*rmatch
+      eta=conv*z12*e2/kch(ich)/2.
+
+      if (tkch.gt.0d0) then   ! open channel
+       call coulph(eta,cph,linc)
+       phc=exp(ci*cph(linc))
+       call coul90(krm,eta,0d0,l,f,g,fp,gp,0,IFAIL)
+
+
+       if (ifail.ne.0) then 
+       write(*,*) 'coul90: ifail=',ifail; stop
+       endif
+       ch  = dcmplx(g(l),f(l))  * (0.,.5)   ! outgoing (i/2) H(+)
+       chd = dcmplx(gp(l),fp(l)) * (0.,.5) ! (i/2) H'(+)
+c3      call coul90(kch(ich)*(rm-h),eta,0d0,l,f,g,fp,gp,0,IFAIL)
+c3      chd = dcmplx(g(l),f(l)) * (0.,.5) 
+c lhs
+      mat(ich,nch+ich)    = ch
+      mat(nch+ich,nch+ich)= chd*kch(ich)
+c rhs
+      bmat(ich,1)      =-kron(ich,inc)*conjg(ch) 
+      bmat(nch+ich, 1) =-kron(ich,inc)*conjg(chd)*kch(ich) 
+      else                      ! closed channel
+       IE = 0  
+       call whit(eta,rmatch,kch(ich),tkch,l,f1,fp1,ie)
+       ch = -f1(l+1) !* (0.,.5) ! Whittaker*i/2
+       chd= -fp1(l+1)!* (0.,.5) ! derivative 
+c lhs
+      mat(ich,nch+ich)    = -ch
+      mat(nch+ich,nch+ich)= -chd*kch(ich)
+c rhs
+      bmat(ich,    1) =0. 
+      bmat(nch+ich,1) =0. 
+      endif
+      enddo
+
+
+c LAPACK SOLVER
+      call zcgesv(2*nch,nrhs,mat,2*nch,ipiv,bmat,2*nch,xmat,2*nch,
+     &           work,swork,rwork,iter,info)
+
+c
+c S-matrix and phase-shifts
+c 
+      flux=0d0
+      phase(1:nch)=0.
+      if (verb.gt.0)
+!     &  write(*,'(8x,"S-matrix (wo/with velocity factors):")') 
+     &   write(*,'(a40,6x,a45)')
+     &   "S-matrix (WITHOUT velocity factors)", 
+     &   "S-matrix (WITH velocity factors)"
+      do ich=1,nch
+      tkch=ecm+ech(inc)-ech(ich) 
+c2      tmat=mat(nch+ich,2*nch+1)
+c2      smat(ich)=(tmat-1)*(0.,-0.5)
+      if (tkch.gt.0) then                                   ! open channel
+      smat(ich)=xmat(nch+ich,1)
+      svel=smat(ich)*sqrt(kch(ich)/kch(inc)) ! S-matrix with velocity factors
+      phase(ich)=(0.,-0.5) * LOG(smat(ich))
+      test=(0.,-0.5) * LOG(smat(ich)) 
+      if (((verb.eq.0).and.(ich.eq.inc)).or.(verb.ge.1)) then
+       write(*,500) ich,smat(ich),svel,abs(svel),test*180/pi
+      endif
+      flux=flux + abs(svel)**2
+500   format(10x,"Chan. #",i3,5x,
+     &    "S=(",1f10.6,",",1f10.6,")", 5x, 
+     &    "S=(",1f10.6,",",1f10.6,") ->  |S|=",1f9.6,3x, 
+     &    "delta=(",1f8.4,",",1f8.4,")")
+
+      else                                                  ! closed channel
+        if (verb.gt.3) then
+        anc=xmat(nch+ich,1)
+        smat(ich)=anc
+        if (debug)write(*,510) ich,anc,abs(anc)
+510     format(5x,"Channel",i3,3x,
+     &    "ANC=(",1g12.6,",",1g12.6,") -> |ANC|=",1g12.6)
+      endif
+      endif
+      enddo !ich
+      phase(1:nch)=phase(1:nch)*180/pi
+       
+      write(*,'(10x,"=> Unitarity=",1f12.8)')flux
+      
+c
+c scattering wavefunctions
+c
+      wf(1:nch,1:nr)=(0d0,0d0)
+      if(abs(smat(inc)).gt.1e-20) then
+        phr = (0.,-0.5) * LOG(smat(inc))
+        yfac=exp(-ci*phr)
+      endif
+
+      do ich=1,nch
+      do is=1,nch
+      wf(ich,1:nr)=wf(ich,1:nr)+xmat(is,1)*y(ich,is,1:nr)
+      enddo
+      enddo
+
+!      wf(:,:)=dsqrt(2d0/pi)*phc*yfac*wf(:,:)
+ccc      wf(:,:)=dsqrt(2d0/pi)*yfac*wf(:,:)
+! TEST
+!      wf(:,:)=dsqrt(2d0/pi)*wf(:,:)
+! TO MATCH WITH FRESCO FORT.17 , NO FACTORS ARE NEEDED HERE!
+
+!      do ir=1,nr
+!      write(51,'(2x,1f6.3,2x,10f14.8)')ir*h,(wf(ich,ir),ich=1,nch)
+!      enddo
+
+      end subroutine
 
 
 
@@ -3409,6 +3833,268 @@ c -----------------------------------------------------------------
 c Matching to real WFS (real couplings!) 
 c
 c ----------------------------------------------- --------------
+      subroutine match_real(ecm,z12,nch,nop,ql,lmax,inc,n1,y,wf,show)
+      use nmrv, only: nr,mu,ech,h,conv,rvec
+      use constants, only : e2,pi
+      use globals, only: verb,debug
+      implicit none
+      logical :: sing,show
+      integer ich,icl,is,inc,ir,klog,nd,n1,n2
+      integer nch,nop,ql(nch),l,linc,lmax,ifail,ie
+      integer ncl,iop,sgn,i,j
+c     --------------------------------------------------------------
+      real*8, dimension(0:lmax):: f,g,gp,fp
+      real*8, dimension(1:lmax+1):: f1,fp1
+      real*8 :: kron,r1,r2,r,whitp,raux,d1,d2,recdet,det
+      real*8 :: ecm,tkch,eta,krm1,krm2,z12,kch(nch)
+      real*8 :: phr,cph(0:lmax) !!!! changed to lmax check !!!!
+      real*8 :: fpmax,small,acc8,flux,magn(nr)
+      real*8:: yd(nch,nch),yaux(5),y1,y2
+      real*8:: y(nch,nch,nr),yop(nch,nop,nr),yor(nch,nop,nr)
+      real*8:: ccoef,dcoef,gaux(nch,nr),amod,rcoef,eph(nch)
+      real*8:: cmat(nch-nop,nch),dmat(nch-nop,nch)
+      real*8:: caux(nch-nop,nch-nop),cinv(nch-nop,nch-nop)
+      real*8:: kmat(nch-nop,nop)
+      real*8:: subnmat(nop,nop),nmat(nop,nop)
+c     ----------------------------------------------------------------
+      complex*16, parameter::iu=cmplx(0.,1.)
+      complex*16:: wf(nch,nch,nr) 
+      complex*16:: ch1,ch2,chp1,chp2,zaux
+      complex*16:: ci,test,cj
+      complex*16:: afas,cnorm,acoef
+      complex*16:: anc
+      complex*16:: amat(nop,nch),bmat(nop,nop)
+c     ---------------------------------------------------------------
+!      debug=.true.
+      show=.false.
+
+      acc8 = epsilon(acc8);
+      fpmax = huge(acc8)**0.8d0 
+      SMALL=1D0/FPMAX
+      pi=acos(-1d0) 
+      klog=99
+      magn(:)=0      
+      nd=6
+      n2=n1-nd
+      ncl=nch-nop
+ 
+!      print*,'Match_real for Ecm=',ecm,' nop=',nop
+
+      if (nch.eq.0) then
+       write(*,*)'Matching: nch=0! Abort'; stop     
+      endif
+
+      amat(:,:)=0d0; cmat(:,:)=0; dmat(:,:)=0
+      linc=ql(inc)
+
+      do ich=1,nch
+        tkch=ecm+ech(inc)-ech(ich) 
+        kch(ich)=sqrt(conv*abs(tkch))
+      enddo
+
+      do is=1,nch
+      do ich=1,nch
+      l=ql(ich) 
+      tkch=ecm+ech(inc)-ech(ich) 
+!      kch(ich)=sqrt(conv*abs(tkch))
+      eta=conv*z12*e2/kch(ich)/2.
+
+      r1=rvec(n1)
+      r2=rvec(n2)
+
+      krm1=kch(ich)*r1
+      krm2=kch(ich)*r2
+
+      y1=y(ich,is,n1)
+      y2=y(ich,is,n2)
+   
+      IF (tkch.gt.0d0) THEN   ! open channel
+       call coulph(eta,cph,linc)
+!       phc=exp(ci*cph(linc))
+!       write(190,'(6f10.4)') tkch,kch(ich),eta,krm1,cph(linc)
+       call coul90(krm1,eta,0d0,l,f,g,fp,gp,0,IFAIL)
+       if (ifail.ne.0) then 
+       write(*,*) 'coul90: ifail=',ifail; stop
+       endif
+       ch1  = dcmplx(g(l),f(l))     !  H(+)(r2)
+       call coul90(krm2,eta,0d0,l,f,g,fp,gp,0,IFAIL)
+       ch2 = dcmplx(g(l),f(l))      !  H(+)(r2)
+
+!       afas=(y1*ch2-y2*ch1)/(y1*conjg(ch2)-y2*conjg(ch1))
+!       amod=(y1*ch2-y2*ch1)/(y1*conjg(ch2)-y2*conjg(ch1))
+
+!       acoef=amod*sqrt(afas)
+
+! Alt method
+       acoef=(y1*ch2-y2*ch1)/(conjg(ch2)*ch1-conjg(ch1)*ch2)
+       acoef=acoef*2*iu*sqrt(kch(ich)*kch(inc))
+       amat(ich,is)=acoef
+
+!       print*,'Sol=',is,' Chan=',ich,'(open) a=',amod*sqrt(afas),acoef
+!       acoef=(y2*conjg(ch1)-y1*conjg(ch2))/
+!     &  (ch2*conjg(ch1)-ch1*conjg(ch2))
+!     &  *2*iu*sqrt(kch(ich)*kch(inc))
+!       print*,'Sol=',is,' Chan=',ich,'(open) a=',amod*sqrt(afas),acoef
+
+      ELSE !......................................... closed channel
+       IE = 0  
+       call whit(eta,r1,kch(ich),tkch,l,f1,fp1,ie)
+       ch1 = f1(l+1) ! Whittaker at r1
+       call whit(eta,r2,kch(ich),tkch,l,f1,fp1,ie)
+       ch2=  f1(l+1) ! Whittaker at r2  
+ 
+       chp1=whitp(eta,r1,kch(ich)) ! exp[+k r1]
+       chp2=whitp(eta,r2,kch(ich)) ! exp[+k r2]
+
+       ccoef=(y1*ch2-y2*ch1)/(chp1*ch2-chp2*ch1)*kch(ich)
+       dcoef=(y1*chp2-y2*chp1)/(ch1*chp2-ch2*chp1)*kch(ich)
+
+       icl=ich-nop
+       cmat(icl,is)=ccoef
+       dmat(icl,is)=dcoef
+       
+!      print*,'Sol=',is,' Chan=',ich,' (closed) c,d=',ccoef,dcoef
+       ENDIF ! OPEN/CLOSED CHANNELS      
+      enddo ! ich
+      enddo ! is
+
+c ... Open channels solutions
+      yop(:,1:nop,1:nr)=y(:,1:nop,1:nr)
+!      do iop=1,nop
+!       write(96,*)'#Open regular solution ',iop,nop,' Ecm=',ecm
+!       do ir=1,nr
+!       r=rvec(ir)
+!       write(96,'(1f8.3,3x,50g14.6)')r,(yop(ich,iop,ir),ich=1,nch)
+!       enddo !ir 
+!       write(96,*)'&'
+!      enddo !iop
+
+
+c ... Regularize in case of closed channels
+      if (ncl.gt.0) then
+        cinv(1:ncl,1:ncl)=cmat(1:ncl,nop+1:nch)
+        caux(:,:)=0.0
+        call cmatin(cinv,caux,ncl)
+! TEST      
+!        caux=matmul(cinv,cmat(1:ncl,nop+1:nch))
+!        write(*,*)'cinv.c=',caux 
+
+        kmat=-matmul(cinv,cmat(1:ncl,1:nop))
+
+c     Regular solutions
+       do iop=1,nop
+       gaux(:,1:nr)=0.0
+       do icl=1,ncl
+        gaux(:,1:nr)= gaux(:,1:nr)
+     &              + kmat(icl,iop)*y(:,nop+icl,1:nr) ! CHECH!!!
+       enddo ! closed channels
+       yop(:,iop,1:nr)=yop(:,iop,1:nr)+gaux(:,1:nr)
+      enddo ! open channels 
+      endif ! open/closed channels?
+
+c B-matrix
+!      print*,'B-matrix: ncl=',ncl
+      do iop=1,nop
+      do ich=1,nop
+       zaux=0
+       do icl=1,ncl
+       zaux=zaux+kmat(icl,iop)*amat(ich,nop+icl)
+       enddo !icl
+       bmat(ich,iop)=amat(ich,iop)+zaux
+!       write(*,*)'iop,ich,b=',iop,ich,bmat(ich,iop)
+      enddo !ich
+      enddo !iop
+
+c Overlap matrix
+      nmat(:,:)=0
+      do iop=1,nop
+      do ich=1,nop
+    
+      nmat(iop,ich)=(sum(conjg(bmat(iop,1:nop))*bmat(ich,1:nop))
+     +             +sum(bmat(iop,1:nop)*conjg(bmat(ich,1:nop))))/2.0
+!      do   j=1,nop  
+!      nmat(iop,ich)=nmat(iop,ich)
+!     &             +0.5*(conjg(bmat(iop,j))*bmat(ich,j)
+!     &             +bmat(iop,j)*conjg(bmat(ich,j)))
+!      enddo ! j
+!      write(*,*)'iop,ich,N=',iop,ich,nmat(iop,ich)
+      enddo !ich
+      enddo !iop
+
+c orthogonalize and normalize solutions using Gram-Schmidt 
+      if (1>2) then
+! GS in determinant form
+      rcoef=1./sqrt(nmat(1,1))
+      yor(:,:,:)=0.
+      yor(1:nch,1,:)=yop(1:nch,1,:)*rcoef
+      sgn=+1
+      do iop=2,nop
+        d1=recdet(nmat(1:iop,1:iop),iop)
+        d2=recdet(nmat(1:iop-1,1:iop-1),iop-1)
+        do is=1,iop
+        subnmat(1:iop-1,1:is-1)   =nmat(1:iop-1,1:is-1)
+        subnmat(1:iop-1,is:iop-1) =nmat(1:iop-1,is+1:iop) 
+        det=recdet(subnmat(1:iop-1,1:iop-1),iop-1)
+        yor(1:nch,iop,:)=yor(1:nch,iop,:)+sgn*det*yop(1:nch,is,:)
+        sgn=-sgn
+        enddo !is
+        yor(1:nch,iop,:)=yor(1:nch,iop,:)/sqrt(d1*d2)
+       
+      if (debug) then
+      write(97,*)'# Regular solution ',iop,'of',nop,' Ecm=',ecm
+      do ir=1,nr
+      r=rvec(ir)
+      write(97,'(1f8.3,3x,50g14.6)')r,(yor(ich,iop,ir),ich=1,nch)
+      enddo !ir 
+      write(97,*)'&'
+      endif
+      enddo !iop
+ 
+      ELSE 
+! Conventional GS form 
+      rcoef=1./sqrt(nmat(1,1))
+!      yor(1:nch,1:nop,1:nr)=yop(1:nch,1:nop,1:nr)
+      wf(1:nch,1,:)=yop(1:nch,1,:)*rcoef
+      if (debug) then
+      write(97,'(a,i2,a,i2,a,1f8.3)')'# Regular solution ',1,
+     & 'of',nop,' Ecm=',ecm
+      do ir=1,nr
+      r=rvec(ir)
+      write(97,'(1f8.3,3x,50g14.6)')r,(wf(ich,1,ir),ich=1,nch)
+      enddo !ir 
+      write(97,*)'&'
+      endif
+      do iop=2,nop
+        wf(1:nch,iop,:)=yop(1:nch,iop,:)
+        do is=1,iop-1
+        wf(:,iop,:)=wf(:,iop,:)-nmat(iop,is)*yop(:,is,:)
+        enddo ! is
+c norm
+        raux=0
+        do i=1,iop
+        do j=1,iop
+        ci=-nmat(iop,i)/nmat(i,i)
+        cj=-nmat(iop,j)/nmat(j,j)
+        if (i.eq.iop) ci=1.
+        if (j.eq.iop) cj=1.
+        raux=raux + ci*cj*nmat(i,j)
+        enddo !j
+        enddo !i
+        wf(:,iop,:)=wf(:,iop,:)/sqrt(raux)
+!!!!!!!!
+      if (debug) then
+      write(97,'(a,i2,a,i2,a,1f8.3)')'# Regular solution ',
+     &  iop,'of',nop,' Ecm=',ecm
+      do ir=1,nr
+      r=rvec(ir)
+      write(97,'(1f8.3,3x,50g14.6)')r,(wf(ich,iop,ir),ich=1,nch)
+      enddo !ir 
+      write(97,*)'&'
+      endif
+!!!!!!!!
+      enddo ! iop
+      endif
+      end subroutine
 
 c ... Recursive determinanat
       recursive function recdet( mat, n ) result( accum )
@@ -3550,12 +4236,80 @@ c ... Apply R^{-1} to every stored radial slice in-place (no copy needed)
 c
 c Gram-Smidt orthogonalization 
 c
+      subroutine gsorto(yp,a,nch)
+      implicit none
+      integer nch,ic,icp,n,i,j
+      complex*16 yp(nch,nch),a(nch,nch),yaux(nch)
+
+      a(:,:)=0;
+      a(1,1)=1
+      do j=2,nch      ! columns
+         a(j,j)=1
+         yaux(:)=0
+         do i=1,j-1   ! rows
+         a(i,j)=-dot_product(yp(:,i),yp(:,j))
+     &          /dot_product(yp(:,i),yp(:,i))
+         yaux(:)=yaux(:) +  yp(:,i)*a(i,j)
+         enddo ! i
+         yp(:,j)=yp(:,j)+ yaux(:)
+      enddo !j
+      return
+      end subroutine
 
 
 
 c
 c Gram-Smidt orthogonalization 
 c
+      subroutine mgsorto(yp,a,nch)
+      implicit none
+      integer nch,ic,icp,n,i,j
+      complex*16 yp(nch,nch),s(nch,nch),a(nch,nch)
+!!! TEST
+      character*1 jobvs,sort
+      logical select
+      integer lda,ldvs,sdim,lwork,info
+      complex*16 w(nch),vs(nch,nch),work(2*nch)
+      double precision rwork(nch)
+      logical bwork(nch)
+!!!!!
+      a(:,:)=0; a(1,1)=1
+      do j=2,nch      ! columns
+         a(j,j)=1
+!         yaux(:)=0
+         do i=1,j-1   ! rows
+         a(i,j)=-dot_product(yp(:,i),yp(:,j))
+     &          /dot_product(yp(:,i),yp(:,i))
+!         yaux(:)=yaux(:) +  yp(:,i)*a(i,j)
+         yp(:,j)=yp(:,j)-yp(:,i)*a(i,j)
+         enddo ! i
+!         yp(:,j)=yp(:,j)+ yaux(:)
+      enddo !j
+
+      RETURN
+c overlap matrix 
+      do ic=1,nch
+      do icp=1,nch
+         s(ic,icp)=dot_product(yp(:,ic),yp(:,icp))
+      enddo ! icp
+      enddo ! ic
+
+
+      lwork=2*nch
+      lda=nch
+      ldvs=nch
+      jobvs='N'
+      sort='N'
+      call ZGEES(JOBVS, SORT, SELECT, NCH, A, LDA, SDIM, W, VS,
+     $                  LDVS, WORK, LWORK, RWORK, BWORK, INFO )
+*
+      if (info.eq.0) then
+      write(*,'(5(i3,2x,1g12.6,3x))') (n,w(n),n=1,nch)
+      else
+         write(*,*)'error: info=',info
+      endif
+            
+      end subroutine
  
       function select(a)
       complex*16 a
@@ -3616,6 +4370,7 @@ c   yp                                     r+h
 c ------------------------------------------------------
       subroutine schcc_MGR(nch,ecm,z12,incvec,ql,factor,dr,r0,
      & npt,wf,phase,smat,info,einc,icc)
+      use telp_mod, only: iftelp_val
       use xcdcc, only: smats
       use nmrv,only: nr,h,vcoup,conv,ech,debug,rmin,hort,
      &               rvec,rmort
