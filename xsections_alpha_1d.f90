@@ -644,7 +644,11 @@
       
       read(kin,nml=gridthetaint) !For alpha and beta this is the internal angle
       read(kin,nml=gridphi)    !For alpha and beta this will be phiq (the v-C phi)
-      read(kin,nml=polarization)
+      read(kin,nml=polarization,iostat=ios)
+      if (ios /= 0) then 
+         write(*,*)' Namelist polarization not present'
+      endif 
+      
       if (sum(abs(polar)).lt.1e-2) polar(:)=1
 
       write(*,*)'Gridthetac not used, theta grid used instead'
@@ -950,7 +954,7 @@
 
       do j=1,3
       kcl(j)=mc/(mc+mv)*bkp(j)-kp(j)+mc/mtot*ktot(j)
-      kvl(j)=mv/(mc+mv)*bkp(j)+kp(j)-mv/mtot*ktot(j)
+      kvl(j)=mv/(mc+mv)*bkp(j)+kp(j)+mv/mtot*ktot(j)
       enddo
 
       Ec=hc**2*dot(kcl,kcl)/(2.d0*mc)
