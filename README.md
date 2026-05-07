@@ -6,7 +6,30 @@ The code assumes a reaction of the form
 
   a(=c+v) + A -> c + v + A
   
-where "c" and "v" are the fragment constituents (denoted, for convenience, core and valence particles, respectively) and "A" represents the target nucleus. 
+where "c" and "v" are the fragment constituents (denoted, for convenience, core and valence particles, respectively) and "A" represents the target nucleus.
+
+## Compilation
+
+### Standard compilation
+```bash
+make
+```
+
+### MPI compilation
+For parallel execution using MPI:
+```bash
+# Uncomment the MPI include line in makefile
+# Change: #include gfortran.def
+# To:    include gfortran-mpi.def
+make
+```
+
+Run with MPI:
+```bash
+mpirun -np <num_processes> ./thox < input.in
+```
+
+The MPI version parallelizes the solution of coupled equations over angular momentum (J) and parity combinations.
 
 ## Short input description 
 ###  SYSTEM  namelist: Zv, Av,  Zc, Ac, sn

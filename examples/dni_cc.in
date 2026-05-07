@@ -8,10 +8,10 @@
 
  &output wfout(:)=1 5   xcdcc=F verb=0 solapout(:)=0  cdccwf=F  /
 
- &GRID  rmin=0.0 rmax=60.0 dr=0.05 rlast=60 /
+ &grid  rmin=0.0 rmax=60.0 dr=0.05 rlast=60 /
 
 # p-n potential
- &POTENTIAL ptype=3 ap=1 at=0 
+ &potential ptype=3 ap=1 at=0 
    vl0(0:2)=-72.150 -38.150 -72.150
    r0=0   a0=1.484  /
 
@@ -28,7 +28,7 @@
  &JPSET /
 
 
- &SCATWF ifcont=T  emin=0.01 emax=10.01  nk=100 inc=1 jset=2  /
+ &SCATWF ifcont=F  emin=0.01 emax=10.01  nk=100 inc=1 jset=2  /
 
  &belambda  ifbel=f uwfgsfile="" lambda=1 nk=100 emin=0.1 emax=20 jset=2 /
 
@@ -71,7 +71,7 @@
          3=Raynal
          4=Modified Numerov used in Fresco
 
-&numerov hcm=0.05 rmaxcc=60  hort=0 method=4 jtmin=20 jtmax=30 skip=f /   
+&numerov hcm=0.05 rmaxcc=60  hort=0 method=4 jtmin=0 jtmax=30 prevfile="" skip=f nopenmp=4/   
 
 
 ######################### TRIPLE DIFFERENTIAL CROSS SECTINS ##############################

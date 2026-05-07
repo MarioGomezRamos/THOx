@@ -290,19 +290,6 @@ c single-particle eigenstates basis
 
 
 c Identity matrix
-	subroutine identity(ndim)
-	use hmatrix,only:idmat
-	implicit none
-	integer:: ndim,n,m
-	if(allocated(idmat)) deallocate(idmat)
-	allocate(idmat(ndim,ndim))
-	idmat(:,:)=0d0
-	do n=1,ndim
-	do m=1,ndim
-	if (n.eq.m) idmat(n,m)=1d0
-	enddo
-	enddo
-	end subroutine
 
 
 

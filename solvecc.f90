@@ -3,11 +3,12 @@ c     Build & solve CDCC equations
       subroutine cdcc(iexgs,ncc)
 c *** ---------------------------------------------------
       use channels, only:jpiset,jpsets,jptset,tset,targdef !MGR
+      use nmrv, only: hort,rmort,vcoup,rvec
+      use telp_mod, only: iftelp_val, rank_telp, sum_wU, sum_w
       use xcdcc   , only: nex,jpch,exch,parch,iftrans,
      &            lamax,hcm,nmatch,elab,ecm,smats,
      &            jtmin,jtmax,rvcc,rmaxcc,nrcc,method,
      &            jump,jbord,wfcdcc
-      use nmrv,only: hort,rmort,vcoup
       use rmat_hp_mod, only: solver_type
       use sistema
       use globals, only: kin,debug,verb
@@ -38,34 +39,43 @@ c *** Variables for CC (move to a module?)
       real*8 :: xsr,xsinel,factor,xsrj,xsinelj
       real*8 start, end
 c     OPENMP----------------------------------------------------------------
-      integer:: num_threads,OMP_GET_NUM_THREADS,omp_get_thread_num
+      integer:: num_threads,OMP_GET_NUM_THREADS,omp_get_thread_num,tid
       logical:: omp_in_parallel
 c     ---------------------------------------------------------------
 
 c     ---------------------------------------------------------------
       complex*16 smat
+      character*40 prevfile
+      logical   prevcalc,file_exists,jpiinfile
+      complex*16,allocatable:: smats_read(:,:,:,:)
+      real*8 jt_read,real_read,imag_read, mod_read
+      integer inc_read,ich_read,ijt_read,ipar_read,ier
+      character*1 par_read
 c     ---------------------------------------------------------------
 
 !MGR--------------------------------------------------------------------
       logical,allocatable:: incvec(:)
-      logical incch
+      logical incch, telpflag
       real*8 einc
       real*8,allocatable:: xs_ch(:,:,:,:)!l, state, jt-l,jt-l incoming
       real*8 jpmax
       integer npmax, nincmax, lpmax, istatemax,jcc,ijml,iinc,linc
       character(len=15) :: col_header
+      integer:: nopenmp
 !-----------------------------------------------------------------------
 
       namelist /numerov/ method,
      &         hcm,rmaxcc,rcc,hort,rmort,
      &         jtmin,jtmax,jump,jbord,skip,
-     &         nlag,ns,solvertype ! R-matrix
+     &         nlag,ns,solvertype,prevfile,telpflag,nopenmp 
 c     ---------------------------------------------------------------
 
 
 c ... initialize variables --------------------------------------------------
       dry=.true.
       skip=.false.
+      prevcalc=.false.
+      prevfile=""
       jtmin=-1; jtmax=-1
       jump=0; jbord=0; 
 c ----------------------------------------------------------------------------
@@ -77,7 +87,8 @@ c ----------------------------------------------------------------------------
       conv=(2*mupt/hc**2)
       etai=conv*zp*zt*e2/kcmi/2.
       zp  =zc+zv 
-
+      num_threads=omp_get_num_threads()
+      nopenmp=num_threads
       write(*,'(//,5x,"******  CC SOLUTIONS ******")')
 
 
@@ -88,6 +99,7 @@ c ... Numerov specifications
       rmort =0
       nlag  =0; ns=1; solvertype=3
       read(kin,nml=numerov)
+      iftelp_val = telpflag
       solver_type = solvertype  ! pass to HPRMAT module
 
       if ((jtmin.lt.0).or.(skip)) then
@@ -294,6 +306,36 @@ c *** Channel energy
       write(*,'(8x,  "=> Max Jt =",f7.1)') maxval(jptset(icc)%jt(:))     
       write(*,'(8x,  "=> Max JTOT =",f8.1)') jtotmax 
       
+!!!!!! Check if prevfile exists
+      if (prevfile.ne."" ) then
+        inquire(file=prevfile, exist=file_exists)
+        if (file_exists) then
+        write(*,'(5x,"[Using previous calculations:",a60,"]")') prevfile
+          prevcalc=.true.
+          allocate(smats_read(0:ceiling(jtmax),2,nchmax,nchmax))
+          smats_read(:,:,:,:)=0d0
+          open(67, file=prevfile, status='old', access='sequential')
+          write(*,*) 'Reading S-matrices from previous calculations...'
+          do 
+       read(67,*,iostat=ier) jt_read,par_read,inc_read,ich_read,
+     &  real_read,imag_read
+          if (ier .ne. 0) exit
+       !write(*,*) jt_read,par_read,inc_read,ich_read,real_read,imag_read
+
+          if (par_read .eq. "+") then
+            smats_read(floor(jt_read),1,inc_read,ich_read)=             &
+     &       cmplx(real_read,imag_read)
+          else if(par_read .eq. "-") then
+            smats_read(floor(jt_read),2,inc_read,ich_read)=             &
+     &       cmplx(real_read,imag_read)
+          endif
+          enddo
+          close(67)
+        else
+          write(*,'(5x,"[File:",a60,"] does not exist")') prevfile
+        endif
+      endif 
+
 !!!! TEMPORARY SOLUTION
       if (ncc.gt.8000) then
         write(*,*)'too many J/pi sets!.Increase dim of jptset'
@@ -340,6 +382,8 @@ c (in both cases, they are interpolated to the specified radial grid for CC )
 c ---------------------------------------------------------------------------
 
 
+      call omp_set_num_threads(nopenmp)
+
 c ***
 c *** Solve CC eqns for ach J/pi set ***
 c ***
@@ -348,14 +392,27 @@ c ***
       smats=0d0
 !     do icc=1,ncc
       icc=0
+      jcc=0
       xsr=0
       xsinel=0
+!$omp parallel do private(ijt,partot,xsrj,xsinelj,jtot,nch,xsr,xsinel,l,
+!$omp&  rturn,einc,incvec,incch,ninc,inc,iex,jpiinfile,ijt_read,icc,
+!$omp&  ipar_read,mod_read,ich_read,inc_read,jp,jt,kcmf,jtarg,
+!$omp&  wfcdcc,par_read,ecmf,smat,factor,tid) 
       do ijt=1,njt
       xsrj   =0      ! reaction  x-section
       xsinelj=0      ! inelastic x-section
       do partot=1,-1,-2
-        jtot=jtmin+dble(ijt-1)
-        icc=icc+1    
+        jtot=jtmin+dble(ijt-1)    
+        do icc=1,ncc
+        if (abs(jptset(icc)%jtot-jtot).lt.1e-6.and.                     &
+     &   jptset(icc)%partot.eq.partot) exit   
+        enddo
+        if (icc.gt.ncc) then
+          write(*,*)'Error: CC set not found for J/pi=',jtot,partot
+          write(*,*)'Maximum number of CC sets:',ncc
+          stop
+        endif
         nch=jptset(icc)%nchan   ! number of channels for this J/pi set     
         if (jtot.ne.jptset(icc)%jtot) then
           print*,'internal error: solvecc'
@@ -367,7 +424,6 @@ c ***
 !        partot=jptset(icc)%partot
         xsr   =0      ! reaction  x-section
         xsinel=0      ! inelastic x-section
-
         write(*,300) icc,jtot,parity(partot+2)
 300     format(/,5x, 35("*")," CC SET",i6, " J/pi=",1f5.1,a1,2x,35("*")) 
         if (nch.eq.0) then 
@@ -382,14 +438,78 @@ c ***
         rturn =(etai + SQRT(etai**2 + L*(L+1d0)))/kcmi
         if (verb.ge.2) write(*,310) nch,rturn
 310     format(5x,"[",i3," channels",4x,"Elastic R-turn=",1f6.2," fm ]")
+
+        allocate(incvec(nch))
+        einc=jptset(icc)%exc(iexgs)
+        incvec(:)=.false.
+        incch=.false.
+        ninc=0
+        do inc=1,nch  ! incoming channels are those with iex=iexgs
+          iex  = jptset(icc)%idx(inc)
+          if ((iex.eq.iexgs) .and. (jptset(icc)%idt(inc).eq.1)) then
+          incvec(inc)=.true.
+          incch=.true.
+          ninc=ninc+1
+          endif
+        enddo  
+        if (.not. incch) then
+        deallocate(incvec)
+        cycle
+        endif 
+
+!     Get the S matrices from file
+       jpiinfile=.false.
+       if (prevcalc) then
+         ijt_read=floor(jtot)
+         if (partot.eq.1) then
+            ipar_read=1
+         else if (partot.eq.-1) then
+            ipar_read=2
+         endif
+         mod_read=0d0
+         do inc_read=1, nchmax
+         do ich_read=1, nchmax
+            mod_read=mod_read                                           &
+     &   +abs(smats_read(ijt_read,ipar_read,inc_read,ich_read))**2
+         enddo
+         enddo
+         if (mod_read .lt. 1e-10) then
+            jpiinfile=.false.
+         else
+            jpiinfile=.true.
+         endif
+         if (jpiinfile) then
+            write(*,*) "J/pi set",jtot,partot," found in file"
+         do inc_read=1, nch
+         do ich_read=1, nch
+            smats(icc,inc_read,ich_read)=                               &
+     &       smats_read(ijt_read,ipar_read,inc_read,ich_read)
+         enddo
+         enddo    
+         endif
+       endif 
+
+!       tid=omp_get_thread_num()
+!       allocate(vcoup(tid+1,tid+1,tid+1))
+!       write(*,*) 'In thread',tid,'Vcoup allocated',allocated(vcoup),
+!     & 'with size',size(vcoup,1),size(vcoup,2),size(vcoup,3),nch,nrcc 
+!       deallocate(vcoup)
+!       write(*,*) 'In thread',tid,'Vcoup deallocated',allocated(vcoup)
+!       call flush(6)
+
+       if(.not. (prevcalc.and.jpiinfile) .or. iftelp_val) then
    
-c ... construct < c| V | c'> matrix for this J/pi set from radial F(R)
+!c ... construct < c| V | c'> matrix for this J/pi set from radial F(R)
         if (targdef) then !MGR
           call makevcoup_tdef(icc,nch)
         else
           call makevcoup(icc,nch)  ! 
         endif
 
+        if (.not. incch) then
+        deallocate(vcoup)
+        cycle
+        endif 
 
 !c ... Solve CC equations for each incoming channel 
 !        do inc=1,nch  ! incoming channels are those with iex=iexgs
@@ -415,25 +535,6 @@ c ... construct < c| V | c'> matrix for this J/pi set from radial F(R)
 !        enddo ! ich
 !       enddo !inc
 
-!MGR--------------------------------------------------------------------
-c ... Solve CC equations for each incoming channel 
-        allocate(incvec(nch))
-        einc=jptset(icc)%exc(iexgs)
-        incvec(:)=.false.
-        incch=.false.
-        ninc=0
-        do inc=1,nch  ! incoming channels are those with iex=iexgs
-          iex  = jptset(icc)%idx(inc)
-          if ((iex.eq.iexgs) .and. (jptset(icc)%idt(inc).eq.1)) then
-          incvec(inc)=.true.
-          incch=.true.
-          ninc=ninc+1
-          endif
-        enddo  
-        if (.not. incch) then
-        deallocate(incvec,vcoup)
-        cycle
-        endif 
         
         
          
@@ -465,8 +566,22 @@ c ... write channels quantum numbers in CDCC file
         allocate(wfcdcc(ninc,nch,nrcc))
 	endif 
 	
-       call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)    
-          
+       call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)
+       
+      !write S matrices to file
+      if (partot.eq. 1) par_read="+"
+      if (partot.eq. -1) par_read="-"
+      do inc=1,nch
+         do ich=1,nch
+            if (abs(smats(icc,inc,ich)).gt.1e-15) then
+            write(67,*) jtot,par_read,inc,ich,                          &
+     &         real(smats(icc,inc,ich)),imag(smats(icc,inc,ich))
+            call flush(67)
+            endif
+         enddo
+      enddo 
+
+      endif ! skip calculation if read    
 c ... Compute integrated cross sections without target spin
        do inc=1,nch
        if (.not. incvec(inc)) cycle
@@ -488,29 +603,26 @@ c ... Compute integrated cross sections without target spin
           endif
         enddo ! ich
        enddo !inc
-       deallocate(incvec)
-!-----------------------------------------------------------------------
-      if (allocated(vcoup)) deallocate(vcoup)
-!      write(440,*) 'Jtot',jtot,partot
-!      do inc=1,nch
-!      write(440,*) (dble(smats(icc,inc,ich)),dimag(smats(icc,inc,ich)),
-!     & ich=1,nch)
-!     enddo
-      
        write(*,320)xsr,xsinel,xsr-xsinel
 320    format(5x,"o X-sections: Reac=", 1f8.3,5x,
      &   " Inel+BU=",1f8.3, 5x," Abs=",1f8.3," mb")
 
+       deallocate(incvec)
+!-----------------------------------------------------------------------
+      if (allocated(vcoup)) deallocate(vcoup)
+
        enddo ! par
 c       write(157,'(1x,1f6.1,a1,2x,3f12.6)') jtot, parity(partot+2),
 c     &    xsrj-xsinelj,xsrj,xsinelj
-       if (jptset(icc)%interp) cycle 
-       write(156,'(1x,1f6.1,2x,3g14.5)') jtot, 
-     &    xsrj-xsinelj,xsrj,xsinelj
+       if (.not. jptset(icc)%interp) then
+         write(156,'(1x,1f6.1,2x,3g14.5)') jtot, 
+     &      xsrj-xsinelj,xsrj,xsinelj
+         call flush(156)
+       endif
 
-       call flush(156)
        call flush(6) 
 330    enddo !ijt
+!$omp  end parallel do
       lpmax=0
       jpmax=0.0d0
       istatemax=0
@@ -536,9 +648,10 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
       
       xs_ch=0.0d0
       do jcc=1,icc
-         if (jptset(jcc)%nchan.eq.0) cycle
-        do ich=1,jptset(jcc)%nchan
-          do inc=1,jptset(jcc)%nchan
+         nch = nint(jptset(jcc)%nchan)
+         if (nch.eq.0) cycle
+        do ich=1,nch
+          do inc=1,nch
             if (jptset(jcc)%idx(inc).ne.iexgs) cycle
             if (ich.eq.inc)cycle
             iex=jptset(jcc)%idx(ich)
@@ -614,6 +727,7 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
 
       end if ! targdef
 
+      call omp_set_num_threads(num_threads)
 
        call cpu_time(end)
        write(*,'(/,20x, "** All CC sets done in",1f12.2,"secs ** ")')
@@ -664,124 +778,6 @@ c *** ------------------------------------------------------------
 c *** -------------------------------------------------------
 c *** Solve CC eqns using Numerov method
 c c *** -----------------------------------------------------
-      subroutine solvecc(icc,nch,inc,nr,nlag,ns)
-      use xcdcc   ,  only: hcm,elab,smats,rvcc,method
-      use channels,  only: jptset
-      use nmrv,      only: vcoup, ech,ql,hort,cutr
-      use constants, only: hc,amu
-      use sistema
-      use globals  , only: verb,debug
-!      use memory   , only: tcc
-      implicit none
-      integer    :: ir,n,nr,icc,nch,inc,nlag,ns
-      complex*16 :: phase(nch),wf(nch,nr),smat(nch)
-      real*8:: ecm
-      real*8:: rmass,factor,rstart
-!!!!!!!!!! TEST: delete me when I work 
-      real*8 vcoul,rc
-      logical:: test=.false., info=.true.
-      real*8 ::v0,r0,a0,w0,ri,ai,a13,vaux,waux,ws,r
-      real*8 ::ti,tf
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!      write(*,'(//,3x," Numerov integration:")') 
-      debug=.false.
-      rmass=mp*mt/(mp+mt)
-      ecm=elab*mt/(mp+mt)
-      factor=(2*amu/hc**2)*rmass
-
-
-!      allocate(wf(nch,nmatch))
-      if (allocated(ech))   deallocate(ech)
-      if (allocated(ql))    deallocate(ql)
-      allocate(ech(nch))
-      allocate(ql(nch))
-
-      ql(1:nch) =jptset(icc)%l(1:nch)  
-      ech(1:nch)=jptset(icc)%exc(1:nch)+jptset(icc)%ext(1:nch)
-
-
-!!!!! TEST!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      if (test) then
-      write(*,*)'TESTING NUMEROV INTEGRATION'
-c *** Channels and potentials
-      ql(1:nch) =2
-      ech(1:nch)=0.0
-      inc=1
-      zp=1; zt=6
-      ecm=18.46;
-      rc=1.25
-
-      v0=-50; r0=1.2; a0=0.5
-      w0=-10; ri=1.2; ai=0.5
-c we do not consider the 1st point (r=rmin)
-c becasuse in scatcc the 1st point is r=h
-      rstart=hcm
-      do ir=1,nr
-        a13=12**.333333       
-        r=ir*hcm 
-        vaux=ws(r,v0,r0*a13,a0)
-        waux=ws(r,w0,ri*a13,ai)
-        vcoup(1,1,ir)=cmplx(vaux,waux) + vcoul(r,zp,zt,rc*a13) 
-!        write(40,'(1f8.3,2x,50f12.8)') r,vcoup(1,1,ir)
-      enddo      
-      endif
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-c Solve eqns
-c-------------------------------------------------------
-      if (debug) then
-        write(*,*) 'Calling Numerov with:'
-        write(*,*)'    Incoming channel=',inc
-        write(*,*)'    (2*amu/hc**2)*rmass=',factor
-        write(*,*)'    Ecm=',ecm
-        write(*,*)'    l-values=',ql(1:nch)
-        write(*,*)'    Channel energies:',ech(1:nch)
-        write(*,*)'    Z1*Z2=',zp*zt
-      if (.not.allocated(vcoup)) then
-        write(*,*)'solvecc: vcoup not allocated!'
-        stop
-      endif
-      endif
-c -----------------------------------------------------
-      call cpu_time(ti)
-      rstart=rvcc(1)
-      cutr=-10
-      select case(method)
-      case(0) ! predictor-corrector (Baylis & Peels)
-        call schcc(nch,ecm,zp*zt,inc,ql,factor,hcm,
-     &  rstart,nr,wf,phase,smat,info)
-
-      case(1,2,3) ! Enhanced Numerov (Thorlacious & Cooper) / Raynal
-        call schcc_ena(nch,ecm,zp*zt,inc,ql,factor,hcm,
-     &  rstart,nr,wf,phase,smat,method,info)
-
-      case(4)     ! Enhanced Numerov (Fresco version of T&C)
-        call schcc_erwin(nch,ecm,zp*zt,inc,ql,factor,hcm,
-     &  rstart,nr,wf,phase,smat,method,info)
-
-      case(5)     ! R-matrix method (P. Desc. subroutine)
-        write(0,*)'calling scchcc_rmat'
-        write(*,*) '=== R-matrix parameters: nlag=',nlag,' ns=',ns
-        call schcc_rmat(nch,ecm,zp*zt,inc,ql,factor,hcm,
-     &  rstart,nr,wf,phase,smat,info,nlag,ns)
-
-      case default
-        write(*,*)'Method',method,' not valid!'
-        stop
-      end select
-
-      call cpu_time(tf)
-      if (verb.ge.3) 
-     &write(*,'(5x,"[ CC solved in",1f8.3," sec ]")') tf-ti
-!      tcc=tcc+finish-start
-      smats(icc,inc,1:nch)=smat(1:nch)
-
-c     Deallocate variables
-!      if (allocated(vcoup)) deallocate(vcoup)
-      deallocate(ql)
-      end subroutine
 
 c *** -------------------------------------------------------
 c *** Solve CC eqns using Numerov method
@@ -789,7 +785,8 @@ c c *** -----------------------------------------------------
       subroutine solvecc_MGR(icc,nch,incvec,nr,nlag,ns,einc)
       use xcdcc   ,  only: hcm,elab,smats,rvcc,method
       use channels,  only: jptset
-      use nmrv,      only: vcoup, ech,ql,hort,cutr
+      use telp_mod, only: iftelp_val, sum_wU, sum_w
+      use nmrv,      only: vcoup, ech,ql,hort,cutr, rvec
       use constants, only: hc,amu
       use sistema
       use globals  , only: verb,debug
@@ -945,9 +942,14 @@ c     .............................................................
       if (verb.ge.3) write(*,190) ymem
 190   format(5x,"[ Coupling matrix require", 1f8.2," Mbytes ]")
 
+!      write(*,*)'nrcc=',nrcc,' nch=',nch
       if (allocated(vcoup)) deallocate(vcoup)
       allocate(vcoup(nch,nch,1:nrcc))
+!      write(*,*)'vcoup allocated',allocated(vcoup),'size',size(vcoup,1),
+!     & 'size2',size(vcoup,2),'size3',size(vcoup,3)
+!      call flush(6)
       vcoup=0d0
+
 
       ix=0
       do ni=1,nch
@@ -1272,184 +1274,10 @@ c     ...............................................................
 c *** ---------------------------------------------------------------------
 C     Use previously calcualted F(R)'s and interpolate in radial grid
 c     used to solve the CC equations  
-      subroutine int_ff()
-c *** --------------------------------------------------------------------      
-      use xcdcc,   only: hcm,ffc,lamax,nex,nrcc,jpch,Ff,lambmax,
-     &                   nrad3,rstep,parch,rmaxcc,rvcc,realwf
-      use channels,only: jpiset,jpsets
-      use wfs     ,only: idx
-      use memory
-      use globals ,only: verb
-      implicit none
-      integer :: ir,irr
-      integer :: m1,m2,nff,lam,par1,par2
-      complex*16, pointer:: faux(:)
-      real*8  :: rv(nrad3),xpos,rfirst
-      real*8 :: jp1,jp2,r,ymem
-      real*8, parameter:: alpha=0d0
-      complex*16 cfival,caux,fic,caux2,ffc4
-c     ----------------------------------------------------
-     
-      write(*,'(//,3x, "** INTERPOLATE FORMFACTORS **" )')
-
-      lamax=2*maxval(jpiset(:)%jtot)
-
-c ... Memory requirements
-      ymem=nex*nex*(lamax+1)*nrcc*lc16/1e6
-      if (verb.ge.1) write(*,190) ymem
-190   format(5x,"[ FF require", 1f8.2," Mbytes ]")
-
-      if (allocated(ffc)) deallocate(ffc)
-      allocate(ffc(nex,nex,0:lamax,1:nrcc))
-      ffc=0
-      do ir=1,nrad3
-       rv(ir)= rstep + rstep*(ir-1) ! CHECK
-      enddo     
- 
-      write(*,170) nrcc, hcm,rmaxcc,hcm
-170   format(/,5x,"=>  Interpolating F(R) in grid with ",i10, ' points:',
-     &           2x,"[ Rmin=",1f5.2,2x," Rmax=",
-     &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
-
-      if (rmaxcc.gt.rv(nrad3)) then
-        write(*,'(3x,"*** WARNING: Coupled eqns integrated up to",f6.1,
-     &  1x,"fm, but formfactors calculated for R<",1f6.1," fm" )')
-     &  rmaxcc,rv(nrad3) 
-      endif 
-
-      nff=0
-      do m1=1,nex
-      par1= parch(m1)
-      jp1 = jpch(m1)
-! Changed in v2.4 !!!!!!!!!!!!!!!!!!!!
-!      do m2=m1,nex
-      do m2=1,nex
-      if (realwf.and.(m2.lt.m1)) cycle
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      jp2 = jpch(m2)
-      par2= parch(m2)
-       do lam= nint(dabs(jp1-jp2)),min(nint(jp1+jp2),lambmax) !nint(jp1+jp2)
-       if (par1*par2*(-1)**lam<0) cycle
-       nff=nff+1
-       faux =>  Ff(m1,m2,lam,:)
-c      interpolate & store in integration grid
-       do ir=1,nrcc
-!        r=hcm*ir ! grid used in scattcc
-!        r=dble(ir-1)*hcm ! grid used in scattcc (Changed in v2.2)
-        r=rvcc(ir)
-        if (r.gt.rv(nrad3)) cycle ! DO NOT EXTRAPOLATE 
-!        caux=cfival(r,rv,faux,nrad3,alpha)
-        xpos=(r-rstep)/rstep
-        caux=FFC4(xpos,faux,nrad3)
-        ffc(m1,m2,lam,ir)=caux
-!        if (abs(caux).gt.1e20) then 
-!          write(90,*)'# ** INT_FF: F(R)=',caux, 
-!     &  'for ir,lam,m1,m2',ir,lam,m1,m2
-!         write(90,'(1f8.3,2x,2g16.5)') (rv(irr),faux(irr),irr=1,nrad3)
-!         write(90,*)'&'
-!         stop
-!        endif
-       enddo ! ir
-      enddo ! lam
-      enddo !m2
-      enddo !m1
-  
-      write(*,*) '=> there are', nff,' radial formfactors '
-      nullify(faux)
-      deallocate(ff)
-      end subroutine
 
 c *** ---------------------------------------------------------------------
 C     Use previously calcualted F(R)'s and interpolated in radial grid
 c     used to solve the CC equations  (Target excitation)
-      subroutine int_ff_tdef()
-c *** --------------------------------------------------------------------      
-      use xcdcc,   only: hcm,ffcn,ffcc,lamax,nex,nrcc,jpch,Fc,nlambhipr,
-     &                   nrad3,rstep,parch,rmaxcc,rvcc,Fn
-      use channels,only: jpiset,jpsets
-      use wfs     ,only: idx
-      use memory
-      use globals ,only: verb
-      implicit none
-      integer :: ir,irr
-      integer :: m1,m2,nff,lam,par1,par2
-      complex*16, pointer:: faux1(:),faux2(:)
-      real*8  :: rv(nrad3)
-      real*8 :: jp1,jp2,r,ymem,yffc
-      real*8, parameter:: alpha=0d0
-      complex*16 cfival,caux,ffc4
-c     ----------------------------------------------------
-     
-      write(*,'(//,3x, "** INTERPOLATE FORMFACTORS TARG DEF **" )')
-
-
-      ymem=nex*nex*(nlambhipr)*nrcc*lc16/1e6
-      if (verb.ge.1) write(*,190) ymem
-190   format(5x,"[ FF require", 1f8.2," Mbytes ]")
-
-      if (allocated(ffcn)) deallocate(ffcn)
-      if (allocated(ffcc)) deallocate(ffcc)
-      allocate(ffcn(nex,nex,nlambhipr,1:nrcc),
-     & ffcc(nex,nex,nlambhipr,1:nrcc))
-      ffcn=0
-      ffcc=0
-             
-      do ir=1,nrad3
-       rv(ir)= rstep + rstep*(ir-1) ! CHECK
-      enddo     
-      write(*,170) nrcc, hcm,rmaxcc,hcm
-170   format(/,5x,"=>  Interpolating F(R) in grid with ",i4, ' points:',
-     &           2x,"[ Rmin=",1f5.2,2x," Rmax=",
-     &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
-
-      if (rmaxcc.gt.rv(nrad3)) then
-        write(*,'(3x,"*** WARNING: Coupled eqns integrated up to",f6.1,
-     &  1x,"fm, but formfactors calculated for R<",1f6.1," fm" )')
-     &  rmaxcc,rv(nrad3) 
-      endif 
-
-      nff=0
-      do m1=1,nex
-      par1= parch(m1)
-      jp1 = jpch(m1)
-      do m2=m1,nex
-      jp2 = jpch(m2)
-      par2= parch(m2)
-       do lam= 1,nlambhipr !nint(jp1+jp2)
-       nff=nff+1
-       faux1 =>  Fc(m1,m2,lam,:)
-       faux2 =>  Fn(m1,m2,lam,:)
-c      interpolate & store in integration grid
-
-       do ir=1,nrcc
-!        r=hcm*ir ! grid used in scattcc
-!        r=dble(ir-1)*hcm ! grid used in scattcc (Changed in v2.2)
-        r=rvcc(ir)
-        if (r.gt.rv(nrad3)) cycle ! DO NOT EXTRAPOLATE 
-!        caux=cfival(r,rv,faux1,nrad3,alpha)
-        yffc=(r-rv(1))/(rv(2)-rv(1))
-        caux=ffc4(yffc,faux1,nrad3)
-        ffcc(m1,m2,lam,ir)=caux
-!        caux=cfival(r,rv,faux2,nrad3,alpha)
-        yffc=(r-rv(1))/(rv(2)-rv(1))
-        caux=ffc4(yffc,faux2,nrad3)
-        ffcn(m1,m2,lam,ir)=caux
-!        if (abs(caux).gt.1e20) then 
-!          write(90,*)'# ** INT_FF: F(R)=',caux, 
-!     &  'for ir,lam,m1,m2',ir,lam,m1,m2
-!         write(90,'(1f8.3,2x,2g16.5)') (rv(irr),faux(irr),irr=1,nrad3)
-!         write(90,*)'&'
-!         stop
-!        endif
-       enddo ! ir
-      enddo ! lam
-      enddo !m2
-      enddo !m1
-  
-      write(*,*) '=> there are', nff,' radial formfactors '
-      nullify(faux1,faux2)
-      deallocate(fc,fn)
-      end subroutine
 
 
 c *** ---------------------------------------------------------------

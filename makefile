@@ -10,6 +10,9 @@
 #If compiled with gfortran
 	include gfortran.def
 
+#If compiled with gfortran and MPI
+#	include gfortran-mpi.def
+
 #If compiled with gfortran-10
 #include gfortran-10.def
 

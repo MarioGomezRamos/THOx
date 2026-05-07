@@ -1,0 +1,13 @@
+# If compiled with gfortran and MPI
+FC=mpifort
+
+# For OpenMP support (used in other parts of the code)
+PARALLEL=-fopenmp
+#PARALLEL = 
+
+# Optimized compilation flags with MPI preprocessor macro
+FFLAGS= -cpp -O3 -march=native -ffixed-form -fno-align-commons $(PARALLEL) -DMPI
+FFLAGS1= -cpp -O3 -march=native -ffixed-form -fno-align-commons $(PARALLEL) -DMPI
+
+# LAPACK/BLAS from OpenBLAS (mpifort wrapper handles the MPI linking)
+LFLAGS = -lopenblas -fopenmp

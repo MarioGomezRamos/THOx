@@ -1,3 +1,9 @@
+      module telp_mod
+      logical :: iftelp_val = .false.
+      integer :: rank_telp = 0
+      complex*16, allocatable :: sum_wU(:)
+      real*8, allocatable :: sum_w(:)
+      end module
       module nmrv
       logical:: debug    ! if true,print debug information
       integer:: verb     ! determines the amount of trace output
@@ -12,11 +18,17 @@
       real*8 :: rmort    ! max radius for orhogonalization
       real*8 :: cutr=-20 ! cutoff
       real*8, allocatable :: rvec(:)
+!$omp threadprivate(rvec)
       complex*16,allocatable,target :: vcoup(:,:,:)   ! coupling matrix formfactors
+!$omp threadprivate(vcoup)
       real*8,allocatable       :: ech(:)   ! channel energies
-      real*8,allocatable       :: kch(:)   ! channel wave-numbers      
-      complex*16,allocatable,target:: y(:,:,:) !
+!$omp threadprivate(ech)      
+      real*8,allocatable       :: kch(:)   ! channel wave-numbers
+!$omp threadprivate(kch)            
+      complex*16,allocatable,target:: y(:,:,:) ! 
+!$omp threadprivate(y)         
       integer,allocatable      :: ql(:)    ! l-values for channels
+!$omp threadprivate(ql)      
       end module 
 
 
@@ -605,74 +617,6 @@ c Sort eigenphases
 !-------------------------------------------------------------------------------
 !  Auxiliary routine for calculation of scat. wf. for arbitrary jpi set and ecm
 !-------------------------------------------------------------------------------
-      subroutine test_cont(nset,nchan,inc,ecm,wf)
-      use nmrv,only:nch,ech,vcoup,hort
-      use constants
-      use channels, only: jpiset, ql,qspl, qj, qspj,qjc,exc,cindex
-      use sistema
-      use potentials, only: ccmat
-      use wfs, only: nr,dr,rvec
-      implicit none
-c     ------------------------------------------------------------
-      logical :: info
-      integer ir,n,nchan,method
-      integer nset,inc,partot
-      real*8  ecm,z12,jtot,rm,factor,r0,vscale
-      complex*16 :: phase(nchan),smat(nchan)
-      complex*16 :: wf(nchan,nr)
-c     ------------------------------------------------------------
-      real*8 :: eph(nchan)
-c     ------------------------------------------------------------
-      rm=av*ac/(av+ac)
-      factor=(2*amu/hc**2)*rm
-
-      jtot    =jpiset(nset)%jtot
-      partot  =jpiset(nset)%partot
-      vscale  =jpiset(nset)%vscale
-      
-      
-      if (nchan.ne.jpiset(nset)%nchan) then
-         write(*,*)'Wrong number of channels passed to test_cont!'
-      endif
-      nch=nchan
-
-      if (allocated(vcoup)) deallocate(vcoup)
-      if (allocated(ech))   deallocate(ech)
-      allocate(vcoup(nch,nch,1:nr)) ! changed in v2.2
-
-      vcoup(:,:,:)=0d0 
-      allocate(ech(nch))
-      ql(1:nchan)    =jpiset(nset)%lsp(1:nchan)  
-      ech(1:nch)     =jpiset(nset)%exc(1:nch)
-      qj(1:nchan)    =jpiset(nset)%jsp(1:nch)
-      qjc(1:nchan)   =jpiset(nset)%jc(1:nch)
-      cindex(1:nchan)=jpiset(nset)%cindex(1:nch)
-
-      call coefmat(nset,nch)
-      vcoup(:,:,1:nr)=ccmat(:,:,1:nr)/factor
-
-      r0=rvec(1)
-      method=4       ! enhanced Numerov as used in Fresco
-      hort  =0       ! no stabilization
-      info  =.false. ! silent output
-!     call schcc(nch,ecm,zv*zc,inc,ql,factor,dr,r0,nr-1,wf,phase,smat)
-!      call schcc(nch,ecm,zv*zc,inc,ql,factor,dr,r0,
-!     & nr,wf,phase,smat,info)
-      call schcc_erwin(nch,ecm,zc*zv,inc,ql,factor,dr,r0,
-     & nr,wf,phase,smat,method,info,eph)
-c to get continuum wfs 'normalized' as <k|k'> = delta(k-k')
-!      wf(:,:)=wf(:,:)*sqrt(2./pi)
-
-!      if ((ecm.gt.0.5).and.(ecm.lt.1)) then 
-!      write(500,*)'# WF wf for ecm,ql(:)=',ecm,ql(1:nchan)
-!      do ir=1,nr
-!         write(500,'(1f8.3,2x,50f12.8)') rvec(ir),
-!     &       (real(wf(n,ir)),n=1,nch)
-!      enddo
-!      write(500,*)'&'
-!      endif
-      deallocate(ccmat,vcoup)
-      end subroutine
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -1055,7 +999,7 @@ c Re-orthogonalize solution vectors
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin)
      & .and.(mod(ir-irmin,norto).eq.0)) then 
 !      if (orto.and.(r.le.rmorto).and.(mod(ir-irmin,norto).eq.0)) then 
-       if (verb.ge.4)write(*,'(5x,"-> orthogonalizing at r=",1f7.2)')r
+       if (verb.ge.3)write(*,'(5x,"-> orthogonalizing at r=",1f7.2)')r
 
         if (debug) then
         write(94,*)'|yp x yp| (before G-S) for ir,r',ir,r
@@ -1239,6 +1183,7 @@ c   yp                                     r+h
 c ------------------------------------------------------
       subroutine schcc_ena(nch,ecm,z12,inc,ql,factor,dr,r0,
      & npt,wf,phase,smat,method,info)
+      use telp_mod, only: iftelp_val
       use nmrv,only: nr,h,vcoup,conv,ech,debug,rmin,hort,rvec,rmort
       use globals, only: verb
       use factorials
@@ -1429,7 +1374,7 @@ c
                          
 
 c calculate and store Y=(1-T)W  
-      if ((ir.ge.nr-8).or.(orto)) then      
+      if ((ir.ge.nr-8).or.(orto).or.iftelp_val) then      
         call w2y(wp,yp,ql,kch2,ir,nch)
         y(1:nch,1:nch,ip)=yp(1:nch,1:nch) 
       endif
@@ -1437,7 +1382,7 @@ c calculate and store Y=(1-T)W
 c Re-orthogonalize solution vectors
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin)
      & .and.(mod(ir-irmin,norto).eq.0)) then 
-      if (verb.ge.4)write(*,'(5x,"-> orthogonalizing at r=",1f7.2)')r
+      if (verb.ge.3)write(*,'(5x,"-> orthogonalizing at r=",1f7.2)')r
         if (debug) then
         write(94,*)'|yp x yp| (before G-S) for ir,r',ir,r
         do is=2,nch
@@ -2471,7 +2416,7 @@ c Re-orthogonalize solution vectors ....................................
       if (norto.gt.0) then
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin).and.(hort.gt.0)
      & .and.(mod(ir-irmin,norto).eq.0).and.(ir.lt.nr-10)) then 
-        if (verb.ge.4) 
+        if (verb.ge.3) 
      &   write(*,'(5x,"->orthogonalizing at ir,r=",i4,1f7.2)')ir,r
   
       if(1>2) then
@@ -2569,505 +2514,99 @@ c
 c
 c ... Orthogonalization by QR factorization
 c
-      subroutine qrerwin(yi,zi,zm,wi,wm,y,n,ir,irmin,nr)
-      use nmrv, only: h,rvec
+
+
+c *** ----------------------------------------
+c ... Re-orthogonalize Z's by QR factorization
+c     Factorizes ZI = Q*R via ZGEQRF, then applies R^{-1} to both
+c     ZI and ZM via ZTRSM. Finally recomputes YI = W^T * ZI.
+c *** ----------------------------------------
+      subroutine qrerwinz(yi,zi,zm,wi,n,ir)
       implicit none
       logical    debug
-      integer    nr
-      complex*16 y(n,n,nr)
 c ... for zgeqrf
-      integer info,lda,lwork,n,m,i,is,ich,ir,irmin
-      complex*16 a(n,n),tau(n),work(2*n),rt(n,n)
-      complex*16,dimension(n,n):: yi,ym,zi,zm,wi,wm
+      integer info,lwork,n,is,ich,ir
+      complex*16 tau(n),rt(n,n)
+      complex*16, allocatable :: work(:)
+      complex*16,dimension(n,n):: yi,zi,zm,wi
 c ... for ztrsm
+c     SIDE='R'  : solve  B <- B * R^{-1}  (R applied from the right)
+c     UPLO='U'  : R is upper triangular (as returned by ZGEQRF)
+c     TRANSA='N': use R as-is (not transposed/conjugated)
+c     DIAG='N'  : R is NOT unit-diagonal; use its actual diagonal entries
       complex*16 alpha
-      integer ldb
+      integer lda,ldb,m
       character diag,side,transa,uplo
-c ...
-      integer   :: nrhs, ipiv(n)
-      character*1  trans
-      EXTERNAL  ZGETRF, ZGETRS
-
-c ---- TEST      
-      integer ndim,lworkx
-      complex*16 aux(3,3),taux(3),raux(3,3),workx(6)
-      complex*16 zaux(n,n),waux(n,n)
 c .................................................
-      lwork=2*n
       debug=.false.
-     
 
-c ... QR factorization YI=Q.R 
-c     (Q=orthogonal matrix; R= triangular UPPER matrix)
-      rt=yi
-      call ZGEQRF( N, N, RT, n, TAU, WORK, LWORK, INFO )
-      if (info.ne.0)  then
-         write(*,*)'zgeqrf failed; info=',info
-      endif
+c ... QR factorization ZI = Q * R
+c     After ZGEQRF, the upper triangle of RT holds R.
+c     The lower triangle stores packed Householder reflectors (not used here).
+      rt=zi
 
+c ... Workspace query then optimal factorization
+      allocate(work(1))
+      call ZGEQRF( N, N, RT, N, TAU, WORK, -1, INFO )
+      lwork = max(1, int(real(WORK(1))))
+      deallocate(work)
+      allocate(work(lwork))
+      call ZGEQRF( N, N, RT, N, TAU, WORK, LWORK, INFO )
+      deallocate(work)
+      if (info.ne.0) write(*,*)'qrerwinz: ZGEQRF failed; info=',info
 
-c ... Apply transformation backwards
-c       Y(old)= Y(new) R 
-c     Solve:
-c        X    *  RT  = Y(old)
-c     and make: Y(new)= X 
-      
-c ... X*op( A ) = alpha*B
-      side  ='R' ! A acts on the right
-      uplo  ='U' ! R is upper triangle matrix
-      transa='N' ! no transpose
-      diag  ='N' !??????????
-      m=n
-      alpha =1d0
-      lda   =n   ! leading dim of A=RT
-      ldb   =n   ! leading dim of B=Y(old)
-
-c Apply transformation to YI,YM
-      call ZTRSM(SIDE,UPLO,TRANSA,DIAG,M,N,ALPHA,RT,LDA,YI,LDB)
-      call ZTRSM(SIDE,UPLO,TRANSA,DIAG,M,N,ALPHA,RT,LDA,YM,LDB)
-!      y(:,:,ir  )=yi(:,:) ! new (orthogonolized) solution at ir
-!      y(:,:,ir-1)=ym(:,:) ! idem at ir-1
-      
- 
-c Apply the same transformation to ZI,ZM
-      call ZTRSM(SIDE,UPLO,TRANSA,DIAG,M,N,ALPHA,RT,LDA,ZI,LDB)
-      call ZTRSM(SIDE,UPLO,TRANSA,DIAG,M,N,ALPHA,RT,LDA,ZM,LDB)
-
-      if (debug) then
-      write(*,*)'yi(new) at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(yi(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-
-        write(*,*)'|yp x yp| (after QR)'
-        do is=1,n
-        write(*,'(5x,50g14.5)') 
-     &    ( abs(dot_product(yi(:,is),yi(:,ich)))
-     &      / abs(dot_product(yi(:,is),yi(:,is)))
-     &      / abs(dot_product(yi(:,ich),yi(:,ich))), ich=1,n) 
-
-        enddo
-       endif !debug
-
-
-
-      RETURN  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
-      do i=irmin,ir
-      yi(:,:)=y(:,:,i)
-      call ZTRSM(SIDE,UPLO,TRANSA,DIAG,M,N,ALPHA,RT,LDA,YI,LDB)
-      y(:,:,i)=yi(:,:) ! override 
-      enddo ! ir
-      yi(:,:)=y(:,:,ir  ) ! new (orthogonolized) solution at ir
-      ym(:,:)=y(:,:,ir-1) ! idem at ir-1
-
-
-
-
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-c ... Recalculate ZI functions for new Y solutions applying the inverse transformation
-c       YI(new) = W ZI(new)   -> ZI(new)
-c       YM(new) = W ZM(new)   -> ZM(new) 
-c     Use Lapack to solve:
-c       A * X  =  alpha*B
-c       W * Z  =  1    *Y
-
-      write(*,*)'Zi (old) at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(zi(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-
-c ... First, compute LU factorization of matrix W to get IPIV
-      call ZGETRF(n, n, wi, n, ipiv, info)
-      if (info /= 0) then 
-       print*, 'zgetrf returned error',info
-      endif
-
-c ... Second, use IPIV & zgetrs to solve system  W*Z= Y  -> Z 
-      trans='N';  ldb=n;  nrhs=n
-      zi(:,:)= yi(:,:) 
-      call zgetrs(trans,n,nrhs,wi,n,ipiv,zi,ldb,info)
-
-      if (info /= 0) then
-        print*,'zgetrs failed at qrerwin!'
-      endif
-
-      write(*,*)'Zi (new) at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(zi(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-
-c ... Repeat for  YM(new) = W ZM(new) 
-      call ZGETRF(n, n, wm, n, ipiv, info)
-      if (info /= 0) stop 'zgetrf returned error'
-      zm(:,:)= ym(:,:) 
-
-      call zgetrs(trans,n,nrhs,wm,n,ipiv,zm,ldb,info)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!      
-      Return
-
-c ......................... TEST ........................
-
-      if (1>2) then
-      write(*,*)'R (triangular) matrix:'
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(RT(ich,is)), is=1,min(15,n))
-      enddo
-
-      write(*,*)'yi(old) at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(y(ich,is,ir)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-
-      endif
-
-
-! TEST THAT Y=W*Z
-      if (1>2) then 
-      write(*,*)'y(old) at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(y(ich,is,ir)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-
-      write(*,*)'yi(old) at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(yi(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-
-!! TEST that Z=W^-1*Y
-      write(*,*)'Zi (arg) at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(zi(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-
-      waux=wi
-      call ZGETRF(n, n, waux, n, ipiv, info)
-      if (info /= 0) then
-       write(*,*)'zgetrf returned error',info; stop
-      endif
-
-c ... Use IPIV & zgetrs to solve system  W*X= Y   (X=Z)
-      trans='N';  ldb=n;  nrhs=n
-      zaux(:,:)= yi(:,:) 
-      call zgetrs(trans,n,nrhs,waux,n,ipiv,zaux,ldb,info)
-
-      write(*,*)'Zi = W^-1*Y at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(zaux(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-
-      if (info /= 0) then
-          stop 'Matrix inversion failed!'
-      else
-       write(*,*)'zgetrs info=',info
-       write(*,*)'ipiv=',ipiv
-      endif
-
-
-!!! TEST  Y= W*Z
-      YM=MATMUL(WM,ZM)
-      write(*,*)'W*ZM at ir-1=',ir-1
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(ym(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-
-      ym=y(:,:,ir-1)
-      write(*,*)'y(old) at ir-1',ir-1
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(ym(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-      endif
-
-      if (1>2) then
-        write(*,*)'|yi x yi| (before QR)'
-        do is=1,n
-        write(*,'(5x,50g14.5)') 
-     &    ( abs(dot_product(y(:,is,ir),y(:,ich,ir)))
-     &      / abs(dot_product(y(:,is,ir),y(:,is,ir)))
-     &      / abs(dot_product(y(:,ich,ir),y(:,ich,ir))), 
-     &     ich=1,n) 
-
-        enddo
-      endif
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      if (0>1) then
-      aux(1,1)=12; aux(1,2)=-51; aux(1,3)=4
-      aux(2,1)=6;  aux(2,2)=167; aux(2,3)=-68
-      aux(3,1)=-4; aux(3,2)=24; aux(3,3)=-41
-      lda=3
-      lworkx=6
-      raux=aux
-      call ZGEQRF( lda, lda, raux, lda, TAUX, WORKX, LWORKX, INFO )
-      if (info.ne.0)  then
-         write(*,*)'zgeqrf failed; info=',info
-      endif
-
-      write(*,*)'R matrix:'
-      do ich=1,3
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(raux(ich,is)), is=1,lda)
-      enddo
-
-c ... X*op( A ) = alpha*B
+c ... ZTRSM setup
       side  ='R'
       uplo  ='U'
       transa='N'
-      diag  ='N' !??????????
-      m=n
-      alpha =1d0
-      lda   =3
-      ldb   =3
-      m     =lda
-      call ZTRSM(SIDE,UPLO,TRANSA,DIAG,M,m,ALPHA,RAUX,LDA,AUX,LDB)
+      diag  ='N'
+      m     = n
+      alpha = 1d0
+      lda   = n
+      ldb   = n
 
-      write(*,*)'Q matrix:'
-      do ich=1,3
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(aux(ich,is)), is=1,lda)
-      enddo
-
-
-        write(*,*)'|yp x yp| (before QR)'
-        do is=1,3
-        write(*,'(5x,50g14.5)') 
-     &    ( abs(dot_product(aux(:,is),aux(:,ich)))
-     &      / abs(dot_product(aux(:,is),aux(:,is)))
-     &      / abs(dot_product(aux(:,ich),aux(:,ich))), ich=1,3) 
-
-        enddo
-
-      stop
-      endif
-
-c .......................................................
-      end subroutine
-
-
-c *** ----------------------------------------
-C ... Re-orthogonalize Z's by QR factorization
-c *** ----------------------------------------
-      subroutine qrerwinz(yi,zi,zm,wi,n,ir)
-      use nmrv, only: h,rvec
-      implicit none
-      logical    debug
-c ... for zgeqrf
-      integer info,lda,lwork,n,m,i,is,ich,ir
-      complex*16 a(n,n),tau(n),work(2*n),rt(n,n)
-      complex*16,dimension(n,n):: yi,zi,zm,wi
-c ... for ztrsm
-      complex*16 alpha
-      integer ldb
-      character diag,side,transa,uplo
-c ...
-      integer   :: nrhs, ipiv(n)
-      character*1  trans
-      EXTERNAL  ZGETRF, ZGETRS
-
-c ---- TEST      
-      complex*16 zaux(n,n),waux(n,n)
-c .................................................
-      lwork=2*n
-      debug=.false.
-     
-
-c ... QR factorization ZI=Q.RT 
-c     (Q=orthogonal matrix; R= triangular UPPER matrix)
-      rt=zi
-      call ZGEQRF( N, N, RT, n, TAU, WORK, LWORK, INFO )
-      if (info.ne.0)  then
-         write(*,*)'zgeqrf failed with exit code=',info
-      endif
- 
-c ... Apply same transformation to ZM
-c       Z(old)= Z(new) RT 
-c     Solve:
-c       X*RT  = Z(old)
-c     and make: Y(new)= X 
-      
-c ... X*op( A ) = alpha*B
-      side  ='R' ! A acts on the right
-      uplo  ='U' ! R is upper triangle matrix
-      transa='N' ! no transpose
-      diag  ='N' !??????????
-      m=n
-      alpha =1d0
-      lda   =n   ! leading dim of A=RT
-      ldb   =n   ! leading dim of B=Y(old)
-
-      if ((debug)) then ! .and.(mod(ir,5).eq.0)) then
-
-      write(*,*)'Re[zi(old)] at ir',ir
+      if (debug) then
+      write(*,*)'Re[zi(old)] at ir=',ir
       do ich=1,min(15,n)
         write(*,'(5x,i3,50g14.5)') ich,
      &  (real(zi(ich,is)), is=1,min(15,n))
       enddo
       write(*,*)' '
 
-
-        write(*,*)'|zi x zi| (before QR)'
+        write(*,*)'|zi x zi| (before QR) -- cosine similarity'
         do is=1,n
-        write(*,'(5x,50g14.5)') 
+        write(*,'(5x,50g14.5)')
      &    ( abs(dot_product(zi(:,is),zi(:,ich)))
      &      / sqrt(abs(dot_product(zi(:,is),zi(:,is))))
-     &      / sqrt(abs(dot_product(zi(:,ich),zi(:,ich)))), ich=1,n) 
+     &      / sqrt(abs(dot_product(zi(:,ich),zi(:,ich)))), ich=1,n)
         enddo
       endif
-      
-      call ZTRSM(SIDE,UPLO,TRANSA,DIAG,M,N,ALPHA,RT,LDA,ZI,LDB)
-      call ZTRSM(SIDE,UPLO,TRANSA,DIAG,M,N,ALPHA,RT,LDA,ZM,LDB)
 
+c ... Apply R^{-1} to ZI and ZM in-place
+      call ZTRSM(SIDE,UPLO,TRANSA,DIAG, M, N, ALPHA, RT, LDA, ZI, LDB)
+      call ZTRSM(SIDE,UPLO,TRANSA,DIAG, M, N, ALPHA, RT, LDA, ZM, LDB)
 
-      if ((debug)) then ! .and.(mod(ir,5).eq.0)) then
-
-      write(*,*)'Re[zi(new)] at ir',ir
+      if (debug) then
+      write(*,*)'Re[zi(new)] at ir=',ir
       do ich=1,min(15,n)
         write(*,'(5x,i3,50g14.5)') ich,
      &  (real(zi(ich,is)), is=1,min(15,n))
       enddo
       write(*,*)' '
 
-
-        write(*,*)'|zi x zi| (after QR)'
-        do is=1,n    
-        write(*,'(5x,50g14.5)') 
-     &    ( abs(dot_product(zi(:,is),zi(:,ich)))
-     &      / abs(dot_product(zi(:,is),zi(:,is)))
-     &      / abs(dot_product(zi(:,ich),zi(:,ich))), ich=1,n) 
-        enddo
-        write(*,*)'' 
-      endif
-     
-c ... Recalculate yi,ym  
-! MGR nov/16
-!      yi=matmul(wi,zi) ! new (orthogonolized) solution at ir
-      yi=matmul(transpose(wi),zi) ! new (orthogonolized) solution at ir
-
-!      ym=matmul(wm,zm) ! idem at ir-1 (NOT NEEDED)
-
-      RETURN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-c ... Use IPIV & zgetrs to solve system  W*X= Y   (X=Z)
-      trans='N';  ldb=n;  nrhs=n
-      zaux(:,:)= yi(:,:) 
-      call zgetrs(trans,n,nrhs,waux,n,ipiv,zaux,ldb,info)
-
-      if (debug) then 
-      write(*,*)'Zi = W^-1*Y at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(zaux(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-      endif
-
-      if (info /= 0) then
-          stop 'Matrix inversion failed!'
-      else
-       write(*,*)'zgetrs info=',info
-       write(*,*)'ipiv=',ipiv
-      endif
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      if (1>2) then
-      write(*,*)'R (triangular) matrix:'
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(RT(ich,is)), is=1,min(15,n))
-      enddo
-      endif
-
-
-      if ((debug).and.(mod(ir,5).eq.0)) then
-      write(*,*)'yi(new) at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(yi(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-
-        write(*,*)'|yp x yp| (after QR)'
+        write(*,*)'|zi x zi| (after QR) -- cosine similarity'
         do is=1,n
-        write(*,'(5x,50g14.5)') 
-     &    ( abs(dot_product(yi(:,is),yi(:,ich)))
-     &      / abs(dot_product(yi(:,is),yi(:,is)))
-     &      / abs(dot_product(yi(:,ich),yi(:,ich))), ich=1,n) 
-
+        write(*,'(5x,50g14.5)')
+     &    ( abs(dot_product(zi(:,is),zi(:,ich)))
+     &      / sqrt(abs(dot_product(zi(:,is),zi(:,is))))
+     &      / sqrt(abs(dot_product(zi(:,ich),zi(:,ich)))), ich=1,n)
         enddo
-       endif !debug
-
-c ... Recalculate ZI functions for new Y solutions applying the inverse transformation
-c       YI(new) = W ZI(new)   -> ZI(new)
-c       YM(new) = W ZM(new)   -> ZM(new) 
-c     Use Lapack to solve:
-c       A * X  =  alpha*B
-c       W * Z  =  1    *Y
-
-      if (debug) then
-      write(*,*)'Zi (old) at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(zi(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
+        write(*,*)''
       endif
 
-c ... First, compute LU factorization of matrix A (=W) -> IPIV
-      call ZGETRF(n, n, wi, n, ipiv, info)
-      if (info /= 0) then
-       write(*,*)'zgetrf returned error',info; stop
-      endif
-
-c ... Use IPIV & zgetrs to solve system  W*X= Y   (X=Z)
-      trans='N';  ldb=n;  nrhs=n
-      zi(:,:)= yi(:,:) 
-      call zgetrs(trans,n,nrhs,wi,n,ipiv,zi,ldb,info)
-
-      if (info /= 0) stop 'zgetrs failed at qrerwin!'
-     
-      if (debug) then
-      write(*,*)'Zi (new) at ir,r=',ir
-      do ich=1,min(15,n)
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(zi(ich,is)), is=1,min(15,n))
-      enddo
-      write(*,*)' '
-      endif
-
-c ... Repeat for  YM(new) = W ZM(new) 
-!      call ZGETRF(n, n, wm, n, ipiv, info)
-!      if (info /= 0) then
-!       write(*,*)'zgetrf returned error',info; stop
-!      endif
-
-!      zm(:,:)= ym(:,:) 
-!      call zgetrs(trans,n,nrhs,wm,n,ipiv,zm,ldb,info)
+c ... Recompute YI from the updated ZI
+c     Note: uses W^T (transposed), not W -- deliberate change (MGR nov/16)
+      yi=matmul(transpose(wi),zi)
 
       end subroutine
 
@@ -3076,30 +2615,6 @@ c ... Repeat for  YM(new) = W ZM(new)
 
 
 
-	SUBROUTINE POTWF2(COUPL,ZI,FI,V,NEQS,MAXB,MAXCH,R12)
-	IMPLICIT NONE
-	REAL*8 R12
-	INTEGER NEQS,MAXB,K,J,IT,MAXCH
-	COMPLEX*16 COUPL(MAXB,MAXB),ZI(MAXB,MAXCH),FI(MAXB,MAXCH),
-     X		   V(MAXB,MAXCH),C,ZERO
-	PARAMETER(ZERO = (0d0,0d0))
-C					VECTORISED MATRIX MULTIPLIES
-C					ALLOWS SKIPS IF ZERO COUPLING
-
-         DO 24 K=1,NEQS
-	     DO 24 J=1,NEQS
-             C = COUPL(K,J) * R12
-	      if(C/=ZERO) FI(1:NEQS,K) = FI(1:NEQS,K) - C * ZI(1:NEQS,J)
- 24       CONTINUE
-
-         DO 34 K=1,NEQS
-	    V(:,K)  = ZERO
-            DO 34 J=1,NEQS
-	      C = COUPL(K,J)
-	      if(C/=ZERO) V(1:NEQS,K) = V(1:NEQS,K) + C * FI(1:NEQS,J)
-34       CONTINUE
-	return
-	end
 
 
 
@@ -4611,167 +4126,117 @@ c ... Recursive determinanat
 
 c
 c ... Orthogonalization by QR factorization
+c     Computes the QR decomposition of the wavefunction matrix YP at
+c     the current radial point IP, then applies R^{-1} to every stored
+c     radial slice Y(:,:,IR) for IR = IRMIN..IP, keeping the solutions
+c     linearly independent throughout the Numerov propagation.
 c
       subroutine qrfac(yp,y,n,ip,irmin,nr)
-      use nmrv, only: h,rvec
       implicit none
       logical    debug
       integer    nr
       complex*16 y(n,n,nr)
 c ... for zgeqrf
-      integer info,lda,lwork,n,m,is,ich,ip,ir,irmin
-      complex*16 a(n,n),tau(n),work(2*n),rt(n,n),yp(n,n)
+      integer info,lwork,n,is,ich,ip,ir,irmin
+      complex*16 tau(n),rt(n,n),yp(n,n)
+      complex*16, allocatable :: work(:)
 c ... for ztrsm
+c     SIDE='R'  : solve  B <- B * R^{-1}  (R applied from the right)
+c     UPLO='U'  : R is upper triangular (as returned by ZGEQRF)
+c     TRANSA='N': use R as-is (not transposed/conjugated)
+c     DIAG='N'  : R is NOT unit-diagonal; use its actual diagonal entries
       complex*16 alpha
-      integer ldb
+      integer lda,ldb,m
       character diag,side,transa,uplo
-!      complex*16 a(lda,*),b(ldb, *)
-c ---- TEST
-      integer ndim,lworkx
-      complex*16 aux(3,3),taux(3),raux(3,3),workx(6)
+c ... for debug
+      complex*16 ysave(n,n)
 
       debug=.false.
-      
 
-      lwork=2*n
-
-c ... QR factorization YP=Q.R 
-c     (Q=orthogonal matrix; R= triangular upper matrix)
+c ... QR factorization YP = Q * R
+c     After ZGEQRF, the upper triangle of RT holds R.
+c     The lower triangle stores packed Householder reflectors which are
+c     not needed here -- only R (upper triangle) is passed to ZTRSM.
       rt=yp
-      call ZGEQRF( N, N, RT, n, TAU, WORK, LWORK, INFO )
-      if (info.ne.0)  then
-         write(*,*)'zgeqrf failed; info=',info
-      endif
 
-      if (debug) then 
-      write(*,*)'|y(old)| at ir,r=',ir
+      write(0,*)'qrfac'
+c ... Workspace query then optimal factorization
+      allocate(work(1))
+      call ZGEQRF( N, N, RT, N, TAU, WORK, -1, INFO )
+      lwork = max(1, int(real(WORK(1))))
+      deallocate(work)
+      allocate(work(lwork))
+      call ZGEQRF( N, N, RT, N, TAU, WORK, LWORK, INFO )
+      deallocate(work)
+      if (info.ne.0) write(*,*)'qrfac: ZGEQRF failed; info=',info
+
+      if (debug) then
+      write(*,*)'|y(old)| at ip=',ip          ! Bug fix: was uninitialized ir
       do ich=1,min(15,n)
         write(*,'(5x,i3,50g14.5)') ich,
      &  (abs(y(ich,is,ip)), is=1,min(15,n))
       enddo
       write(*,*)' '
 
-
         write(*,*)'|yp x yp| (before QR)'
         do is=1,n
-        write(*,'(5x,50g14.5)') 
+        write(*,'(5x,50g14.5)')
      &    ( abs(dot_product(y(:,is,ip),y(:,ich,ip)))
      &      / abs(dot_product(y(:,is,ip),y(:,is,ip)))
-     &      / abs(dot_product(y(:,ich,ip),y(:,ich,ip))), 
-     &     ich=1,n) 
-
+     &      / abs(dot_product(y(:,ich,ip),y(:,ich,ip))),
+     &     ich=1,n)
         enddo
-
 
       write(*,*)'|R| matrix:'
       do ich=1,min(15,n)
         write(*,'(5x,i3,50g14.5)') ich,
      &  (abs(RT(ich,is)), is=1,min(15,n))
       enddo
+
+c ... Save y(:,:,ip) before the loop overwrites it (needed for post-loop diff)
+      ysave(:,:) = y(:,:,ip)
       endif
-      
-c ... X*op( A ) = alpha*B
+
+c ... Apply R^{-1} to every stored radial slice in-place (no copy needed)
       side  ='R'
       uplo  ='U'
       transa='N'
-      diag  ='N' !??????????
-      m=n
-      alpha =1d0
-      lda   =n
-      ldb   =n
-      
-c ... Apply transformation backwards
+      diag  ='N'
+      m     = n
+      alpha = 1d0
+      lda   = n
+      ldb   = n
       do ir=irmin,ip
       yp(:,:)=y(:,:,ir)
       call ZTRSM(SIDE,UPLO,TRANSA,DIAG,M,N,ALPHA,RT,LDA,YP,LDB)
       y(:,:,ir)=yp(:,:) ! override 
       enddo ! ir
-      
+
       if (.not.debug) return
 
-      if (debug) then
-      write(*,*)'yp(new) at ir,r=',ir
+      write(*,*)'y(new) at ip=',ip
       do ich=1,min(15,n)
         write(*,'(5x,i3,50g14.5)') ich,
-     &  (abs(yp(ich,is)), is=1,min(15,n))
+     &  (abs(y(ich,is,ip)), is=1,min(15,n))
       enddo
       write(*,*)' '
 
-
-      if (debug) then
-        write(*,*)'|yp x yp| (after QR)'
+        write(*,*)'|y x y| (after QR)'
         do is=1,n
-        write(*,'(5x,50g14.5)') 
-     &    ( abs(dot_product(yp(:,is),yp(:,ich)))
-     &      / abs(dot_product(yp(:,is),yp(:,is)))
-     &      / abs(dot_product(yp(:,ich),yp(:,ich))), ich=1,n) 
-
+        write(*,'(5x,50g14.5)')
+     &    ( abs(dot_product(y(:,is,ip),y(:,ich,ip)))
+     &      / abs(dot_product(y(:,is,ip),y(:,is,ip)))
+     &      / abs(dot_product(y(:,ich,ip),y(:,ich,ip))), ich=1,n)
         enddo
-       endif !debug
 
-
-
- 
-      write(*,*)'|y-yp|/y at ir,r=',ir
+      write(*,*)'|y(new)-y(old)|/|y(old)| at ip=',ip
       do ich=1,min(15,n)
         write(*,'(5x,i3,50g14.5)') ich,
-     &  (abs(y(ich,is,ip)-yp(ich,is))
-     &   /abs(y(ich,is,ip)), is=1,min(15,n))
+     &  (abs(y(ich,is,ip)-ysave(ich,is))
+     &   /abs(ysave(ich,is)), is=1,min(15,n))
       enddo
       write(*,*)' '
-      endif
 
-c ......................... TEST ........................
-      if (0>1) then
-      aux(1,1)=12; aux(1,2)=-51; aux(1,3)=4
-      aux(2,1)=6;  aux(2,2)=167; aux(2,3)=-68
-      aux(3,1)=-4; aux(3,2)=24; aux(3,3)=-41
-      lda=3
-      lworkx=6
-      raux=aux
-      call ZGEQRF( lda, lda, raux, lda, TAUX, WORKX, LWORKX, INFO )
-      if (info.ne.0)  then
-         write(*,*)'zgeqrf failed; info=',info
-      endif
-
-      write(*,*)'R matrix:'
-      do ich=1,3
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(raux(ich,is)), is=1,lda)
-      enddo
-
-c ... X*op( A ) = alpha*B
-      side  ='R'
-      uplo  ='U'
-      transa='N'
-      diag  ='N' !??????????
-      m=n
-      alpha =1d0
-      lda   =3
-      ldb   =3
-      m     =lda
-      call ZTRSM(SIDE,UPLO,TRANSA,DIAG,M,m,ALPHA,RAUX,LDA,AUX,LDB)
-
-      write(*,*)'Q matrix:'
-      do ich=1,3
-        write(*,'(5x,i3,50g14.5)') ich,
-     &  (real(aux(ich,is)), is=1,lda)
-      enddo
-
-
-        write(*,*)'|yp x yp| (before QR)'
-        do is=1,3
-        write(*,'(5x,50g14.5)') 
-     &    ( abs(dot_product(aux(:,is),aux(:,ich)))
-     &      / abs(dot_product(aux(:,is),aux(:,is)))
-     &      / abs(dot_product(aux(:,ich),aux(:,ich))), ich=1,3) 
-
-        enddo
-
-      stop
-      endif
-
-c .......................................................
       end subroutine
 
 
@@ -4912,6 +4377,7 @@ c   yp                                     r+h
 c ------------------------------------------------------
       subroutine schcc_MGR(nch,ecm,z12,incvec,ql,factor,dr,r0,
      & npt,wf,phase,smat,info,einc,icc)
+      use telp_mod, only: iftelp_val
       use xcdcc, only: smats
       use nmrv,only: nr,h,vcoup,conv,ech,debug,rmin,hort,
      &               rvec,rmort
@@ -5171,7 +4637,7 @@ c Re-orthogonalize solution vectors
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin)
      & .and.(mod(ir-irmin,norto).eq.0)) then 
 !      if (orto.and.(r.le.rmorto).and.(mod(ir-irmin,norto).eq.0)) then 
-       if (verb.ge.4) 
+       if (verb.ge.3) 
      &   write(*,'(5x,"-> orthogonalizing at r=",1f7.2)')r
 
         if (debug) then
@@ -5610,7 +5076,7 @@ c zm <- z0, wm <-w0
 c Re-orthogonalize solution vectors ....................................
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin).and.(hort.gt.0)
      & .and.(mod(ir-irmin,norto).eq.0).and.(ir.lt.nr-10)) then 
-      if (verb.ge.4) 
+      if (verb.ge.3) 
      &   write(*,'(5x,"->orthogonalizing at ir,r=",i4,1f7.2)')ir,r
   
        call cpu_time(ti)
@@ -5929,7 +5395,7 @@ c calculate and store Y=(1-T)W
 c Re-orthogonalize solution vectors
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin)
      & .and.(mod(ir-irmin,norto).eq.0)) then 
-        if (verb.ge.4) 
+        if (verb.ge.3) 
      &   write(*,*) 'orthogonalizing at ir,r=',ir,r
 
         if (debug) then
@@ -6425,178 +5891,6 @@ c
       end subroutine
 
 
-      SUBROUTINE ESMOOV(NC,QUAD,QUAD1,PHZ,EN,NUME,NFTA)
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-C
-C***********************************************************************
-C     Downloaded from:  http://www.tampa.phys.ucl.ac.uk/rmat/old/eigenp.f
-C
-C     ESMOOV was formerly part of ETABLE and carries out smoothing
-C     of eigenphases using second order finite differences
-C
-C***********************************************************************
-C
-      DIMENSION QUAD(NC),QUAD1(NC),PHZ(NC,NUME),EN(NUME)
-      DATA PI/3.1415926535897932D+00/,ZERO/0.D0/,ONE/1.0D0/
-C
-C     INITIALIZE ARRAY QUAD1 WITH THE MULTIPLES OF PI WHICH ARE
-C     TO BE ADDED TO THE EIGENPHASES AT THE FIRST ENERGY
-C
-      scale = one
-      ieav = 0
-      DO 3 I=1,NC
-      QUAD1(I)=QUAD(I)
-    3 CONTINUE
-C
-C     CHECK CONTINUITY OF EIGENPHASE PARAMETERS AS A FUNCTION OF
-C     SCATTERING ENERGY BY THE USE OF SECOND-ORDER DIVIDED DIFFERENCES
-C
-      DO 190 NO=1,NC
-C
-C     INITIATE SMOOTHING ; CONTINUITY OF FIRST THREE ENERGY POINTS
-C     IS ASSUMED
-C
-      Q1=QUAD1(NO)*PI
-C
-      II=3
-      E1=EN(1)
-      E2=EN(2)
-      E3=EN(3)
-      P1=PHZ(NO,1)+Q1
-      P2=PHZ(NO,2)+Q1
-      P3=PHZ(NO,3)+Q1
-      PHZ(NO,1)=P1
-      PHZ(NO,2)=P2
-      PHZ(NO,3)=P3
-C
-C     FORM DIVIDED DIFFERENCES
-C
-      FD1=(P2-P1)/(E2-E1)
-      FD2=(P3-P2)/(E3-E2)
-      SD2=(FD2-FD1)/(E3-E1)
-C
-C     BEGIN ITERATION OVER ENERGY POINTS
-C
-    5 II=II+1
-      IF(II .GT. NUME) GO TO 190
-      Q1=QUAD1(NO)*PI
-      P2=P3
-      P3=PHZ(NO,II)+Q1
-C
-      E1=E2
-      E2=E3
-      E3=EN(II)
-      FD1=FD2
-      FD2=(P3-P2)/(E3-E2)
-      SD1=SD2
-      SD2=(FD2-FD1)/(E3-E1)
-      EPS1=SCALE*DABS(SD1)
-C
-C     CHECK CONTINUITY
-C
-      IF(DABS(SD2-SD1) .GT. EPS1) GO TO 7
-C
-C     CONTINUITY CHECKS CORRECTLY
-C
-    6 PHZ(NO,II)=P3
-      GO TO 5
-C
-C                     **************************
-C
-C     CORRECTION SEQUENCE :
-C
-C     (1) ADD QUADRANT CORRECTION OF PI
-C
-    7 P3=P3+PI
-      FD2=(P3-P2)/(E3-E2)
-      SD2=(FD2-FD1)/(E3-E1)
-      IF(DABS(SD2-SD1) .GT. EPS1) GO TO 9
-C
-      QUAD1(NO)=QUAD1(NO)+ONE
-      GO TO 6
-C
-C     (2) SUBTRACT QUADRANT CORRECTION OF PI
-C
-    9 P3=P3-PI-PI
-      FD2=(P3-P2)/(E3-E2)
-      SD2=(FD2-FD1)/(E3-E1)
-      IF(DABS(SD2-SD1) .GT. EPS1) GO TO 11
-C
-      QUAD1(NO)=QUAD1(NO)-ONE
-      GO TO 6
-C
-C     (3) CHECK WHETHER CHANNELS HAVE BEEN SWAPPED
-C
-   11 NO1=NO+1
-      IF(NO1 .GT. NC) GO TO 20
-C
-      DO 18 NOX=NO1,NC
-      IPT=1
-      NOP=NOX
-C
-      P3=PHZ(NOP,II)+Q1
-   12 FD2=(P3-P2)/(E3-E2)
-      SD2=(FD2-FD1)/(E3-E1)
-C
-C     JUMP OUT IF SEARCH SUCCEEDS
-C
-      IF(DABS(SD2-SD1) .LE. EPS1) GO TO 25
-C
-      if(ipt.eq.1) then
-C
-C     TRY ADDING PI
-C
-        P3=P3+PI
-        IPT=2
-        GO TO 12
-C
-C     TRY SUBTRACTING PI
-C
-      else if(ipt.eq.2) then
-        P3=P3-PI-PI
-        IPT=3
-        GO TO 12
-      endif
-C
-   18 CONTINUE
-C
-C     SMOOTHING FAILURE
-C
-   20 WRITE(NFTA,22)NO,II,E3
-   22 FORMAT(' CONTINUITY ERROR ENCOUNTERED IN CHANNEL ',I3,
-     1       ' EIGENPHASE AT ENERGY E(',I3,') =',D16.8)
-      P3=PHZ(NO,II)+Q1
-      GO TO 5
-C
-C     SWAP EIGENPHASE COLUMNS NO AND NOP BEGINNING AT ENERGY POINT II
-C
-   25 DO 27 IEP=II,NUME
-      SAVE=PHZ(NO,IEP)
-      PHZ(NO,IEP)=PHZ(NOP,IEP)
-      PHZ(NOP,IEP)=SAVE
-   27 CONTINUE
-C
-C     REVERSE QUAD1 VALUES
-C
-      SAVE=QUAD1(NOP)
-      QUAD1(NOP)=QUAD1(NO)
-      QUAD1(NO)=SAVE
-      if(ipt.eq.2) then
-        QUAD1(NO)=QUAD1(NO)+ONE
-      else if(ipt.eq.3) then
-        QUAD1(NO)=QUAD1(NO)-ONE
-      endif
-C
-      PHZ(NO,II)=P3
-C
-      WRITE(NFTA,32)NO,NOP,II
-   32 FORMAT(' CHANNELS NO =',I3,' AND NOP =',I3,' SWAPPED BEGINNING',
-     1       ' AT ENERGY POINT IEN =',I4)
-      GO TO 5
-C
-  190 CONTINUE
-      RETURN
-      END
 
 
 c ...
@@ -7076,7 +6370,7 @@ c Re-orthogonalize solution vectors ....................................
 !     & .and.(mod(ir-irmin,norto).eq.0).and.(ir.lt.nr-10)) then 
       if (orto .and. tolsma .lt.5e-4 .and. (ir.gt.irmin).and.
      & (ir.lt.nr-10)) then
-      if (verb.ge.4) 
+      if (verb.ge.3) 
      &   write(*,'(5x,"->orthogonalizing at ir,r=",i4,1f7.2)')ir,r
   
          write(447,'(5x,"#->orthogonalizing at ir,r=",i4,1f7.2)')ir,r
@@ -7721,7 +7015,7 @@ c Re-orthogonalize solution vectors ....................................
 !     & .and.(mod(ir-irmin,norto).eq.0).and.(ir.lt.nr-10)) then 
       if (orto .and. tolsma .lt.5e-4 .and. (ir.gt.irmin).and.
      & (ir.lt.nr-10)) then
-      if (verb.ge.4) 
+      if (verb.ge.3) 
      &   write(*,'(5x,"->orthogonalizing at ir,r=",i4,1f7.2)')ir,r
   
          write(447,'(5x,"#->orthogonalizing at ir,r=",i4,1f7.2)')ir,r
@@ -10659,66 +9953,6 @@ c ... Repeat for  YM(new) = W ZM(new)
 *
       END
 
-      SUBROUTINE ZLACG_Q( N, X, INCX )
-*
-*  -- LAPACK auxiliary routine (version 3.1) --
-*     Univ. of Tennessee, Univ. of California Berkeley and NAG Ltd..
-*     November 2006
-*
-*     .. Scalar Arguments ..
-      INTEGER            INCX, N
-*     ..
-*     .. Array Arguments ..
-      COMPLEX*32         X( * )
-*     ..
-*
-*  Purpose
-*  =======
-*
-*  ZLACGV conjugates a complex vector of length N.
-*
-*  Arguments
-*  =========
-*
-*  N       (input) INTEGER
-*          The length of the vector X.  N >= 0.
-*
-*  X       (input/output) COMPLEX*16 array, dimension
-*                         (1+(N-1)*abs(INCX))
-*          On entry, the vector of length N to be conjugated.
-*          On exit, X is overwritten with conjg(X).
-*
-*  INCX    (input) INTEGER
-*          The spacing between successive elements of X.
-*
-* =====================================================================
-*
-*     .. Local Scalars ..
-      INTEGER            I, IOFF
-*     ..
-*     .. Intrinsic Functions ..
-      INTRINSIC          CONJG
-*     ..
-*     .. Executable Statements ..
-*
-      IF( INCX.EQ.1 ) THEN
-         DO 10 I = 1, N
-            X( I ) = CONJG( X( I ) )
-   10    CONTINUE
-      ELSE
-         IOFF = 1
-         IF( INCX.LT.0 )
-     $      IOFF = 1 - ( N-1 )*INCX
-         DO 20 I = 1, N
-            X( IOFF ) = CONJG( X( IOFF ) )
-            IOFF = IOFF + INCX
-   20    CONTINUE
-      END IF
-      RETURN
-*
-*     End of ZLACGV
-*
-      END
 
       SUBROUTINE ZTRMV_Q(UPLO,TRANS,DIAG,N,A,LDA,X,INCX)
 *     .. Scalar Arguments ..
@@ -12346,7 +11580,7 @@ c calculate and store Y=(1-T)W
 c Re-orthogonalize solution vectors
       if (orto.and.(r.lt.rmorto).and.(ir.gt.irmin)
      & .and.tolsma.lt.5e-4) then 
-        if (verb.ge.4) 
+        if (verb.ge.3) 
      &   write(*,*) 'orthogonalizing at ir,r=',ir,r
 
         if (debug) then

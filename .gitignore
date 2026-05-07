@@ -32,3 +32,10 @@ fort.*
 # Editor files
 *.swp
 *.swo
+
+# Scratch directories
+lixo/
+lixo2/
+
+# Log files
+*.log

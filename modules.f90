@@ -143,6 +143,7 @@ c
           integer  inc             ! incoming channel (bins only)
           logical  complex         ! real/complex wfs?
           real*8   vscale          ! scaling factor for v-c central potential
+          logical  energy          ! if true, bins uniform in energy; otherwise uniform in momentum
 !          type(spchannel) qnsp(maxchan)
       END TYPE
       TYPE(PCHANNEL),allocatable:: jpiset(:)
@@ -227,7 +228,7 @@ c       for all j/pi sets
       end module wfs
 
       module xcdcc
-      logical iftrans,realwf,rel
+      logical iftrans,realwf,rel,iftelp
       integer nrad1,nquad,nex,numfilmax,nrad2,nrad3
       real*8 rin,dr, hin, rstep
       real*8, allocatable:: rvin(:),rvcc(:)
@@ -260,7 +261,7 @@ c     Solving the CC (separate module??)
 
 c ... to store bin information
       TYPE BIN_INFO
-         logical :: ifhat
+         logical :: ifhat,energy
          integer :: nbins,nk(200)
          real*8 klow(200), kup(200), kmid(200),ebin(200),khat(200)
          real*8 wbin(200)
