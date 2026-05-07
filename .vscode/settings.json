@@ -1,9 +1,0 @@
-{
-    "editor.defaultFormatter": "fortran-lang.linter-gfortran",
-    "editor.rulers": [
-        5,
-        6,
-        72
-    ],
-    "makefile.makefilePath": "makefile"
-}
