@@ -859,7 +859,7 @@
 !$OMP& if2c,icount,imo,mo,ind,imu,mu,isig,sig,ampt,ampt2,li,ji,jci,rli, &
 !$OMP& rnu,mult,xsig,nk,kinset,wkfac,haux,fxytab)                       &
 !$OMP& PRIVATE(ii,maxtab,imax,jmax,sti,ipk,itphik,phik,factor,alphad,   &
-!$OMP& alpha) 
+!$OMP& alpha) schedule(dynamic,6) 
 
 !      write(*,*)'itc,itv,iten=',itc,itv,iten
       

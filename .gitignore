@@ -10,6 +10,7 @@ test/thox
 # Fortran output files
 fort.*
 */fort.*
+*/*/fort.*
 
 # Output files
 *.out

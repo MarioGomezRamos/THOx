@@ -1455,6 +1455,7 @@
 !$OMP& niel,iecv,ecv,ecmf,kcmf,th,sumps,iex,ibin,ki,kf,dk,dkb,ik,phbin, &
 !$OMP& if2c,icount,imo,mo,ind,imu,mu,isig,sig,ampt,ampt2,li,ji,jci,rli, &
 !$OMP& rnu,mult,xsig,nk,kinset,wkfac,haux,fxytab) PRIVATE(ii,xsphiaux) 
+!$OMP& schedule(dynamic,4)
 
 !      write(*,*)'itc,itv,iten=',itc,itv,iten
       

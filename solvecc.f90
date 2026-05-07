@@ -62,6 +62,7 @@ c     ---------------------------------------------------------------
       integer npmax, nincmax, lpmax, istatemax,jcc,ijml,iinc,linc
       character(len=15) :: col_header
       integer:: nopenmp
+      real*8 :: mem_percent
 !-----------------------------------------------------------------------
 
       namelist /numerov/ method,
@@ -395,11 +396,15 @@ c ***
       jcc=0
       xsr=0
       xsinel=0
+      call get_memory_usage(mem_percent)
+        write(*,*) 'Used ', mem_percent, '% of total memory'
 !$omp parallel do private(ijt,partot,xsrj,xsinelj,jtot,nch,xsr,xsinel,l,
 !$omp&  rturn,einc,incvec,incch,ninc,inc,iex,jpiinfile,ijt_read,icc,
 !$omp&  ipar_read,mod_read,ich_read,inc_read,jp,jt,kcmf,jtarg,
-!$omp&  wfcdcc,par_read,ecmf,smat,factor,tid) 
+!$omp&  wfcdcc,par_read,ecmf,smat,factor,tid,mem_percent) 
+!$omp&  schedule(dynamic,2)
       do ijt=1,njt
+      tid=omp_get_thread_num()
       xsrj   =0      ! reaction  x-section
       xsinelj=0      ! inelastic x-section
       do partot=1,-1,-2
@@ -424,8 +429,9 @@ c ***
 !        partot=jptset(icc)%partot
         xsr   =0      ! reaction  x-section
         xsinel=0      ! inelastic x-section
-        write(*,300) icc,jtot,parity(partot+2)
-300     format(/,5x, 35("*")," CC SET",i6, " J/pi=",1f5.1,a1,2x,35("*")) 
+        write(*,300) icc,jtot,parity(partot+2),tid
+300     format(/,5x, 30("*")," CC SET",i6, " J/pi=",1f5.1,a1,2x,        &
+     &"in thread",i4,30("*")) 
         if (nch.eq.0) then 
           write(*,*) '  [no channels for this J/pi]'; cycle
         endif
@@ -568,6 +574,9 @@ c ... write channels quantum numbers in CDCC file
 	
        call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)
        
+       call get_memory_usage(mem_percent)
+        write(*,*) 'Used ', mem_percent, '% of total memory'
+
       !write S matrices to file
       if (partot.eq. 1) par_read="+"
       if (partot.eq. -1) par_read="-"
@@ -1682,3 +1691,46 @@ c      interpolate & store in integration grid
       nullify(faux1,faux2)
       deallocate(fc,fn)
       end subroutine
+
+
+      subroutine get_memory_usage(rss)
+        real*8, intent(out) :: rss
+        integer :: unit_num, ios,usedmem,totalmem
+        character(len=200) :: line
+        
+        rss = 0d0
+        open(newunit=unit_num, file='/proc/self/status', status='old',  &
+     &    action='read', iostat=ios)
+        
+        if (ios == 0) then
+            do
+                read(unit_num, '(A)', iostat=ios) line
+                if (ios /= 0) exit
+                ! Search for the VmRSS line (Resident Set Size)
+                if (index(line, 'VmRSS:') > 0) then
+                    read(line(7:), *) usedmem
+                    exit
+                end if
+            end do
+            close(unit_num)
+        end if
+
+        open(newunit=unit_num, file='/proc/meminfo', status='old',      &
+     &    action='read', iostat=ios)
+
+      if (ios == 0) then
+            do
+                read(unit_num, '(A)', iostat=ios) line
+                if (ios /= 0) exit
+                ! Search for the VmRSS line (Resident Set Size)
+                if (index(line, 'MemTotal:') > 0) then
+                    read(line(10:), *) totalmem
+                    exit
+                end if
+            end do
+            close(unit_num)
+        end if
+
+        rss = (real(usedmem,8) / real(totalmem,8)) * 100.0d0
+
+      end subroutine get_memory_usage
