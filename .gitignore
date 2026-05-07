@@ -39,3 +39,6 @@ lixo2/
 
 # Log files
 *.log
+
+#venv
+venv
