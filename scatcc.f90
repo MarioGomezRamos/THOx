@@ -608,12 +608,6 @@ c Sort eigenphases
 
 
 
-!-------------------------------------------------------------------------------
-!  Auxiliary routine for calculation of scat. wf. for arbitrary jpi set and ecm
-!-------------------------------------------------------------------------------
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 c ------------------------------------------------------------------
 c   Solve multichannel Schrodinger equation callint R-matrix routines
 c   by P. Descouvemont CPC XXX XXX

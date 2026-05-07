@@ -395,8 +395,16 @@ c ***
       xsrj   =0      ! reaction  x-section
       xsinelj=0      ! inelastic x-section
       do partot=1,-1,-2
-        jtot=jtmin+dble(ijt-1)
-        icc=icc+1    
+        jtot=jtmin+dble(ijt-1)    
+        do icc=1,ncc
+        if (abs(jptset(icc)%jtot-jtot).lt.1e-6.and.                     &
+     &   jptset(icc)%partot.eq.partot) exit   
+        enddo
+        if (icc.gt.ncc) then
+          write(*,*)'Error: CC set not found for J/pi=',jtot,partot
+          write(*,*)'Maximum number of CC sets:',ncc
+          stop
+        endif
         nch=jptset(icc)%nchan   ! number of channels for this J/pi set     
         if (jtot.ne.jptset(icc)%jtot) then
           print*,'internal error: solvecc'
@@ -553,7 +561,8 @@ c ... write channels quantum numbers in CDCC file
             if (abs(smats(icc,inc,ich)).gt.1e-15) then
             write(67,*) jtot,par_read,inc,ich,                          &
      &         real(smats(icc,inc,ich)),imag(smats(icc,inc,ich))
-           endif
+            call flush(67)
+            endif
          enddo
       enddo 
 
