@@ -656,6 +656,11 @@ c     -----------------------------------------------------------
       complex*16 :: phase(nch),smat(nch) !,svel(nch)
 c     ----------------------------------------------------------
 !      call cpu_time(start)
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
 c *** Initialize some variables & R-matrix
       write(*,*) '=== schcc_rmat received: nlag=',nlag,' ns=',ns
       nmax=nlag*ns
@@ -796,6 +801,12 @@ c     ---------------------------------------------
       if (debug) then
         write(*,*)'schcc: ql=',ql(1:nch)
         write(*,*)'schcc: ecm=',ecm
+      endif
+      
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
       endif
 
       if (allocated(rvec)) deallocate(rvec)
@@ -1225,6 +1236,12 @@ c     -------------------------------------------------------
       rmin=0
       lmax=maxval(ql)
       orto=.false.
+
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
 
       
       if (allocated(rvec)) deallocate(rvec)
@@ -1906,6 +1923,12 @@ c     ---------------------------------------------------------
       big=huge(big)
       small=epsilon(small)
      
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
+
       h=dr
       h2=h*h
       conv=factor
@@ -2186,6 +2209,12 @@ c     ---------------------------------------------------------
       big=huge(big)
       small=epsilon(small)
      
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
+
       h=dr
       h2=h*h
       conv=factor
@@ -4352,14 +4381,14 @@ c
       return
       end
 
-c -------------------------------------------------------
-c   Solve multichannel Schrodinger equation
-c   ecm     = kinetic energy
-c           (E= Ecm + core energy)
-c   nch     = number of channels
-c   inc     = incoming channel
-c   ql(nch) = array with l'values for nch channels
-c             (NEEDS TO BE ALLOCATED BY USER)
+!c -------------------------------------------------------
+!c   Solve multichannel Schrodinger equation
+!c   ecm     = kinetic energy
+!c           (E= Ecm + core energy)
+!c   nch     = number of channels
+!c   inc     = incoming channel
+!c   ql(nch) = array with l'values for nch channels
+!c             (NEEDS TO BE ALLOCATED BY USER)
 c   nr      = number of radial points
 c   dr      = radial step 
 c   z1*z2   = product of charges
@@ -4422,6 +4451,12 @@ c     ---------------------------------------------
       rmin=0
       lmax=maxval(ql)
       orto=.false.
+
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
 
       if (debug) then
         write(*,*)'schcc: ql=',ql(1:nch)
@@ -4800,9 +4835,9 @@ c Using two adjacent points
 
 !-----------------------------------------------------------------------
 
-c ...
-c ... Enhanced Numerov (version of IJ Thompson used in Fresco) 
-c ... 
+!c ...
+!c ... Enhanced Numerov (version of IJ Thompson used in Fresco) 
+!c ... 
       subroutine schcc_erwin_MGR(nch,ecm,z12,incvec,ql,factor,dr,r0,
      & npt,wf,phase,smat,method,info,einc,icc)
       use xcdcc, only: smats
@@ -4866,6 +4901,11 @@ c ... Initialize some variables
 c ... Set TRUE for debugging
       debug=.false.
 c ..............................................................................
+      if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
       if (nch.lt.1) then 
         write(*,*)'Scatcc_erwin: nch=',nch; stop
       endif
@@ -5231,6 +5271,11 @@ c     -------------------------------------------------------
       lmax=maxval(ql)
       orto=.false.
 
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
       
       if (allocated(rvec)) deallocate(rvec)
       allocate(rvec(nr))
@@ -5600,6 +5645,12 @@ c *** Initialize some variables & R-matrix
       write(0,*)'Rmat: rmax=',rmax
       twf=.false.
       
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
+
       ninc=0
       do i=1,nch
       if (incvec(i)) ninc=ninc+1
@@ -5783,6 +5834,11 @@ c *** Initialize some variables & R-matrix
       write(0,*)'HPRMAT Rmat: rmax=',rmax,' solver_type=',solver_type
       twf=.false.
 
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
       ninc=0
       do i=1,nch
       if (incvec(i)) ninc=ninc+1
@@ -5954,6 +6010,12 @@ c     ---------------------------------------------------------
       big=huge(big)**0.8
       small=epsilon(small)**0.8
      
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
+
       h=dr
       h2=h*h
       conv=factor
@@ -6564,6 +6626,12 @@ c     ---------------------------------------------------------
       ENA2 = 2Q0/5Q0 * R12**2
       ENA3 = - 4Q0/35Q0 * R12**3
 !
+
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
 ! MODIFIED: This line is redundant with the parameter, but kept for logic
 !      ONEC = (1.0Q0, 0.0Q0) 
       TMAX = 20.
@@ -11394,6 +11462,12 @@ c     -------------------------------------------------------
       rmin=0
       lmax=maxval(ql)
       orto=.false.
+
+           if (dry_schcc) then
+      call get_memory_usage(mem_J)
+        write(*,*) 'Test J uses', mem_J, '% of total memory'
+        return
+      endif
 
       write(*,*) 'cutr',cutr      
       if (allocated(rvec)) deallocate(rvec)

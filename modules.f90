@@ -10,6 +10,8 @@ c -------------------------------------------------------
       module memory
         integer :: lr8,lc16
         real*8  :: tzfun,torto,tcc,tcsh,tmatch,t3d
+        logical :: dry_schcc=.false.
+        real*8  :: mem_J 
       end module memory
 
       module sistema

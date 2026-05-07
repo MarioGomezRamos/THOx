@@ -13,7 +13,7 @@ c *** ---------------------------------------------------
       use sistema
       use globals, only: kin,debug,verb
       use constants, only: hc,amu,pi,e2
-      use memory   , only: tcc
+      use memory   , only: tcc,dry_schcc,mem_J
       use trace   , only: cdccwf
       use writecdccwf ! JLei for IAV-CDCC calculations
 !#ifdef _OPENMP
@@ -62,13 +62,16 @@ c     ---------------------------------------------------------------
       integer npmax, nincmax, lpmax, istatemax,jcc,ijml,iinc,linc
       character(len=15) :: col_header
       integer:: nopenmp
-      real*8 :: mem_percent
+      real*8 :: mem_percent,maxmem
+      integer :: nthread_mem
+      logical :: memcheck
 !-----------------------------------------------------------------------
 
       namelist /numerov/ method,
      &         hcm,rmaxcc,rcc,hort,rmort,
      &         jtmin,jtmax,jump,jbord,skip,
-     &         nlag,ns,solvertype,prevfile,telpflag,nopenmp 
+     &         nlag,ns,solvertype,prevfile,telpflag,nopenmp,
+     &         maxmem 
 c     ---------------------------------------------------------------
 
 
@@ -76,6 +79,8 @@ c ... initialize variables --------------------------------------------------
       dry=.true.
       skip=.false.
       prevcalc=.false.
+      memcheck=.false.
+      maxmem=0d0
       prevfile=""
       jtmin=-1; jtmax=-1
       jump=0; jbord=0; 
@@ -100,6 +105,7 @@ c ... Numerov specifications
       rmort =0
       nlag  =0; ns=1; solvertype=3
       read(kin,nml=numerov)
+      if (maxmem.gt.0.5) memcheck=.true.
       iftelp_val = telpflag
       solver_type = solvertype  ! pass to HPRMAT module
 
@@ -398,6 +404,143 @@ c ***
       xsinel=0
       call get_memory_usage(mem_percent)
         write(*,*) 'Used ', mem_percent, '% of total memory'
+
+!First run to estimate memory cost, starting from the end
+      mem_J=0d0
+        if (memcheck) then 
+        dry_schcc=.true.       
+      do ijt=njt,1,-1
+      xsrj   =0      ! reaction  x-section
+      xsinelj=0      ! inelastic x-section
+      do partot=1,-1,-2
+        jtot=jtmin+dble(ijt-1)    
+        do icc=1,ncc
+        if (abs(jptset(icc)%jtot-jtot).lt.1e-6.and.                     &
+     &   jptset(icc)%partot.eq.partot) exit   
+        enddo
+        if (icc.gt.ncc) then
+          write(*,*)'Error: CC set not found for J/pi=',jtot,partot
+          write(*,*)'Maximum number of CC sets:',ncc
+          stop
+        endif
+        nch=jptset(icc)%nchan   ! number of channels for this J/pi set     
+        if (jtot.ne.jptset(icc)%jtot) then
+          print*,'internal error: solvecc'
+        endif
+        if (partot.ne.jptset(icc)%partot) then
+           print*,'internal error: solvecc'
+        endif
+!        jtot  =jptset(icc)%jtot 
+!        partot=jptset(icc)%partot
+        xsr   =0      ! reaction  x-section
+        xsinel=0      ! inelastic x-section
+
+        l=jptset(icc)%l(iexgs)
+        rturn =(etai + SQRT(etai**2 + L*(L+1d0)))/kcmi
+
+        allocate(incvec(nch))
+        einc=jptset(icc)%exc(iexgs)
+        incvec(:)=.false.
+        incch=.false.
+        ninc=0
+        do inc=1,nch  ! incoming channels are those with iex=iexgs
+          iex  = jptset(icc)%idx(inc)
+          if ((iex.eq.iexgs) .and. (jptset(icc)%idt(inc).eq.1)) then
+          incvec(inc)=.true.
+          incch=.true.
+          ninc=ninc+1
+          endif
+        enddo  
+        if (.not. incch) then
+        deallocate(incvec)
+        cycle
+        endif 
+
+!     Get the S matrices from file
+       jpiinfile=.false.
+       if (prevcalc) then
+         ijt_read=floor(jtot)
+         if (partot.eq.1) then
+            ipar_read=1
+         else if (partot.eq.-1) then
+            ipar_read=2
+         endif
+         mod_read=0d0
+         do inc_read=1, nchmax
+         do ich_read=1, nchmax
+            mod_read=mod_read                                           &
+     &   +abs(smats_read(ijt_read,ipar_read,inc_read,ich_read))**2
+         enddo
+         enddo
+         if (mod_read .lt. 1e-10) then
+            jpiinfile=.false.
+         else
+            jpiinfile=.true.
+         endif
+         if (jpiinfile) then
+            write(*,*) "J/pi set",jtot,partot," found in file"
+         do inc_read=1, nch
+         do ich_read=1, nch
+            smats(icc,inc_read,ich_read)=                               &
+     &       smats_read(ijt_read,ipar_read,inc_read,ich_read)
+         enddo
+         enddo    
+         endif
+       endif 
+
+!       tid=omp_get_thread_num()
+!       allocate(vcoup(tid+1,tid+1,tid+1))
+!       write(*,*) 'In thread',tid,'Vcoup allocated',allocated(vcoup),
+!     & 'with size',size(vcoup,1),size(vcoup,2),size(vcoup,3),nch,nrcc 
+!       deallocate(vcoup)
+!       write(*,*) 'In thread',tid,'Vcoup deallocated',allocated(vcoup)
+!       call flush(6)
+
+       if(.not. (prevcalc.and.jpiinfile) .or. iftelp_val) then
+   
+!c ... construct < c| V | c'> matrix for this J/pi set from radial F(R)
+        if (targdef) then !MGR
+          call makevcoup_tdef(icc,nch,.true.)
+        else
+          call makevcoup(icc,nch,.true.)  ! 
+        endif
+
+        if (.not. incch) then
+        deallocate(vcoup)
+        cycle
+
+        endif 
+
+
+       if (cdccwf) then
+        if (allocated(wfcdcc)) deallocate(wfcdcc)
+        allocate(wfcdcc(ninc,nch,nrcc))
+	endif 
+
+      call solvecc_MGR (icc,nch,incvec,nrcc,nlag,ns,einc)
+        
+      endif ! skip calculation if read    
+
+       deallocate(incvec)
+!-----------------------------------------------------------------------
+      if (allocated(vcoup)) deallocate(vcoup)
+       if (mem_J.gt.mem_percent) exit
+       enddo ! par
+       if (mem_J.gt.mem_percent) exit     
+       enddo !ijt
+      
+      if (mem_J.gt.mem_percent) then
+        nthread_mem=floor((maxmem-mem_percent)/(mem_J-mem_percent))
+      endif
+      write(*,*) 'Number of threads to get max memory load', nthread_mem
+      write(*,*) 'Number of threads given in input', nopenmp
+      write(*,*) 'Will use min.:',min(nopenmp,nthread_mem)
+      call omp_set_num_threads(min(nopenmp,nthread_mem))
+        dry_schcc=.false.
+      endif !memcheck        
+
+
+      
 !$omp parallel do private(ijt,partot,xsrj,xsinelj,jtot,nch,xsr,xsinel,l,
 !$omp&  rturn,einc,incvec,incch,ninc,inc,iex,jpiinfile,ijt_read,icc,
 !$omp&  ipar_read,mod_read,ich_read,inc_read,jp,jt,kcmf,jtarg,
@@ -507,9 +650,9 @@ c ***
    
 !c ... construct < c| V | c'> matrix for this J/pi set from radial F(R)
         if (targdef) then !MGR
-          call makevcoup_tdef(icc,nch)
+          call makevcoup_tdef(icc,nch,.false.)
         else
-          call makevcoup(icc,nch)  ! 
+          call makevcoup(icc,nch,.false.)  ! 
         endif
 
         if (.not. incch) then
@@ -916,7 +1059,7 @@ c     Deallocate variables
       end subroutine
 
 c *** Calculate coupling matrix for CC set
-      subroutine makevcoup(icc,nch)
+      subroutine makevcoup(icc,nch,dry)
       use xcdcc,     only: lamax,ffc,nrcc,nex,hcm,parch,rvcc,realwf
       use channels,  only: jptset
       use nmrv,      only: vcoup
@@ -933,6 +1076,7 @@ c *** Calculate coupling matrix for CC set
       real*8 :: vcoul,frconv,ymem
       complex*16:: vaux,phc
       CHARACTER LNAME(0:14),PARITY(3)
+      logical :: dry   
       DATA PARITY / '-','?','+' / 
 c     .............................................................
       debug=.false.
@@ -958,6 +1102,7 @@ c     .............................................................
 !     & 'size2',size(vcoup,2),'size3',size(vcoup,3)
 !      call flush(6)
       vcoup=0d0
+      if (dry) return
 
 
       ix=0
@@ -1068,7 +1213,7 @@ c     .............................................................
       end subroutine 
 
 c *** Calculate coupling matrix for CC set (target excitation)
-      subroutine makevcoup_tdef(icc,nch)
+      subroutine makevcoup_tdef(icc,nch,dry)
       use xcdcc,     only: nlambhipr,ffcn,ffcc,nrcc,nex,hcm,parch,rvcc,
      & lambdahpr
       use channels,  only: jptset,tset
@@ -1088,6 +1233,7 @@ c *** Calculate coupling matrix for CC set (target excitation)
       complex*16:: vaux,phc
       real*8,external:: rotor,threej,sixj,u9
       CHARACTER LNAME(0:14),PARITY(3)
+      logical :: dry
       DATA PARITY / '-','?','+' / 
 c     ...............................................................
       debug=.false.
@@ -1110,6 +1256,7 @@ c     ...............................................................
       if (allocated(vcoup)) deallocate(vcoup)
       allocate(vcoup(nch,nch,1:nrcc))
       vcoup=0d0
+      if (dry) return
 
       ix=0
       do ni=1,nch
