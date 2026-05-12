@@ -146,7 +146,9 @@ c ... Numerov specifications
       case(8)
       write(numethod,'(a60)')"ENA with 5 terms and tolsma criterion" 
       case(9)
-      write(numethod,'(a60)')"R-matrix solution (HPRMAT)" 
+      write(numethod,'(a60)')"R-matrix solution (HPRMAT)"
+      case(14)
+      write(numethod,'(a60)')"Modified ENA (fresco) with scratch files" 
       end select 
       write(*,350) adjustl(numethod),hcm,rmaxcc
       if (abs(hort).gt.0) then
@@ -650,9 +652,17 @@ c ***
    
 !c ... construct < c| V | c'> matrix for this J/pi set from radial F(R)
         if (targdef) then !MGR
+           if (method .eq. 14) then
+          call makevcoup_tdef_scratch(icc,nch,.false.)
+          else 
           call makevcoup_tdef(icc,nch,.false.)
+          endif
         else
-          call makevcoup(icc,nch,.false.)  ! 
+          if (method .eq. 14) then
+          call makevcoup_scratch(icc,nch,.false.)
+          else
+            call makevcoup(icc,nch,.false.)
+          endif
         endif
 
         if (.not. incch) then
@@ -1012,6 +1022,7 @@ c -----------------------------------------------------
         call schcc_erwin_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
      &  rstart,nr,wf,phase,smat,method,info,einc,icc)
 
+
       case(5)     ! R-matrix method (P. Desc. subroutine)
         write(*,*) '=== R-matrix_MGR parameters: nlag=',nlag,' ns=',ns
         call schcc_rmat_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
@@ -1032,6 +1043,11 @@ c -----------------------------------------------------
         call schcc_rmat_hp_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
      &  rstart,nr,wf,phase,smat,info,nlag,ns,einc,icc)
 
+
+      case(14) !Enhanced numerov with scratch files     
+      call schcc_erwin_scratch(nch,ecm,zp*zt,incvec,ql,factor,hcm,
+     &  rstart,nr,wf,phase,smat,method,info,einc,icc)
+     
       case default
         write(*,*)'Method',method,' not valid!'
         stop
@@ -1881,3 +1897,380 @@ c      interpolate & store in integration grid
         rss = (real(usedmem,8) / real(totalmem,8)) * 100.0d0
 
       end subroutine get_memory_usage
+
+c *** Calculate coupling matrix for CC set
+      subroutine makevcoup_scratch(icc,nch,dry)
+      use xcdcc,     only: lamax,ffc,nrcc,nex,hcm,parch,rvcc,realwf
+      use channels,  only: jptset
+      use nmrv,      only: vcoup,uscratch,nr
+      use sistema
+      use globals,   only: verb, debug,nfacmax
+      use memory
+      implicit none
+      logical   fail3
+      integer   ir,nchans,nch,ni,nf,lam,icc,inc,ix,idti,idtf !MGR
+      real*8::  jtot,jpi,jpf,lri,lrf,lamr,ri,jti,jtf,jlpi,jlpf!MGR
+      real*8 coef(nch,nch,0:lamax)
+      integer:: partot,pari,parf,idi,idf
+      real*8::  r1,r2,r3,r13,x,zero,threej,sixj,zpt
+      integer:: li,lf
+      real*8 :: vcoul,frconv,ymem
+      complex*16:: vaux,phc
+      complex*16 vcoupscratch(1:nch,1:nch)
+      integer :: rec_len
+      CHARACTER LNAME(0:14),PARITY(3)
+      logical :: dry   
+      DATA PARITY / '-','?','+' / 
+c     .............................................................
+      debug=.false.
+c     .............................................................       
+      zero=0d0
+      nchans =jptset(icc)%nchan   ! number of channels for this J/pi set
+      partot =jptset(icc)%partot  ! parity of the set
+      jtot   =jptset(icc)%jtot    ! total angular momentum of J/pi set
+      if (nchans.ne.nch) then
+       write(*,*)'Internal error in makevcoup: expected',nchans,
+     &           'channels for CC set',icc,' but required',nch
+       stop
+      endif
+
+      inquire(iolength=rec_len) vcoupscratch
+
+
+      open(newunit=uscratch, status='scratch', access='direct', 
+     & recl=rec_len)
+
+      ymem=nch*nch*nrcc*lc16/1e6
+      if (verb.ge.3) write(*,190) ymem
+190   format(5x,"[ Coupling matrix require", 1f8.2," Mbytes ]")
+
+!      write(*,*)'nrcc=',nrcc,' nch=',nch
+!      if (allocated(vcoup)) deallocate(vcoup)
+!      allocate(vcoup(nch,nch,1:nrcc))
+!      write(*,*)'vcoup allocated',allocated(vcoup),'size',size(vcoup,1),
+!     & 'size2',size(vcoup,2),'size3',size(vcoup,3)
+!      call flush(6)
+      if (dry) return
+
+
+      ix=0
+      coef=0d0
+      do ni=1,nch
+      li  =jptset(icc)%l(ni)
+      lri =li
+      jpi =jptset(icc)%jp(ni)
+      idi =jptset(icc)%idx(ni)
+      idti =jptset(icc)%idt(ni) !MGR
+      jlpi=jptset(icc)%jlp(ni)  !MGR
+      pari=parch(idi)
+!      do nf=ni,nch !Upper triangle available here only!!! ! Changed for complex internal wfs
+       do nf=1,nch 
+      if (realwf.and.nf.lt.ni) cycle
+
+      lf=jptset(icc)%l(nf)
+      lrf=lf
+      jpf=jptset(icc)%jp(nf)
+      idf =jptset(icc)%idx(nf)
+      idtf =jptset(icc)%idt(nf) !MGR
+      jlpf=jptset(icc)%jlp(nf)  !MGR
+      parf=parch(idf)
+!MGR      No target excitation
+      if ((idtf.ne.idti).or.(abs(jlpi-jlpf).gt.1e-3)) then
+         coef(ni,nf,:)=0d0
+!         write(*,*) 'SKIPPED Targ.state',idti,'->',idtf,'JLp',jlpi,'->',
+!     &   jlpf 
+         cycle
+      endif 
+!--------------------------------------------------------------------           
+!c1      r1=sqrt((2.*lri+1.)*(2.*lrf+1.)*(2.*jpi+1.)*(2.*jpf+1.))
+!c1     &  *(-1)**(jpi+jtot)
+
+!      r1=sqrt((2.*lri+1.)*(2.*lrf+1.)*(2.*jpi+1.)*(2.*jpf+1.))
+!     &  *(-1)**(jpf+jtot)
+
+! AMM: Based on v2.4 changes: CHECK!!!!!!!!!!!!!!!!!!!!
+!      r1=sqrt((2.*lri+1.)*(2.*lrf+1.)*(2.*jpi+1.)*(2.*jpf+1.))
+!     &  *(-1)**(jpi+jlpi)
+
+      r1=sqrt((2.*lri+1.)*(2.*lrf+1.)*(2.*jpi+1.)*(2.*jpf+1.))
+     &  *(-1)**(jpf+jlpf)
+
+      do lam=0,lamax
+      lamr=lam
+!      if (fail3(jpi,jpf,lamr)) cycle
+      if (fail3(lri,lrf,lamr)) cycle
+      if ((-1)**lam*pari.ne.parf) cycle
+
+!c1      r2=threej(lamr,lri,lrf,zero,zero,zero)
+!c1      r3=sixj(jpi,jpf,lamr,lrf,lri,jtot)
+      r2=threej(lamr,lrf,lri,zero,zero,zero)
+      r3=sixj(jpf,jpi,lamr,lri,lrf,jlpf)
+
+      r13=r1*r2*r3
+! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!
+!      phc=(0d0,1d0)**(lri-lrf)  ! Phase in i^(Li-Lf) < f | V | i>  
+! TEST 5/nov/16
+!      phc=(0d0,1d0)**(lrf-lri)  ! Phase in i^(Li-Lf) < f | V | i>  
+
+      ix=ix+1
+      coef(ni,nf,lam)=(-1)**lamr*(2.*lamr+1.)*r13
+      frconv=(-1)**lamr*(2d0*lamr+1)*sqrt(2*jpi+1)*sqrt(2*jpf+1) ! FFC=FRCONV*FFR(fresco)
+
+      enddo !la
+
+      enddo !m
+      enddo !n      
+
+
+      do ir=1,nrcc 
+      vcoupscratch=0d0           
+      ri=rvcc(ir)
+
+      do ni=1,nch
+                  idi =jptset(icc)%idx(ni)
+                  li  =jptset(icc)%l(ni)
+      lri =li
+        do nf=1,nch
+        idf =jptset(icc)%idx(nf)
+        lf=jptset(icc)%l(nf)
+      lrf=lf    
+        if (realwf.and.nf.lt.ni) cycle   
+        phc=(0d0,1d0)**(lri-lrf) 
+            do lam=0,lamax                
+      vaux= coef(ni,nf,lam)*ffc(idi,idf,lam,ir)
+      if (vaux.ne.vaux) vaux=0d0
+      vcoupscratch(ni,nf)=vcoupscratch(ni,nf) + vaux
+
+
+      if ((zp*zt.gt.1e-6).and.(ni.eq.nf).and.(li.eq.lf).
+     &  and.(lam.eq.0)) then
+        vcoupscratch(ni,nf)=vcoupscratch(ni,nf) + VCOUL(ri,zp,zt,Rcc)
+      endif
+!!! TEST 11/Oct)
+      if (realwf.and.(ni.ne.nf)) then
+        vcoupscratch(nf,ni)=vcoupscratch(ni,nf)*conjg(phc)/phc
+      endif
+!!!!!!!!!!!!      
+
+
+      enddo !la
+
+      enddo !m
+      enddo !n
+
+      write(uscratch,rec=ir) vcoupscratch
+!      write(167,*)'ir=',ir
+!      do ni=1,nch
+!      write(167,*)vcoupscratch(ni,1:nch)
+!      enddo
+      enddo !ir      
+
+
+!      if (.not.allocated(vcoup)) then
+!        write(*,*)'makevcoup: vcoup not allocated!'
+!        stop
+!      endif
+
+      RETURN
+      end subroutine 
+
+
+c *** Calculate coupling matrix for CC set (target excitation)
+      subroutine makevcoup_tdef_scratch(icc,nch,dry)
+      use xcdcc,     only: nlambhipr,ffcn,ffcc,nrcc,nex,hcm,parch,rvcc,
+     & lambdahpr
+      use channels,  only: jptset,tset
+      use nmrv,      only: uscratch
+      use sistema
+      use globals,   only: verb, debug,nfacmax
+      use memory
+      implicit none
+      logical   fail3
+      integer   ir,nchans,nch,ni,nf,icc,inc,ix,idti,idtf,ihpr !MGR
+      real*8::  jtot,jpi,jpf,lri,lrf,lamr,lamp,ri,jti,jtf,jlpi,jlpf!MGR
+      real*8::  coef(nch,nch,nlambhipr,2)
+      real*8::  qr,pi
+      integer:: partot,pari,parf,idi,idf,parti,partf
+      real*8::  r1,r2,r3,r13,x,zero,zpt
+      integer:: li,lf
+      real*8 :: vcoul,frconv,ymem,krotor !MGR
+      complex*16:: vaux,phc
+      complex*16 :: vcoupscratch(nch,nch)
+      integer:: rec_len
+      real*8,external:: rotor,threej,sixj,u9
+      CHARACTER LNAME(0:14),PARITY(3)
+      logical :: dry
+      DATA PARITY / '-','?','+' / 
+c     ...............................................................
+      debug=.false.
+       
+!      write(*,'(5x,"zp,zt,rcc=",3f8.2)') zp,zt,rcc
+      zero=0d0
+      nchans =jptset(icc)%nchan   ! number of channels for this J/pi set
+      partot =jptset(icc)%partot  ! parity of the set
+      jtot   =jptset(icc)%jtot    ! total angular momentum of J/pi set
+      pi=acos(-1d0)
+      if (nchans.ne.nch) then
+       write(*,*)'Internal error in makevcoup: expected',nchans,
+     &           'channels for CC set',icc,' but required',nch
+       stop
+      endif
+      ymem=nch*nch*nrcc*lc16/1e6
+      if (verb.ge.3) write(*,190) ymem
+190   format(5x,"[ Coupling matrix require", 1f8.2," Mbytes ]")
+
+      if (dry) return
+
+      inquire(iolength=rec_len) vcoupscratch
+
+
+      open(newunit=uscratch, status='scratch', access='direct', 
+     & recl=rec_len)
+
+
+      ix=0
+      coef=0d0
+      do ni=1,nch
+      li =jptset(icc)%l(ni)
+      lri=li
+      jpi =jptset(icc)%jp(ni)
+      idi =jptset(icc)%idx(ni)
+      idti =jptset(icc)%idt(ni)
+      jlpi=jptset(icc)%jlp(ni)
+      jti=jptset(icc)%jt(ni)
+      pari=parch(idi)
+      parti=tset(idti)%partarg
+      do nf=ni,nch !Upper triangle available here only!!!
+      lf=jptset(icc)%l(nf)
+      lrf=lf
+      jpf=jptset(icc)%jp(nf)
+      idf =jptset(icc)%idx(nf)
+      idtf =jptset(icc)%idt(nf)
+      jlpf=jptset(icc)%jlp(nf)
+      jtf=jptset(icc)%jt(nf)
+      parf=parch(idf)
+      partf=tset(idtf)%partarg
+
+!--------------------------------------------------------------------
+
+      do ihpr=1,nlambhipr
+      lamr=lambdahpr(ihpr)%lambda+0d0
+      lamp=lambdahpr(ihpr)%lambdap+0d0
+      qr=lambdahpr(ihpr)%q+0d0
+!      if ((maxval(lambdahpr(:)%q).eq.0).and. .false.) then
+!      write(*,*) 'Qmax0'
+!      if(abs(lamr-lamp).gt.1e-3) cycle
+!      if(abs(jlpi-jlpf).gt.1e-3) cycle
+!      if(abs(jti-jtf).gt.1e-3) cycle
+!      if (fail3(lri,lrf,lamr)) cycle
+!      if ((-1)**lamr*pari*parti.ne.parf*partf) cycle
+!      if (mod(nint(lamr+lrf+lri),2).ne.0) cycle
+!      coef=sqrt(2d0*lri+1d0)*sqrt(2d0*lrf+1d0)*(-1)**(jlpi+jpi)*
+!     & threej(lri,lamr,lrf,0d0,0d0,0d0)*
+!     & sixj(jpf,jpi,lamr,lri,lrf,jlpf) 
+!      if (abs(coef).gt.1e-6) then
+!        write(330,*)
+!        write(330,*)'[(',lri,',',jpi,')',jlpi,',',jti,']',Jtot
+!        write(330,*)'[(',lrf,',',jpf,')',jlpf,',',jtf,']',Jtot
+        
+!        write(330,*) 'Lambda',lamr,'Lambdap',lamp,'Q',qr
+!        write(330,*)'Coef',coef
+!        endif
+!      phc=(0d0,1d0)**(lrf-lri)
+!      ix=ix+1
+!      else
+!      if (fail3(jpi,jpf,lamr)) cycle
+        if (fail3(lri,lrf,lamr)) cycle
+        if ((-1)**lamr*pari*parti.ne.parf*partf) cycle
+        if (fail3(jpi,jpf,lamp)) cycle
+        if (fail3(jti,jtf,qr)) cycle
+        if (fail3(jlpi,jlpf,qr)) cycle
+!      write(*,*) 'Using rotor model for target'
+        if (abs(jti-nint(jti)).lt.1e-2) then
+        if (mod(nint(jti+jtf+qr),2).ne.0) cycle
+        endif
+        if((abs(tset(idti)%Krot-tset(idtf)%Krot)).gt. 1e-1) cycle
+              krotor=tset(idti)%Krot
+        r1=rotor(jtf,krotor,nint(qr),jti,2)!!Coulomb
+        r3=rotor(jtf,krotor,nint(qr),jti,1) !Nuclear
+!        if (nint(qr).eq.0) r1=sqrt(2d0*jti+1d0)
+!        if (nint(qr).eq.0) r3=sqrt(2d0*jti+1d0)
+        if (r1.ne.r1) write(*,*) '<Jt|Q|Jt> is NaN for <',jtf,'|',qr,'|'
+     & ,jti,'>'
+!        if (abs(r1+r3).lt.1e-6) then
+!        write(*,*)'Jt',jtf,'not coupled to',jti,'through Q:',qr 
+!         cycle
+!        endif 
+        r2=(-1d0)**(qr+jti+jtot+jlpi)*sqrt(2d0*jlpi+1d0)*
+     &  sqrt(2d0*jlpf+1d0)*
+     &  sqrt(2d0*lamr+1d0)*sqrt(2d0*lri+1d0)*sqrt(2d0*lrf+1d0)*
+     &  (-1)**(lamr+lrf)*threej(lri,lamr,lrf,0d0,0d0,0d0)*
+     &  u9(lri,jpi,jlpi,lamr,lamp,qr,lrf,jpf,jlpf)/sqrt(4d0*pi)*
+     &  sixj(jlpi,jti,jtot,jtf,jlpf,qr)
+        if (abs(r2).lt.1e-6) cycle
+        if ((abs(r1)+abs(r3)).lt.1e-6) cycle
+        ix=ix+1
+
+      coef(ni,nf,ihpr,1)=r1*r2
+      coef(ni,nf,ihpr,2)=r3*r2
+
+
+
+      enddo !hipr
+      enddo !m
+      enddo !n
+
+      
+
+      
+      do ir=1,nrcc      
+!      ri=dble(ir-1)*hcm  ! CHECK!!!!!!!!!!!!
+      ri=rvcc(ir)
+      vcoupscratch(:,:)=0d0
+      do ni=1,nch
+      li =jptset(icc)%l(ni)
+      lri=li
+      idi =jptset(icc)%idx(ni)
+      idti =jptset(icc)%idt(ni)
+      do nf=ni,nch !Upper triangle available here only!!!
+      lf=jptset(icc)%l(nf)
+      lrf=lf
+      idf =jptset(icc)%idx(nf)
+      idtf =jptset(icc)%idt(nf)
+      do ihpr=1,nlambhipr 
+                 
+      if (abs(coef(ni,nf,ihpr,1)).lt.1e-10 .and.                        &
+     & abs(coef(ni,nf,ihpr,2)).lt.1e-10 ) cycle
+      lamr=lambdahpr(ihpr)%lambda+0d0
+      lamp=lambdahpr(ihpr)%lambdap+0d0
+      qr=lambdahpr(ihpr)%q+0d0
+
+      phc=(0d0,1d0)**(lrf-lri)
+      vaux= phc*coef(ni,nf,ihpr,1)*ffcc(idi,idf,ihpr,ir)+                             &
+     & phc*coef(ni,nf,ihpr,2)*ffcn(idi,idf,ihpr,ir)
+      
+      vcoupscratch(ni,nf)=vcoupscratch(ni,nf) + vaux
+
+
+      if ((zp*zt.gt.1e-6).and.(ni.eq.nf).and.(li.eq.lf).
+     &  and.(nint(lamr).eq.0).and.(nint(lamp).eq.0).and.(nint(qr).eq.0)
+     & .and.(idti.eq.idtf))then
+        vcoupscratch(ni,ni)=vcoupscratch(ni,ni) + VCOUL(ri,zp,zt,Rcc)
+      endif
+
+      if ((ni.ne.nf)) vcoupscratch(nf,ni)=vcoupscratch(ni,nf)*
+     & conjg(phc)/phc
+      
+      
+
+      enddo !hipervector
+      enddo !n
+      enddo !m
+
+      write(uscratch,rec=ir) vcoupscratch
+
+      enddo !ir
+
+
+      RETURN
+      end subroutine       

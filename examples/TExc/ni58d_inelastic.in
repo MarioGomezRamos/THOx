@@ -92,7 +92,7 @@
          4=Modified Numerov used in Fresco
          5=R-matrix with Lagrange mesh (P.Desc.)
 
-&numerov hcm=0.1 rmaxcc=80  hort=5 method=4  rcc=4.873d0  jtmin=0 jtmax=40 nopenmp=3  maxmem=50/  !maxmem percentage of memory to be used by the program, it assigns the number of threads and is limited above by nopenmp
+&numerov hcm=0.1 rmaxcc=80  hort=5 method=14  rcc=4.873d0  jtmin=0 jtmax=40 nopenmp=3  maxmem=50/  !maxmem percentage of memory to be used by the program, it assigns the number of threads and is limited above by nopenmp
 
 &xsections fileamp="" thmin=0.1 thmax=179.1 dth=0.5  doublexs=T triplexs=F icore=1 ner=200 ermin=0.01 ermax=60 jsets(1)=T itarg=2/
 
