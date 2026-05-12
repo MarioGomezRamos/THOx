@@ -244,7 +244,7 @@ c frad changed to complex in v2.3
      & potQKc_targ(:,:,:,:,:)                          !MGR
       complex*16:: potn,potc,fauxn,fauxc,caux,potnv,potcv,potncor,
      & potccor 
-      complex*16,allocatable,target::Ff(:,:),Fc(:,:,:,:),Fn(:,:,:,:)
+      complex*16,allocatable,target::Ff(:,:),Fc(:,:),Fn(:,:)
       complex*16,pointer:: ffr(:,:,:,:,:,:)
       parameter(nener=200,numfilmax=10) !,nchmax=10)
       integer, allocatable:: np(:)
@@ -263,7 +263,7 @@ c     Solving the CC (separate module??)
       type(coupling_t), allocatable :: coup(:)
       complex*16, allocatable:: ffc(:,:),smats(:,:,:),famps0(:,:,:)
       complex*16, allocatable:: famps(:,:,:,:) !MGR
-      complex*16, allocatable:: ffcn(:,:,:,:),ffcc(:,:,:,:) !MGR
+      complex*16, allocatable:: ffcn(:,:),ffcc(:,:) !MGR
       real*8:: hcm,rmatch,elab,ecm,jtmin,jtmax,rmaxcc
       real*8:: jump(1:5),jbord(1:5) 
       complex*16, allocatable:: wfcdcc(:,:,:) ! Full CDCC WF      

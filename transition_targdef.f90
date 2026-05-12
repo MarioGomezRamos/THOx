@@ -46,6 +46,8 @@
        integer itex1,itex2,nonzero
        integer initstates,isc1,isc2,jsc1,jsc2,ksc1,ksc2
        real*8 krotor,ecmi,ech
+       integer,allocatable:: ic_map(:,:,:)
+       integer :: ncouplings, ic
 ! v0.6c
 !      dimension energ(nener,numfilmax),!,xrad2(:),elapsed(2),
 !     .np(numfilmax)
@@ -301,16 +303,96 @@
 
 !c *** START CALCULATION OF COUPLING POTENTIALS ---------------------------------------
       write(*,'(/,2x,"** FORMFACTORS **")') 
-      fmem=nex*nex*(nlambhipr+1)*nrad3*lc16/1e6
+
+      call factorial(2*nQmax)
+!c *** PRE-PASS TO COUNT AND MAP COUPLINGS --------------------------------------------
+      if (allocated(coup)) deallocate(coup)
+      allocate(ic_map(nex, nex, nlambhipr))
+      ic_map = 0
+      ncouplings = 0
+      
+      do m=1,jpsets
+         nchann1=jpiset(m)%nchan
+         xjp1=jpiset(m)%jtot
+         do n=m,jpsets
+            nchann2=jpiset(n)%nchan
+            xjp2=jpiset(n)%jtot
+            do lc=1,nlambhipr
+               nk=0
+               nq=lambdahpr(lc)%q
+               do i=1,nchann1
+                  xl1=jpiset(m)%lsp(i) 
+                  xj1=jpiset(m)%jsp(i) 
+                  Iin=jpiset(m)%jc(i) 
+                  if (ignorespin) then
+                     xj1=jpiset(m)%lsp(i)
+                     Iin=0d0
+                     xjp1=jpiset(m)%lsp(i)
+                  endif
+                  
+                  do j=1,nchann2
+                     xl2=jpiset(n)%lsp(j)
+                     xj2=jpiset(n)%jsp(j)
+                     sn1=sn
+                     Ifi=jpiset(n)%jc(j) 
+                     if (ignorespin) then
+                        xj2=jpiset(n)%lsp(j)
+                        Ifi=0d0
+                        sn1=0d0
+                        xjp2=jpiset(n)%lsp(j)
+                     endif
+                     if (abs(Ifi-Iin).gt.1e-3) cycle
+                     
+                     do k=0,kmax
+                        do l=0,nq
+                           call rmatel_tdef(m,n,lc,i,j,k,nq,l,
+     &                      xjp1,xjp2,rmatn,ignorespin)
+                           if (abs(rmatn).lt.1e-6) cycle
+                           nk=nk+1
+                           exit
+                        enddo
+                        if (nk.gt.0) exit
+                     enddo
+                     if (nk.gt.0) exit
+                  enddo
+                  if (nk.gt.0) exit
+               enddo
+               
+               if (nk.gt.0) then
+                  do ie1=1,jpiset(m)%nex
+                     id1=idx(m,ie1)
+                     do ie2=1,jpiset(n)%nex
+                        id2=idx(n,ie2)
+                        ncouplings = ncouplings + 1
+                        ic_map(id1, id2, lc) = ncouplings
+                     enddo
+                  enddo
+               endif
+            enddo
+         enddo
+      enddo
+      
+      allocate(coup(ncouplings))
+      do lc=1,nlambhipr
+         do id2=1,nex
+            do id1=1,nex
+               ic = ic_map(id1, id2, lc)
+               if (ic > 0) then
+                  coup(ic)%i = id1
+                  coup(ic)%j = id2
+                  coup(ic)%l = lc
+               endif
+            enddo
+         enddo
+      enddo
+!c -------------------------------------------------------------------------------------
+
+      fmem=ncouplings*nrad3*lc16/1e6
       write(*,'(5x," [ formfactors need",1f7.1," Mbytes ]")') fmem
 
       allocate(potQKn_targ(nquad,nrad2,0:nQmax,0:Kmax,2))
       allocate(potQKc_targ(nquad,nrad2,0:nQmax,0:Kmax,2))
-      allocate(Fc(nex,nex,nlambhipr,nrad3),Fn(nex,nex,nlambhipr,nrad3))
-!c commented by AMoro, to save memory
-!      allocate(Fc(nex,nex,0:lambmax,nrad3))
-!      allocate(Fn(nex,nex,0:lambmax,nrad3)) 
-!      Fc=0.d0;  Fn=0.d0
+      allocate(Fc(nrad3, ncouplings),Fn(nrad3, ncouplings))
       Fc=0d0; Fn=0d0
       potQKn_targ=0d0; potQKc_targ=0d0
       rmat=0d0
@@ -318,7 +400,7 @@
        
       write(*,'(/,2x,"o V^{K,Q}(r,R) ",$)')
       call cpu_time(t1)
-      call factorial(2*nQmax)
+      ! Factorial table moved up to allow pre-pass usage
 
 !      write(*,*)'nqmin,nqmax=',nqmin,nqmax,' kmax=',kmax,kcmax
 !      write(*,*)'nquad,nrad2=',nquad,nrad2
@@ -577,10 +659,11 @@
 1200  fauxn=rmatn*xsumn*dsqrt(2.d0*dble(k)+1.d0)*0.5d0*radmax
       fauxc=rmatn*xsumc*dsqrt(2.d0*dble(k)+1.d0)*0.5d0*radmax
 !       if (fauxn.ne.fauxn) write(*,*) 'Fauxn NaN'
-!      Fc(id1,id2,lc,irad2)=Fc(id1,id2,lc,irad2)+fauxc    ! coulomb
-!      Fn(id1,id2,lc,irad2)=Fn(id1,id2,lc,irad2)+fauxn    ! nuclear
-      Fn(id1,id2,lc,irad2)=Fn(id1,id2,lc,irad2)+fauxn ! total
-      Fc(id1,id2,lc,irad2)=Fc(id1,id2,lc,irad2)+fauxc
+      ic = ic_map(id1,id2,lc)
+      if (ic.gt.0) then
+        Fn(irad2,ic)=Fn(irad2,ic)+fauxn 
+        Fc(irad2,ic)=Fc(irad2,ic)+fauxc
+      endif
       enddo ! ik
       enddo ! irad2 (R)
       enddo ! ie2
@@ -740,12 +823,12 @@
 !      if ((m1.eq.3).and.((m2.eq.4).or.(m2.eq.5))) 
 !     & write(330,*)'Rmel',rmeln,rmelc
       if (mproj1.le.mproj2) then
-      if ((sum(abs(Fc(mproj1,mproj2,lc,:)))+                            &
-     & sum(abs(Fn(mproj1,mproj2,lc,:)))).lt.1e-10) cycle
+      ic = ic_map(mproj1,mproj2,lc)
       else
-      if ((sum(abs(Fc(mproj2,mproj1,lc,:)))+                            &
-     & sum(abs(Fn(mproj2,mproj1,lc,:)))).lt.1e-10) cycle
+      ic = ic_map(mproj2,mproj1,lc)
       endif
+      if (ic.le.0) cycle
+      if ((sum(abs(Fc(:,ic)))+sum(abs(Fn(:,ic)))).lt.1e-10) cycle
 !      write(330,*) 'Non-zero'
 !      write(330,*)
       write(comment,'(2x,"<",i3,"|",i2,"|",i3,">")') m1,nint(xlc),m2
@@ -756,13 +839,8 @@
       
       do irad=1,nrad2
       r2=xrad2(irad)
-      if (mproj1.le.mproj2) then
-      fauxc=Fc(mproj1,mproj2,lc,irad)*rmelc
-      fauxn=Fn(mproj1,mproj2,lc,irad)*rmeln  
-      else
-      fauxc=Fc(mproj2,mproj1,lc,irad)*rmelc
-      fauxn=Fn(mproj2,mproj1,lc,irad)*rmeln 
-      endif
+      fauxc=Fc(irad,ic)*rmelc
+      fauxn=Fn(irad,ic)*rmeln
  
 !      fauxn=0d0
 !      if ((ncoul.eq.0).or.(ncoul.eq.1)) then
@@ -794,8 +872,8 @@
       if (writeff) write(kfr,'(2x,1g16.10,2x,1g16.10)')fauxc*rmelc
       if (verb.ge.4) write(120,'(1x,1f8.3,2x,2g16.8)')r2,               &
      & fauxc*rmelc
-      Fc(mproj1,mproj2,lc,ir)=fauxc
-      Fn(mproj1,mproj2,lc,ir)=0
+      Fc(ir,ic)=fauxc
+      Fn(ir,ic)=0d0
       if ((ir.eq.nrad3).and.(abs(fauxc).gt.0.01d0))                     &
      & write(330,500) nrad3,rstep,rfirst,fscale,nint(xlc),xlcp,nq+0d0   &
      & ,m2,m1,comment
@@ -825,8 +903,8 @@
 !      r2=xrad2(irad)
       r2=rstep+rstep*dble(irad-1)
 !      write(12,900) r2, (Fn(m1,m2,i,irad),i=i1,i2)
-      write(10,900) r2, (Fn(m1,m2,i,irad),i=i1,i2)
-      write(11,900) r2, (Fc(m1,m2,i,irad),i=i1,i2)
+!      write(10,900) r2, (Fn(m1,m2,i,irad),i=i1,i2)
+!      write(11,900) r2, (Fc(m1,m2,i,irad),i=i1,i2)
 500   format(i4,3f8.4,i4,2f4.0,2i4,a35)
 800   format (a,2(a,(f8.4),2x,a,i3,2x),2(a,(f8.4),2x),/)
 820   format (a,a5,a,a5,2(a,(f8.4),2x))

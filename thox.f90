@@ -457,6 +457,7 @@
 !c
       subroutine preread(kin)
       use channels 
+      use memory
       use parameters, only: maxl,maxeset,maxchan
       use xcdcc, only: realwf
       use wfs, only: energ,wfc,nr
@@ -465,7 +466,7 @@
       logical :: tres,ehat,merge,energy
       integer::l,lmin,lmax,bastype,mlst,kin,ng
       integer:: basold,parold,incold 
-      real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
+      real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint,fmem
       real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale,r1,rnmax,st
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
       integer:: nk,nbins,inc,nodes
@@ -558,6 +559,9 @@
 
       if (.not.allocated(wfc)) then
         nchmax=0
+        fmem=jpsets*maxeset*maxchan*nr*lc16/1e6
+      write(*,'(5x," [ Chan. wfs need",1f7.1," Mbytes ]")') fmem
+
         allocate(wfc(jpsets,maxeset,maxchan,nr))
         allocate(energ(jpsets,maxeset))
       endif
