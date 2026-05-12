@@ -3,6 +3,54 @@
       integer :: rank_telp = 0
       complex*16, allocatable :: sum_wU(:)
       real*8, allocatable :: sum_w(:)
+      
+      contains
+      
+      subroutine add_telp(inc,nr,nch,wf,vcoup,jtot,smat_inc)
+      implicit none
+      integer, intent(in) :: inc,nr,nch
+      complex*16, intent(in) :: wf(nch,nr)
+      complex*16, intent(in) :: vcoup(nch,nch,nr)
+      real*8, intent(in) :: jtot
+      complex*16, intent(in) :: smat_inc
+      real*8 :: wght
+      integer :: ir,j
+      complex*16 :: usrc
+      wght = (2.0d0 * jtot + 1.0d0) * (1.0d0 - abs(smat_inc)**2)
+!$omp critical(telp_sum)
+      do ir=1,nr
+         usrc = (0.0d0,0.0d0)
+         do j=1,nch
+            if (j.ne.inc) then
+               usrc = usrc + vcoup(inc,j,ir)*wf(j,ir)
+            endif
+         enddo
+!         sum_wU(ir)=sum_wU(ir) + wght * conjg(wf(inc,ir)) * usrc
+!         sum_w(ir) =sum_w(ir) + wght * abs(wf(inc,ir))**2
+      enddo
+!$omp end critical(telp_sum)
+      end subroutine
+
+      subroutine write_telp(nr,rvec)
+      implicit none
+      integer, intent(in) :: nr
+      real*8, intent(in) :: rvec(nr)
+      integer :: ir
+      complex*16 :: tval
+      open(unit=97,file='telp.out',status='replace')
+      write(97,'(a)')'# R(fm)    Re[V_telp]      Im[V_telp]'
+      do ir=1,nr
+         if (sum_w(ir).gt.1d-15) then
+            tval = sum_wU(ir) / sum_w(ir)
+         else
+            tval = (0d0,0d0)
+         endif
+         write(97,'(f12.6,2e15.6)') rvec(ir),real(tval),aimag(tval)
+      enddo
+      close(97)
+      print *,'[ TELP saved to telp.out ]'
+      end subroutine
+
       end module
       module nmrv
       logical:: debug    ! if true,print debug information
@@ -4849,6 +4897,8 @@ c
       use constants , only: e2
       use memory
       use trace , only: cdccwf
+      use telp_mod, only: iftelp_val, add_telp
+      use channels, only: jptset
       implicit none
       integer:: method
       logical:: copen(nch),orto,raynal,info
@@ -5184,6 +5234,9 @@ c
       if (incvec(ich)) then
       inc=ich
       call matching3(ecm,z12,nch,ql,lmax,inc,nr,y,wf,phase,smat,info) ! gauss5 + 2 points
+      if (iftelp_val) then
+         call add_telp(inc,npt,nch,wf,vcoup,jptset(icc)%jtot,smat(inc))
+      endif
 ! DEBUG - print S-matrix from Numerov
       write(*,'(a,i2,a,2f10.5,a,f10.6)')
      &  ' Numerov ch',1,': S=(',real(smat(1)),aimag(smat(1)),

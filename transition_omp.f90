@@ -28,6 +28,10 @@ c     --------------------------------------------------------------------------
       real*8 factor,ptr,ttr,jt,iin,ifi,kband1,kband2
       real*8,allocatable:: xrad2(:),xrad3(:)
       real*8 :: qfactorc(0:50),qfactorn(0:50)
+      integer,allocatable:: ic_map(:,:,:)
+      complex*16 :: caux_print(0:200)
+      integer :: ncouplings, m1, m2, par1, par2, ic, ic_diag
+      real*8  :: jp1, jp2
       
 c changed to complex in v2.3
       complex*16,pointer:: ui(:),uf(:)
@@ -273,16 +277,50 @@ c ------------------------------------------------------------------------------
 
 c *** START CALCULATION OF COUPLING POTENTIALS ---------------------------------------
       write(*,'(/,2x,"** FORMFACTORS **")') 
-      fmem=nex*nex*(lambmax+1)*nrad3*lc16/1e6
+
+      if (allocated(coup)) deallocate(coup)
+      ncouplings=0
+      do m1=1,nex
+         par1= parch(m1)
+         jp1 = jpch(m1)
+         do m2=1,nex
+            if (realwf.and.(m2.lt.m1)) cycle
+            jp2 = jpch(m2)
+            par2= parch(m2)
+            do lam= nint(dabs(jp1-jp2)),min(nint(jp1+jp2),lambmax)
+               if (par1*par2*(-1)**lam<0) cycle
+               ncouplings=ncouplings+1
+            enddo
+         enddo
+      enddo
+      allocate(coup(ncouplings))
+      allocate(ic_map(nex, nex, 0:lambmax))
+      ic_map = 0
+      ncouplings=0
+      do m1=1,nex
+         par1= parch(m1)
+         jp1 = jpch(m1)
+         do m2=1,nex
+            if (realwf.and.(m2.lt.m1)) cycle
+            jp2 = jpch(m2)
+            par2= parch(m2)
+            do lam= nint(dabs(jp1-jp2)),min(nint(jp1+jp2),lambmax)
+               if (par1*par2*(-1)**lam<0) cycle
+               ncouplings=ncouplings+1
+               coup(ncouplings)%i = m1
+               coup(ncouplings)%j = m2
+               coup(ncouplings)%l = lam
+               ic_map(m1,m2,lam) = ncouplings
+            enddo
+         enddo
+      enddo
+
+      fmem=ncouplings*nrad3*lc16/1e6
       write(*,'(5x," [ formfactors need",1f7.1," Mbytes ]")') fmem
 
       allocate(potQKn(nquad,nrad2,0:nQmax,0:Kmax))
       allocate(potQKc(nquad,nrad2,0:nQmax,0:Kmax))
-      allocate(Ff(nex,nex,0:lambmax,nrad3))
-c commented by AMoro, to save memory
-!      allocate(Fc(nex,nex,0:lambmax,nrad3))
-!      allocate(Fn(nex,nex,0:lambmax,nrad3)) 
-!      Fc=0.d0;  Fn=0.d0
+      allocate(Ff(nrad3,ncouplings))
       Ff=0.d0
       potQKn=0d0; potQKc=0d0
       rmat=0d0
@@ -540,7 +578,8 @@ c subtract projectile-target monopole Coulomb
  
 !      Fc(id1,id2,lc,irad2)=Fc(id1,id2,lc,irad2)+fauxc    ! coulomb
 !      Fn(id1,id2,lc,irad2)=Fn(id1,id2,lc,irad2)+fauxn    ! nuclear
-      Ff(id1,id2,lc,irad2)=Ff(id1,id2,lc,irad2)+fauxn+fauxc ! total
+      ic = ic_map(id1,id2,lc)
+      if (ic.gt.0) Ff(irad2,ic)=Ff(irad2,ic)+fauxn+fauxc ! total
       enddo ! ik
       enddo ! irad2 (R)
       enddo ! ie2
@@ -642,12 +681,13 @@ c \hat{Jp}*hat{Jp'}*(2*Lambda+1)*(-1)^Lambda
 !     &               comment   ! ORIG
 
 
+      ic = ic_map(m1,m2,lc)
+      if ((coups.eq.3).and.(m1.eq.m2)) ic = ic_map(1,1,lc)
       if (verb.ge.4) write(120,'("# <",i3,"|",i2,"|",i3,">")') m1,lc,m2
       do irad=1,nrad2
       r2=xrad2(irad)
-      fauxc=Ff(m1,m2,lc,irad)
-      
-      if ((coups.eq.3).and.(m1.eq.m2)) fauxc=Ff(1,1,lc,irad)
+      fauxc=0d0
+      if (ic.gt.0) fauxc=Ff(irad,ic)
          
 !      fauxn=0d0
 !      if ((ncoul.eq.0).or.(ncoul.eq.1)) then
@@ -687,7 +727,7 @@ c Extrapolate Coulomb formactors from R=Rmax to Rextrap
       if (writeff) write(kfr,'(2x,1g16.10,2x,1g16.10)') factor*fauxc
       if (verb.ge.4) write(120,'(1x,1f8.3,2x,2g16.8)') r2,factor*fauxc
 !      Fc(m1,m2,lc,ir)=fauxc 
-      Ff(m1,m2,lc,ir)=fauxc ! total  
+      if (ic.gt.0) Ff(ir,ic)=fauxc ! total  
       enddo !nrad3
       endif ! rextrap> rmax
       
@@ -724,7 +764,12 @@ c ---------- nuclear + coulomb
       do irad=1,nrad3
 !      r2=xrad2(irad)
       r2=rstep+rstep*dble(irad-1) 
-      write(12,900) r2, (Ff(m1,m2,i,irad),i=i1,i2)
+      do i=i1,i2
+         ic = ic_map(m1,m2,i)
+         caux_print(i)=0d0
+         if (ic.gt.0) caux_print(i)=Ff(irad,ic)
+      enddo
+      write(12,900) r2, (caux_print(i),i=i1,i2)
 !      write(10,900) r2, (Fn(m1,m2,i,irad),i=i1,i2)
 !      write(11,900) r2, (Fc(m1,m2,i,irad),i=i1,i2)
 ! TEST I4 -> I5

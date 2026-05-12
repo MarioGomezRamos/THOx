@@ -1076,7 +1076,8 @@ c     Deallocate variables
 
 c *** Calculate coupling matrix for CC set
       subroutine makevcoup(icc,nch,dry)
-      use xcdcc,     only: lamax,ffc,nrcc,nex,hcm,parch,rvcc,realwf
+      use xcdcc,     only: lamax,ffc,coup,nrcc,nex,hcm,parch,rvcc,
+     &                     realwf
       use channels,  only: jptset
       use nmrv,      only: vcoup
       use sistema
@@ -1084,7 +1085,7 @@ c *** Calculate coupling matrix for CC set
       use memory
       implicit none
       logical   fail3
-      integer   ir,nchans,nch,ni,nf,lam,icc,inc,ix,idti,idtf !MGR
+      integer   ir,nchans,nch,ni,nf,lam,icc,inc,ix,idti,idtf,ic,k !MGR
       real*8::  jtot,jpi,jpf,lri,lrf,lamr,ri,coef,jti,jtf,jlpi,jlpf!MGR
       integer:: partot,pari,parf,idi,idf
       real*8::  r1,r2,r3,r13,x,zero,threej,sixj,zpt
@@ -1169,16 +1170,11 @@ c     .............................................................
       if (fail3(lri,lrf,lamr)) cycle
       if ((-1)**lam*pari.ne.parf) cycle
 
-!c1      r2=threej(lamr,lri,lrf,zero,zero,zero)
-!c1      r3=sixj(jpi,jpf,lamr,lrf,lri,jtot)
       r2=threej(lamr,lrf,lri,zero,zero,zero)
       r3=sixj(jpf,jpi,lamr,lri,lrf,jlpf)
 
       r13=r1*r2*r3
-! CHECK!!!!!!!!!!!!!!!!!!!!!!!!!
       phc=(0d0,1d0)**(lri-lrf)  ! Phase in i^(Li-Lf) < f | V | i>  
-! TEST 5/nov/16
-!      phc=(0d0,1d0)**(lrf-lri)  ! Phase in i^(Li-Lf) < f | V | i>  
 
       ix=ix+1
       coef=(-1)**lamr*(2.*lamr+1.)*r13
@@ -1188,33 +1184,49 @@ c     .............................................................
       if (verb.ge.4) then     
       write(*,300) ix,ni,idi,li,jpi,parity(pari+2),
      &                nf,idf,lf,jpf,parity(parf+2),
-     &             lam,r1,r2,r3,coef,coef/frconv,phc !,ffc(idi,idf,lam,1)
+     &             lam,r1,r2,r3,coef,coef/frconv,phc
 300   format(5x,"IX=",i5," Ch. IEX L, Jpi=",3i4,f4.1,a1,
      &     " =>",3i4,f4.1,a1,3x,
      &     'with LAM=',i3,4x,'r1-3=',3f10.3,
      &     2x,'COEF=',1f7.3,' COEF(FR)=',1g10.4,
      &  ' phc=',2f8.4)
-!     &     2x,'COEF=',1f7.3,' F(1)=',2g10.4)
       endif
-!!!!!!!!!!!
 
-      do ir=1,nrcc      
-      ri=rvcc(ir)
-      vaux= phc*coef*ffc(idi,idf,lam,ir)
-      vcoup(ni,nf,ir)=vcoup(ni,nf,ir) + vaux
-
-
-      if ((zp*zt.gt.1e-6).and.(ni.eq.nf).and.(li.eq.lf).
-     &  and.(lam.eq.0)) then
-        vcoup(ni,ni,ir)=vcoup(ni,ni,ir) + VCOUL(ri,zp,zt,Rcc)
+      ! Look up coupling index ic
+      ic = -1
+      if (allocated(coup)) then
+         do k=1,size(coup)
+            if (coup(k)%i == idi .and. coup(k)%j == idf .and.
+     &          coup(k)%l == lam) then
+               ic = k
+               exit
+            endif
+         enddo
       endif
-!!! TEST 11/Oct)
-      if (realwf.and.(ni.ne.nf)) then
-        vcoup(nf,ni,ir)=vcoup(ni,nf,ir)*conjg(phc)/phc
-      endif
-!!!!!!!!!!!!      
 
-      enddo !ir
+      if (ic /= -1) then
+         do ir=1,nrcc      
+         ri=rvcc(ir)
+         vaux= phc*coef*ffc(ir,ic)
+         vcoup(ni,nf,ir)=vcoup(ni,nf,ir) + vaux
+
+         if ((zp*zt.gt.1e-6).and.(ni.eq.nf).and.(li.eq.lf).
+     &     and.(lam.eq.0)) then
+           vcoup(ni,ni,ir)=vcoup(ni,ni,ir) + VCOUL(ri,zp,zt,Rcc)
+         endif
+         if (realwf.and.(ni.ne.nf)) then
+           vcoup(nf,ni,ir)=vcoup(ni,nf,ir)*conjg(phc)/phc
+         endif
+         enddo !ir
+      else
+         if ((zp*zt.gt.1e-6).and.(ni.eq.nf).and.(li.eq.lf).
+     &     and.(lam.eq.0)) then
+           do ir=1,nrcc
+              ri=rvcc(ir)
+              vcoup(ni,ni,ir)=vcoup(ni,ni,ir) + VCOUL(ri,zp,zt,Rcc)
+           enddo
+         endif
+      endif
       enddo !la
       enddo !m
       enddo !n
@@ -1454,16 +1466,16 @@ c     used to solve the CC equations  (Target excitation)
 
 c *** ---------------------------------------------------------------
 C     READ FORMFACTORS AND BUILD COUPLING MATRIX in integration grid  
-      subroutine read_ff()
+            subroutine read_ff()
 c *** ---------------------------------------------------------------      
-      use xcdcc, only:hcm,nrcc,ffc,lamax,nex,nrcc,jpch,Ff,rmaxcc,
+      use xcdcc, only:hcm,nrcc,ffc,coup,lamax,nex,jpch,Ff,rmaxcc,
      &                rvcc,realwf
       use globals, only: debug,verb
       use memory
       implicit none
       complex*16, allocatable:: faux(:)
       real*8, allocatable:: rv(:)
-      integer lam,m1,m2,npt,nff,ir
+      integer lam,m1,m2,npt,nff,ir,ncouplings,ios
       real*8 factor,jt,ptr,ttr,rstep,rfirst,fscale
       real*8 r,x,y
       real*8 jpi,jpf,frconv,ymem,big,small
@@ -1477,21 +1489,38 @@ c     ...............................................................
   
       write(*,'(//,3x, "** READ FORMFACTORS **" )')
       call flush(6)
-      nff=0
-      ymem=nex*nex*(lamax+1)*nrcc*lc16/1e6
+
+c ... First pass: count number of couplings in kfr
+      ncouplings = 0
+      rewind(kfr)
+ 5    read(kfr,500,iostat=ios) npt,rstep,rfirst,fscale,
+     & lam,ptr,ttr,m2,m1,comment
+      if (ios /= 0) goto 15
+      ncouplings = ncouplings + 1
+      do ir=1,npt
+         read(kfr,*,iostat=ios) x,y
+      enddo
+      goto 5
+
+ 15   continue
+      rewind(kfr)
+
+      ymem=ncouplings*nrcc*lc16/1e6
       if (verb.ge.1) write(*,190) ymem
 190   format(5x,"[ FF require", 1f8.2," Mbytes ]")
 
+      if (allocated(coup)) deallocate(coup)
       if (allocated(ffc)) deallocate(ffc)
-      allocate(ffc(nex,nex,0:lamax,1:nrcc))
-      ffc=0
+      allocate(coup(ncouplings))
+      allocate(ffc(nrcc,ncouplings))
+      ffc=0.0d0
 
       write(*,170) nrcc, hcm,rmaxcc,hcm
 170   format(/,5x,"=>  Interpolating F(r) in grid with ",i4, ' points:',
      &           2x,"[ Rmin=",1f5.2,2x," Rmax=",
      &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
 
-
+      nff=0
 10    read(kfr,500,end=600) npt,rstep,rfirst,fscale,
      & lam,ptr,ttr,m2,m1,comment
  
@@ -1503,12 +1532,16 @@ c     ...............................................................
       write(*,*)'o F(R) -> F(R) [fres]=',frconv
       endif
       if (verb.ge.4) write(*,'(i3," =>",i3, " with LAM=",i3,
-     & 3x," o F(R) -> F(R) [fres]=",1f8.4)') 
+     & 2x," o F(R) -> F(R) [fres]=",1f8.4)')
      & m1,m2,lam,frconv
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 500   format(i4,3f8.4,i4,2f4.0,2i4,a35)
       nff=nff+1
+      coup(nff)%i = m1
+      coup(nff)%j = m2
+      coup(nff)%l = lam
+
       if (nff.eq.1) allocate(faux(npt),rv(npt))
       do ir=1,npt
          read(kfr,*) x,y
@@ -1517,12 +1550,12 @@ c     ...............................................................
          rv(ir)=rfirst+dble(ir-1)*rstep
          faux(ir)=fscale*cmplx(x,y)/frconv
       enddo !ir 
-c     interpolate & store in integration grid
+c ... interpolate & store in integration grid
       do ir=1,nrcc
         r=rvcc(ir)
         if (r.gt.rv(npt)) cycle ! DO NOT EXTRAPOLATE 
         caux=cfival(r,rv,faux,npt,alpha)
-        ffc(m1,m2,lam,ir)=caux
+        ffc(ir,nff)=caux
       enddo ! ir
       goto 10
 
@@ -1583,104 +1616,26 @@ c let's consider all of them, BY NOW
 c *** ---------------------------------------------------------------
 C     READ FORMFACTORS AND BUILD COUPLING MATRIX in integration grid  
       subroutine read_ff_tdef()
-c *** ---------------------------------------------------------------      
-      use xcdcc,only:hcm,nrcc,ffc,nlambhipr,nex,nrcc,jpch,Ff,rmaxcc,rvcc
-      use globals, only: debug,verb
-      use memory
       implicit none
-      complex*16, allocatable:: faux(:)
-      real*8, allocatable:: rv(:)
-      integer lam,m1,m2,npt,nff,ir
-      real*8 factor,jt,ptr,ttr,rstep,rfirst,fscale
-      real*8 r,x,y,yffc
-      real*8 jpi,jpf,frconv,ymem,big,small
-      real*8, parameter:: alpha=0d0
-      integer,parameter :: kfr=4
-      complex*16 cfival,caux,ffc4
-      character*40 comment
-c     ...............................................................   
-      big=huge(big)
-      small=epsilon(small)
-  
-      write(*,*) 'Reading from fresco not implemented for target 
+      write(*,*) 'Reading from fresco not implemented for target &
      & excitation. STOPPING'
       STOP
-  
-      write(*,'(//,3x, "** READ FORMFACTORS **" )')
-      call flush(6)
-      nff=0
-      ymem=nex*nex*(nlambhipr)*nrcc*lc16/1e6
-      if (verb.ge.1) write(*,190) ymem
-190   format(5x,"[ FF require", 1f8.2," Mbytes ]")
-
-      if (allocated(ffc)) deallocate(ffc)
-      allocate(ffc(nex,nex,nlambhipr,1:nrcc))
-      ffc=0
-
-      write(*,170) nrcc, hcm,rmaxcc,hcm
-170   format(/,5x,"=>  Interpolating F(r) in grid with ",i4, ' points:',
-     &           2x,"[ Rmin=",1f5.2,2x," Rmax=",
-     &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
-
-
-10    read(kfr,500,end=600) npt,rstep,rfirst,fscale,
-     & lam,ptr,ttr,m2,m1,comment
- 
-!!!!!!!! CONVERSION FACTOR FROM FRESCO !!!!!!!!!!!!!
-      jpi=jpch(m1)
-      jpf=jpch(m2) 
-      frconv=(-1)**ptr*(2d0*ptr+1)*sqrt(2*jpi+1)*sqrt(2*jpf+1)
-      if (debug) then
-      write(*,*)'o F(R) -> F(R) [fres]=',frconv
-      endif
-      if (verb.ge.4) write(*,'(i3," =>",i3, " with LAM=",i3,
-     & 3x," o F(R) -> F(R) [fres]=",1f8.4)') 
-     & m1,m2,lam,frconv
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-500   format(i4,3f8.4,i4,2f4.0,2i4,a35)
-      nff=nff+1
-      if (nff.eq.1) allocate(faux(npt),rv(npt))
-      do ir=1,npt
-         read(kfr,*) x,y
-         if (abs(x).lt.small) x=small
-         if (abs(y).lt.small) y=small
-         rv(ir)=rfirst+dble(ir-1)*rstep
-         faux(ir)=fscale*cmplx(x,y)/frconv
-      enddo !ir 
-c     interpolate & store in integration grid
-      do ir=1,nrcc
-!        r=hcm*ir ! grid used in scattcc
-        r=rvcc(ir)
-        if (r.gt.rv(npt)) cycle ! DO NOT EXTRAPOLATE 
-!        caux=cfival(r,rv,faux,npt,alpha)
-        yffc=(r-rv(1))/(rv(2)-rv(1))
-        caux=ffc4(yffc,faux,npt)
-        ffc(m1,m2,lam,ir)=caux
-      enddo ! ir
-      goto 10
-
-600   write(*,'(5x,"[",i6, " formfactors read from unit ",i2,"]")')
-     &     nff,kfr
-      deallocate(faux,rv)
-      call flush(6)
-      return
       end subroutine
 
 
 c *** ---------------------------------------------------------------------
 C     Use previously calcualted F(R)'s and interpolate in radial grid
 c     used to solve the CC equations  
-      subroutine int_ff_omp()
+            subroutine int_ff_omp()
 c *** --------------------------------------------------------------------      
-      use xcdcc,   only: hcm,ffc,lamax,nex,nrcc,jpch,Ff,lambmax,
-     &                   nrad3,rstep,parch,rmaxcc,rvcc,realwf
+      use xcdcc,   only: hcm,ffc,coup,lamax,nex,nrcc,jpch,Ff,lambmax,
+     &                nrad3,rstep,parch,rmaxcc,rvcc,realwf
       use channels,only: jpiset,jpsets
       use wfs     ,only: idx
       use memory
       use globals ,only: verb
       implicit none
-      integer :: ir,irr
+      integer :: ir,irr,ic,ncouplings
       integer :: m1,m2,nff,lam,par1,par2
       complex*16, pointer:: faux(:)
       real*8  :: rv(nrad3),xpos,rfirst
@@ -1693,14 +1648,53 @@ c     ----------------------------------------------------
 
       lamax=2*maxval(jpiset(:)%jtot)
 
+      if (.not.allocated(coup)) then
+c ... Count total couplings
+      ncouplings=0
+      do m1=1,nex
+      par1= parch(m1)
+      jp1 = jpch(m1)
+      do m2=1,nex
+      if (realwf.and.(m2.lt.m1)) cycle
+      jp2 = jpch(m2)
+      par2= parch(m2)
+       do lam= nint(dabs(jp1-jp2)),min(nint(jp1+jp2),lambmax)
+       if (par1*par2*(-1)**lam<0) cycle
+       ncouplings=ncouplings+1
+       enddo
+      enddo
+      enddo
+      allocate(coup(ncouplings))
+      nff=0
+      do m1=1,nex
+      par1= parch(m1)
+      jp1 = jpch(m1)
+      do m2=1,nex
+      if (realwf.and.(m2.lt.m1)) cycle
+      jp2 = jpch(m2)
+      par2= parch(m2)
+       do lam= nint(dabs(jp1-jp2)),min(nint(jp1+jp2),lambmax)
+       if (par1*par2*(-1)**lam<0) cycle
+       nff=nff+1
+       coup(nff)%i = m1
+       coup(nff)%j = m2
+       coup(nff)%l = lam
+       enddo
+      enddo
+      enddo
+      else
+       ncouplings=size(coup)
+      endif
+
 c ... Memory requirements
-      ymem=nex*nex*(lamax+1)*nrcc*lc16/1e6
+      ymem=ncouplings*nrcc*lc16/1e6
       if (verb.ge.1) write(*,190) ymem
 190   format(5x,"[ FF require", 1f8.2," Mbytes ]")
 
       if (allocated(ffc)) deallocate(ffc)
-      allocate(ffc(nex,nex,0:lamax,1:nrcc))
-      ffc=0
+      allocate(ffc(nrcc,ncouplings))
+      ffc=0.0d0
+
       do ir=1,nrad3
        rv(ir)= rstep + rstep*(ir-1) ! CHECK
       enddo     
@@ -1716,46 +1710,22 @@ c ... Memory requirements
      &  rmaxcc,rv(nrad3) 
       endif 
 
-      nff=0
-!$omp parallel do private(m1,par1,jp1,m2,jp2,par2,lam,faux,ir,r,xpos,
-!$omp& caux)   
-      do m1=1,nex
-      par1= parch(m1)
-      jp1 = jpch(m1)
-! Changed in v2.4 !!!!!!!!!!!!!!!!!!!!
-!      do m2=m1,nex
-      do m2=1,nex
-      if (realwf.and.(m2.lt.m1)) cycle
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      jp2 = jpch(m2)
-      par2= parch(m2)
-       do lam= nint(dabs(jp1-jp2)),min(nint(jp1+jp2),lambmax) !nint(jp1+jp2)
-       if (par1*par2*(-1)**lam<0) cycle
-       faux =>  Ff(m1,m2,lam,:)
-c      interpolate & store in integration grid
-       do ir=1,nrcc
-!        r=hcm*ir ! grid used in scattcc
-!        r=dble(ir-1)*hcm ! grid used in scattcc (Changed in v2.2)
-        r=rvcc(ir)
-        if (r.gt.rv(nrad3)) cycle ! DO NOT EXTRAPOLATE 
-!        caux=cfival(r,rv,faux,nrad3,alpha)
-        xpos=(r-rstep)/rstep
-        caux=FFC4(xpos,faux,nrad3)
-        ffc(m1,m2,lam,ir)=caux
-!        if (abs(caux).gt.1e20) then 
-!          write(90,*)'# ** INT_FF: F(R)=',caux, 
-!     &  'for ir,lam,m1,m2',ir,lam,m1,m2
-!         write(90,'(1f8.3,2x,2g16.5)') (rv(irr),faux(irr),irr=1,nrad3)
-!         write(90,*)'&'
-!         stop
-!        endif
-       enddo ! ir
-      enddo ! lam
-      enddo !m2
-      enddo !m1
+!$omp parallel do private(ic,m1,m2,lam,faux,ir,r,xpos,caux)   
+      do ic=1,ncouplings
+         m1 = coup(ic)%i
+         m2 = coup(ic)%j
+         lam = coup(ic)%l
+         faux => Ff(:,ic)
+         do ir=1,nrcc
+            r=rvcc(ir)
+            if (r.gt.rv(nrad3)) cycle ! DO NOT EXTRAPOLATE 
+            xpos=(r-rstep)/rstep
+            caux=FFC4(xpos,faux,nrad3)
+            ffc(ir,ic)=caux
+         enddo ! ir
+      enddo ! ic
 !$omp end parallel do
   
-      !write(*,*) '=> there are', nff,' radial formfactors '
       nullify(faux)
       deallocate(ff)
       end subroutine
@@ -1900,7 +1870,7 @@ c      interpolate & store in integration grid
 
 c *** Calculate coupling matrix for CC set
       subroutine makevcoup_scratch(icc,nch,dry)
-      use xcdcc,     only: lamax,ffc,nrcc,nex,hcm,parch,rvcc,realwf
+      use xcdcc,     only: lamax,ffc,nrcc,nex,hcm,parch,rvcc,realwf,coup
       use channels,  only: jptset
       use nmrv,      only: vcoup,uscratch,nr
       use sistema
@@ -1908,7 +1878,7 @@ c *** Calculate coupling matrix for CC set
       use memory
       implicit none
       logical   fail3
-      integer   ir,nchans,nch,ni,nf,lam,icc,inc,ix,idti,idtf !MGR
+      integer   ir,nchans,nch,ni,nf,lam,icc,inc,ix,idti,idtf,ic,k !MGR
       real*8::  jtot,jpi,jpf,lri,lrf,lamr,ri,jti,jtf,jlpi,jlpf!MGR
       real*8 coef(nch,nch,0:lamax)
       integer:: partot,pari,parf,idi,idf
@@ -2025,19 +1995,27 @@ c     .............................................................
       do ir=1,nrcc 
       vcoupscratch=0d0           
       ri=rvcc(ir)
+              
+      !vaux= coef(ni,nf,lam)*ffc(idi,idf,lam,ir)
 
-      do ni=1,nch
+         do k=1,size(coup)
+               ic = k 
+         do ni=1,nch
                   idi =jptset(icc)%idx(ni)
+                  if (coup(ic)%i .ne. idi) cycle
                   li  =jptset(icc)%l(ni)
-      lri =li
-        do nf=1,nch
-        idf =jptset(icc)%idx(nf)
-        lf=jptset(icc)%l(nf)
-      lrf=lf    
+                  lri =li
+          do nf=1,nch
+            idf =jptset(icc)%idx(nf)
+            if (coup(ic)%j .ne. idf) cycle
+             lf=jptset(icc)%l(nf)
+             lrf=lf    
         if (realwf.and.nf.lt.ni) cycle   
         phc=(0d0,1d0)**(lri-lrf) 
-            do lam=0,lamax                
-      vaux= coef(ni,nf,lam)*ffc(idi,idf,lam,ir)
+        lam=coup(ic)%l
+        if (abs(coef(ni,nf,lam)).lt.1d-10) cycle
+
+         vaux= phc*coef(ni,nf,lam)*ffc(ir,ic)
       if (vaux.ne.vaux) vaux=0d0
       vcoupscratch(ni,nf)=vcoupscratch(ni,nf) + vaux
 
@@ -2053,10 +2031,10 @@ c     .............................................................
 !!!!!!!!!!!!      
 
 
-      enddo !la
+      enddo !nf
 
-      enddo !m
-      enddo !n
+      enddo !ni
+      enddo !k
 
       write(uscratch,rec=ir) vcoupscratch
 !      write(167,*)'ir=',ir
