@@ -25,8 +25,8 @@
                usrc = usrc + vcoup(inc,j,ir)*wf(j,ir)
             endif
          enddo
-!         sum_wU(ir)=sum_wU(ir) + wght * conjg(wf(inc,ir)) * usrc
-!         sum_w(ir) =sum_w(ir) + wght * abs(wf(inc,ir))**2
+         sum_wU(ir)=sum_wU(ir) + wght * conjg(wf(inc,ir)) * usrc
+         sum_w(ir) =sum_w(ir) + wght * abs(wf(inc,ir))**2
       enddo
 !$omp end critical(telp_sum)
       end subroutine

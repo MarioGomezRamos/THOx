@@ -4,8 +4,9 @@ c     Build & solve CDCC equations
 c *** ---------------------------------------------------
       use channels, only:jpiset,jpsets,jptset,tset,targdef !MGR
       use nmrv, only: hort,rmort,vcoup,rvec
-      use telp_mod, only: iftelp_val, rank_telp, sum_wU, sum_w
-      use xcdcc   , only: nex,jpch,exch,parch,iftrans,
+      use telp_mod, only: iftelp_val, rank_telp, sum_wU, sum_w,
+     &            write_telp
+      use xcdcc   , only: nex,jpch,exch,parch,iftrans,iftelp,
      &            lamax,hcm,nmatch,elab,ecm,smats,
      &            jtmin,jtmax,rvcc,rmaxcc,nrcc,method,
      &            jump,jbord,wfcdcc
@@ -69,7 +70,7 @@ c     ---------------------------------------------------------------
       namelist /numerov/ method,
      &         hcm,rmaxcc,rcc,hort,rmort,
      &         jtmin,jtmax,jump,jbord,skip,
-     &         nlag,ns,solvertype,prevfile,telpflag,nopenmp,
+     &         nlag,ns,solvertype,prevfile,iftelp,nopenmp,
      &         maxmem 
 c     ---------------------------------------------------------------
 
@@ -105,7 +106,7 @@ c ... Numerov specifications
       nlag  =0; ns=1; solvertype=3
       read(kin,nml=numerov)
       if (maxmem.gt.0.5) memcheck=.true.
-      iftelp_val = telpflag
+      iftelp_val = iftelp
       solver_type = solvertype  ! pass to HPRMAT module
 
       if ((jtmin.lt.0).or.(skip)) then
@@ -163,6 +164,15 @@ c     ------------------------------------------------------------
         nrcc=nint(rmaxcc/hcm)+1
       else
        write(*,*) 'hcm too small!'; stop
+      endif
+      
+      if (iftelp_val) then
+         if (allocated(sum_wU)) deallocate(sum_wU)
+         if (allocated(sum_w))  deallocate(sum_w)
+         allocate(sum_wU(nrcc))
+         allocate(sum_w(nrcc))
+         sum_wU = (0.0d0, 0.0d0)
+         sum_w  = 0.0d0
       endif
       allocate(rvcc(nrcc))
       do ir=1,nrcc
@@ -896,6 +906,9 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
          call flush(6)
        tcc=end-start
 !      call xsecs(kin,ncc,iexgs)
+      if (iftelp_val) then
+         call write_telp(nrcc, rvcc)
+      endif
       end subroutine
 
 
