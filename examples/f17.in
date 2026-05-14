@@ -1,0 +1,55 @@
+## 17F=16O + p using WS potential
+# ---------------------------------------------------------------------------------------------
+ &SYSTEM  Zv=1 Av=1.007825   sn=0.5
+          Zc=8. Ac=15.9949 egs=-0.6 /
+
+ &corestates spin=0.0 parity=+1 ex=0.0  nph=0 /
+ &corestates spin=3.0 parity=-1 ex=6.13 nph=1 /
+ &corestates /
+
+ &output wfout(:)=1 2 3 verb=2 /
+
+ &GRID  ng=0 rmin=0.0 rint=50 rmax=100.0 dr=0.05 rlast=0 /
+
+! ORIG:     vl0(0:3)=-53.1048 -59.9024 -59.9024 -53.1048
+! AMM:      vl0(0:3)=-53.1048 -62.9024 -62.9024 -53.1048
+ &POTENTIAL ptype=1 ap=1 at=0 
+            vl0(0:3)=-53.1048 -59.9024 -59.9024 -53.1048
+           r0=3.023   a0=0.6515  rc0=3.023
+           Vso=6.0  rso=3.023  aso=0.6515 
+           pcmodel=1 lambda=3 kband=0
+           cptype=2  Vcp0=0 rcp0= 3.00 acp=0.6 delta=2.3142 /
+  &potential ptype=0 /
+
+
+ &pauli n=0 /
+ 
+
+
+# Basis bound (iniciales) Jp=1/2+
+
+!&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=25 nsp=15 exmin=-10 exmax=10 bas2=0 JTOT=2.5 PARITY=1 lmax=3 nodes=1 /
+&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=35 nsp=25 exmin=-10 exmax=10 bas2=0 JTOT=0.5 PARITY=1 lmax=3 /
+
+!&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=15 nsp=15 exmin=0 exmax=10 bas2=0 JTOT=0.5 PARITY=1 lmax=0 /
+&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=15 nsp=15 exmin=0 exmax=10 bas2=0 JTOT=0.5 PARITY=-1 lmax=3 vscale=1.11 /
+!&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=15 nsp=15 exmin=-20 exmax=10 bas2=0 JTOT=1.5 PARITY=-1 lmax=3 /
+&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=15 nsp=15 exmin=0 exmax=10 bas2=0 JTOT=2.5 PARITY=-1 lmax=3 /
+&JPSET /
+
+# Scattering states (finales)
+&SCATWF ifcont=f emin=0.01 emax=10.0 nk=100 inc=1 jset=3/
+
+#Electric and magnetic transition probabilities + capture cross sections
+!&belambda ifbel=t uwfgsfile="" lambda=2 emin=0.1 emax=8 nk=300 jset=2 /
+&belambda ifbel=t uwfgsfile="" lambda=1 emin=0.1 emax=4 nk=300 jset=2 /
+!&belambda ifbel=t uwfgsfile="" lambda=1 emin=0.1 emax=8 nk=300 jset=3 /
+&belambda /
+
+&bmlambda / 
+
+# REACTION CALCULATION
+&reaction elab=1.0 namep='17F' mp=17.0 mt=1 namet='p' zt=1 jt=0.0 /
+&trans skip=T /
+&numerov skip=T /
+&xsections thmin=1 thmax=180 dth=1 doublexs=F triplexs=F /

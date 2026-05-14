@@ -29,6 +29,9 @@ c     --------------------------------------------------------------------------
       real*8:: mvc,mv, rm,conv,solap,rlam,dk
       real*8:: dkrdk,krel   !depends on wfcont and solap definitions
       real*8:: eps,aux
+      real*8:: rkt,rlv,rkcore,rkcorem,term_pref,term_mix
+      real*8:: dfactratio, matmix
+      integer:: ikterm, ilv
       real*8, allocatable:: edisc(:) ! discrete energies (PS's or Bins)
       real*8, allocatable:: uext(:,:)
       real*8, allocatable:: qlr(:)
@@ -153,7 +156,7 @@ c     ------------------------------ GS WF  -----------------------------------
         aux=aux+ugs(ir,ich)**2*dr
         enddo !ich
         enddo !ir
-        write(*,'(5x,"[ Norm=",1f10.5,"]")'),aux
+        write(*,'(5x,"[ Norm=",1f10.5,"]")') aux
       else !....................................EXTERNAL GS WF (ASSUMED REAL!!!!!)
       write(*,'(2x,"Initial WF from file: ",a)') uwfgsfile
       open(20,file=uwfgsfile)
@@ -408,6 +411,53 @@ c < n | r^lambda | m >
      &     qlir(n),qji(n),qlr(m),qj(m),mv
          endif
          endif
+
+c SIMULTANEOUS Core and Valence contribution --------------------------
+      if (lambda.gt.0) then
+        do ikterm = 1, maxlamb
+         do ilv = 1, maxlamb
+           rkt = dble(ikterm)
+           rlv = dble(ilv)
+           if (fail3(rkt, rlv, lambdar)) cycle
+           if (fail3(qjci(n), rkt, qjc(m))) cycle
+           if (fail3(qji(n), rlv, qj(m))) cycle
+           if (fail3(qlir(n), rlv, qlr(m))) cycle
+           select case(coremodel)
+           case(0) 
+             if (rms.ne.0d0) then
+               rkcorem = 3d0*zc*delta*(sqrt(5d0/3d0)*rms)**(ikterm-1)/
+     &                   (4d0*pi)
+               rkcore  = rkcorem*cleb(qjci(n), 0d0, rkt, 0d0, qjc(m), 
+     &                   0d0) * sqrt((2*qjci(n)+1)/(2*qjc(m)+1)) * 
+     &                   (-1)**(2*ikterm)
+             else
+               rkcore = 0d0
+             endif
+           case(1)
+             rkcore = mec(cindexi(n), cindex(m), ikterm)
+           end select
+           if (abs(rkcore).lt.1d-10) cycle
+           faux(1:nr) = rvec(1:nr)**(1 + ilv) 
+     &                * ugs(1:nr,n) * wfc(jset,i,m,1:nr)
+           call simc(faux, resc, 1, nr, dr, nr)
+           rlam = resc
+           if (ikterm + ilv == lambda) then
+              term_pref = sqrt(4d0 * pi) * dfactratio(lambda, ikterm) 
+     &                 * ((-av)/(ac+av))**(ilv)
+           else
+              term_pref = 1.0d0
+           endif
+           term_mix = matmix(rkt, rlv, lambdar, sn, 
+     &                       qlir(n), qji(n), jtoti, qjci(n),
+     &                       qlr(m), qj(m), jtot, qjc(m))
+           Elamcore = term_pref * term_mix * rlam * rkcore
+           Elam = Elam + Elamcore
+           mvc  = mvc + Elamcore
+           mel(i,m) = mel(i,m) + cmplx(Elamcore, 0d0)
+         enddo
+        enddo
+      endif
+c ----------------------------------------------------------------------------
          enddo !n
         enddo  ! m
 
@@ -468,6 +518,9 @@ c------------------------------------------------
       besum=0d0
       if (.not.allocated(dbde)) allocate(dbde(il,nk))
       dbde(:,:)=0.
+      if (allocated(solapmat)) deallocate(solapmat)
+      allocate(solapmat(nk,il,nex,nchan))
+      solapmat(:,:,:,:)=(0.0d0,0.0d0)
       do iil=ili,il ! incoming channels
         
         if (allocated(wfscat)) deallocate(wfscat)
@@ -490,6 +543,15 @@ c------------------------------------------------
          BEl=0d0
          kcont=kmin+ (ik-1)*dk  !new kcont for schcc
          econt=(hc*kcont)**2/2/mu12
+
+         ! Compute overlaps for the folding method
+         do i=1,nex
+         do m=1,nchan
+           gaux(:)=wfc(jset,i,m,:)*wfscat(ik,m,:)*rvec(:)
+           call simc(gaux(:),resc,1,nr,dr,nr)
+           solapmat(ik,iil,i,m)=resc
+         enddo
+         enddo
 
 !         do iil=ili,il !open channels 
 !           excore =jpiset(jset)%exc(iil) 
@@ -565,6 +627,51 @@ c < n | r^lambda | m >
      &          + coef*resc*sqrt(pi/2)*(4*pi)/kcont
          endif
          endif
+
+c SIMULTANEOUS Core and Valence contribution --------------------------
+      if (lambda.gt.0) then
+        do ikterm = 1, maxlamb
+         do ilv = 1, maxlamb
+           rkt = dble(ikterm)
+           rlv = dble(ilv)
+           if (fail3(rkt, rlv, lambdar)) cycle
+           if (fail3(qjci(n), rkt, qjc(m))) cycle
+           if (fail3(qji(n), rlv, qj(m))) cycle
+           if (fail3(qlir(n), rlv, qlr(m))) cycle
+           select case(coremodel)
+           case(0) 
+             if (rms.ne.0d0) then
+               rkcorem = 3d0*zc*delta*(sqrt(5d0/3d0)*rms)**(ikterm-1)/
+     &                   (4d0*pi)
+               rkcore  = rkcorem*cleb(qjci(n), 0d0, rkt, 0d0, qjc(m), 
+     &                   0d0) * sqrt((2*qjci(n)+1)/(2*qjc(m)+1)) * 
+     &                   (-1)**(2*ikterm)
+             else
+               rkcore = 0d0
+             endif
+           case(1)
+             rkcore = mec(cindexi(n), cindex(m), ikterm)
+           end select
+           if (abs(rkcore).lt.1d-10) cycle
+           gaux(1:nr) = rvec(1:nr)**(ilv) 
+     &                * ugs(1:nr,n) * wfscat(ik,m,1:nr)
+           call simc(gaux, resc, 1, nr, dr, nr)
+           if (ikterm + ilv == lambda) then
+              term_pref = sqrt(4d0 * pi) * dfactratio(lambda, ikterm) 
+     &                 * ((-av)/(ac+av))**(ilv)
+           else
+              term_pref = 1.0d0
+           endif
+           term_mix = matmix(rkt, rlv, lambdar, sn, 
+     &                       qlir(n), qji(n), jtoti, qjci(n),
+     &                       qlr(m), qj(m), jtot, qjc(m))
+           write(0,*)'term_mix=',term_mix
+           Elamcont = Elamcont + term_pref * term_mix * rkcore * resc 
+     &                * sqrt(pi/2) * (4*pi) / kcont
+         enddo
+        enddo
+      endif
+c ----------------------------------------------------------------------------
         enddo !n
         enddo  !m
 
@@ -588,6 +695,7 @@ c < n | r^lambda | m >
         sfactphoto=econt*exp(2*pi*eta)*photoxs
         
 !        write(0,*)'ill,jc=',iil,jpiset(jset)%jc(iil)
+      
         
 *
 * Radiative capture cross section
@@ -622,9 +730,7 @@ c < n | r^lambda | m >
 c-----------------------------------------------------------------------------
 c   B(Elambda) from discrete distribution convoluted with continuous wfs (AMM style)
 c-----------------------------------------------------------------------------
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      write(*,*)'NEED TO UPDATE SOLAPS HERE; RETURNING!!'; RETURN
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      write(*,*)'Folding discrete dist. with overlaps...'
       besum=0d0
       BEl=0d0
 
@@ -632,29 +738,28 @@ c-----------------------------------------------------------------------------
       BEl=0d0
       test=zero
       Elamcont=zero
-      kcont=kmin+(kmax-kmin)*(ik-1)/(nk-1)  !new kcont for schcc          
+      kcont=kmin+ (ik-1)*dk  ! Use stable dk interval
       econt=(hc*kcont)**2/2/mu12
       do iil=ili,il	  
-	krel=sqrt(2d0*mu12*(econt-exc(iil)))/hc
-	if (krel.gt.eps) then
-	  dkrdk=kcont/krel
-	else
-	  dkrdk=1d0
-	endif
 	  
        Elamcont=zero
        do i=1,nex
-       do n=1,nchan
-       Elamcont=Elamcont+solapmat(ik,iil,i,n)*
-     &                 mel(i,n)*sqrt(dkrdk)
-       enddo
+          ! Compute projection coefficient and discrete matrix amplitude
+          solapc = (0.0d0, 0.0d0)
+          resc = (0.0d0, 0.0d0)
+          do n=1,nchan
+             solapc = solapc + solapmat(ik,iil,i,n)
+             resc = resc + mel(i,n)
+          enddo
+          ! Fold components: Full projection onto pseudo-state i
+          Elamcont = Elamcont + solapc * resc
        enddo
        Elamcont=Elamcont*sqrt(pi/2)*(4*pi)/kcont
-      BEl=BEl+(2*jtot+1)*abs(Elamcont)**2/(2*jtoti+1)
+       BEl=BEl+(2*jtot+1)*abs(Elamcont)**2/(2*jtoti+1)
        enddo
 !          write(98,*)econt,BEl
       BEl=BEl*mu12*kcont/hc**2/(2*pi)**3
-      besum=besum+BEl*hc**2*kcont/mu12*(kmax-kmin)/(nk-1) 
+      besum=besum+BEl*hc**2*kcont/mu12*dk 
       write(97,*)econt,BEl
       enddo
 
@@ -766,3 +871,54 @@ c-----------------------------------------------------------------------------
         end
 
         
+
+        function matmix(k, lambdav, lambda, sn, li, jni, jtoti, jci, 
+     &                  lf, jnf, jtotf, jcf)
+        use constants, only: pi
+        implicit none
+        real*8:: k, lambdav, lambda, sn
+        real*8:: li, jni, jtoti, jci
+        real*8:: lf, jnf, jtotf, jcf
+        real*8:: matmix, sixj, threej, WIGN9J
+        real*8:: valang
+
+        ! 1. Valence Angular Part: 
+        ! < (lf sn) jnf || Y_lambdav || (li sn) jni >
+        valang = (-1)**(sn + jni + lambdav) * 
+     &           sqrt((2*jnf+1.)*(2*jni+1.))
+        valang = valang * sixj(jnf, jni, lambdav, li, lf, sn)
+        
+        ! Reduced matrix element of Y_lambdav (spatial part)
+        valang = valang * sqrt((2*lf+1.)*(2*lambdav+1.)*(2*li+1.)/
+     &           (4*pi))
+        valang = valang * threej(li, lf, lambdav, 0d0, 0d0, 0d0)
+
+        ! 2. Combined 9-j Matrix Element: | (j I) J >
+        matmix = sqrt((2*jtotf+1.)*(2*jtoti+1.)*(2*lambda+1.))
+        matmix = matmix * WIGN9J(jnf, jni, lambdav, jcf, jci, k, 
+     &                           jtotf, jtoti, lambda)
+        matmix = matmix * valang
+
+        end function matmix
+
+
+        function dfactratio(l, k)
+        implicit none
+        integer:: l, k, i, t1, t2, tnum
+        real*8:: dfactratio, prod
+        t1 = 2*k+1
+        t2 = 2*l - 2*k + 1
+        tnum = 2*l+1
+        prod = 1.0d0
+        do i = 1, tnum
+           prod = prod * dble(i)
+        enddo
+        do i = 1, t1
+           prod = prod / dble(i)
+        enddo
+        do i = 1, t2
+           prod = prod / dble(i)
+        enddo
+        dfactratio = sqrt(prod)
+        end function dfactratio
+

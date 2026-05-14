@@ -1,7 +1,7 @@
 # 11Be=10Be + n using WS potential
 # ---------------------------------------------------------------------------------------------
  &SYSTEM  Zv=0. Av=1.0087   sn=0.5
-          Zc=4. Ac=10.013   /
+          Zc=4. Ac=10.013   egs=-0.54 /
 
  &corestates spin=0.0 parity=+1 ex=0.0 /
  &corestates /
@@ -21,14 +21,14 @@
  &pauli n=0 /
 
 #Bound
-  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=20 nsp=0 exmin=-1 exmax=0.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=0 /
+  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=20 nsp=0 exmin=-1 exmax=0.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=0 nodes=2 /
   &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=20  nsp=0 exmin=-15 exmax=0.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /
 
 #Cont
 !  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=40 nsp=0 exmin=-15 exmax=15.0 bas2=0 JTOT=1.5 PARITY=-1  lmax=1 /
-!  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=10  nsp=0 exmin=0 exmax=50.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=1 /
+  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=10  nsp=0 exmin=0 exmax=50.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=1 /
 !  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=40  nsp=0 exmin=0 exmax=15.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /
-   &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=40 nsp=0 exmin=-15 exmax=15.0 bas2=0 JTOT=2.5 PARITY=+1  lmax=2 /
+!   &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=40 nsp=0 exmin=-15 exmax=15.0 bas2=0 JTOT=2.5 PARITY=+1  lmax=2 /
   &JPSET /
 
 
@@ -37,9 +37,9 @@
  &pauli n=1 l=0 j=0.5 wfname="wf_1s.dat" /
 
  
-  &SCATWF ifcont=t  emin=0.01 emax=5.01  nk=200 inc=1   writewf=t jset=2 / 
+  &SCATWF ifcont=f  emin=0.01 emax=5.01  nk=200 inc=1   writewf=t jset=2 / 
 
-  &belambda  ifbel=t uwfgsfile="" lambda=1 emin=0.02 emax=10 nk=200 jset=3 BElcore=0.0 /
+  &belambda  ifbel=f uwfgsfile="" lambda=1 emin=0.02 emax=10 nk=200 jset=3 BElcore=0.0 /
 
 ############################    REACTION       ####################################
 &reaction elab=702.076  namep='11Be' mp=11.027 namet='1H' mt=1.0078 zt=1 jt=0.0  /
@@ -48,7 +48,7 @@
 ######################### COUPLING POTENTIALS FOR XCDCC ######################################
 # (if no basis sets have been defined, this section will be skipped)
 # ############################################################################################
-&trans rcc=2.353d0 writeFF=T skip=T /
+&trans rcc=2.353d0 writeFF=T skip=f /
 
 #Optional: kcmax, lamax
 &coupling qcmax=0   ncoul=0 lamax=2  / 
@@ -77,7 +77,7 @@
          4=Modified Numerov used in Fresco
          5=R-matrix with Lagrange mesh (P.Desc.)
 
-&numerov skip=T hcm=0.05 rmaxcc=100  hort=0 method=4 rcc=2.353d0   jtmin=0.5 jtmax=25.5 skip=T/  
+&numerov skip=T hcm=0.05 rmaxcc=100  hort=0 method=4 rcc=2.353d0   jtmin=0.5 jtmax=25.5 skip=f/  
 
 &xsections fileamp="fort.137" thmin=0.0 thmax=179. dth=0.5  doublexs=F triplexs=F icore=1 ner=200 ermin=0.01 ermax=55 jsets(1:4)=F F T T / itarg=1 /
 
