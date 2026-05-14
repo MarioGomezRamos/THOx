@@ -9,7 +9,7 @@
 
  &output wfout(:)=1 2 3 verb=2 /
 
- &GRID  ng=0 rmin=0.0 rint=50 rmax=100.0 dr=0.05 rlast=0 /
+ &GRID  ng=0 rmin=0.0 rint=50 rmax=100.0 dr=0.05 rlast=30 /
 
 ! ORIG:     vl0(0:3)=-53.1048 -59.9024 -59.9024 -53.1048
 ! AMM:      vl0(0:3)=-53.1048 -62.9024 -62.9024 -53.1048
@@ -28,13 +28,13 @@
 
 # Basis bound (iniciales) Jp=1/2+
 
-!&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=25 nsp=15 exmin=-10 exmax=10 bas2=0 JTOT=2.5 PARITY=1 lmax=3 nodes=1 /
-&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=35 nsp=25 exmin=-10 exmax=10 bas2=0 JTOT=0.5 PARITY=1 lmax=3 /
+&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=25 nsp=15 exmin=-10 exmax=0 bas2=0 JTOT=2.5 PARITY=1 lmax=3 nodes=1 changepot=T/
+!&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=35 nsp=25 exmin=-10 exmax=0 bas2=0 JTOT=0.5 PARITY=1 lmax=3 /
 
 !&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=15 nsp=15 exmin=0 exmax=10 bas2=0 JTOT=0.5 PARITY=1 lmax=0 /
-&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=15 nsp=15 exmin=0 exmax=10 bas2=0 JTOT=0.5 PARITY=-1 lmax=3 vscale=1.11 /
+!&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=15 nsp=15 exmin=0 exmax=10 bas2=0 JTOT=0.5 PARITY=-1 lmax=3 vscale=1.11 /
 !&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=15 nsp=15 exmin=-20 exmax=10 bas2=0 JTOT=1.5 PARITY=-1 lmax=3 /
-&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=15 nsp=15 exmin=0 exmax=10 bas2=0 JTOT=2.5 PARITY=-1 lmax=3 /
+!&JPSET bastype=1 mlst=4 gamma=2.3 bosc=1.6 nho=15 nsp=15 exmin=0 exmax=10 bas2=0 JTOT=2.5 PARITY=-1 lmax=3 /
 &JPSET /
 
 # Scattering states (finales)

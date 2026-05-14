@@ -1,0 +1,265 @@
+--------------------------------------------------------------------------------
+Command:            ./thox
+Massif arguments:   --time-unit=B --massif-out-file=massif.out
+ms_print arguments: massif.out
+--------------------------------------------------------------------------------
+
+
+    MB
+195.7^                                                   #                    
+     |                                                   # : : : @ : : : : @ :
+     |                                                   # : : : @ : : : : @ :
+     |                                                   # : : : @ : : : : @ :
+     |                                                   # : : : @ : : : : @ :
+     |                                                   # : : : @ : : : : @ :
+     |                                                   # : : : @ : : : : @ :
+     |                                                   # : : : @ : : : : @ :
+     |                                                   # : : : @ : : : : @ :
+     |     @:::::::::::::::::::::::::::::::::@:::::::@:::# : : : @ : : : : @ :
+     |     @:::: :::::::::: ::::::::::::: :: @: : :: @:::#:::::::@:::::::::@::
+     |     @:::: :::::::::: ::::::::::::: :: @: : :: @:::#:::::::@:::::::::@::
+     |     @:::: :::::::::: ::::::::::::: :: @: : :: @:::#:::::::@:::::::::@::
+     |     @:::: :::::::::: ::::::::::::: :: @: : :: @:::#:::::::@:::::::::@::
+     |     @:::: :::::::::: ::::::::::::: :: @: : :: @:::#:::::::@:::::::::@::
+     |     @:::: :::::::::: ::::::::::::: :: @: : :: @:::#:::::::@:::::::::@::
+     |   ::@:::: :::::::::: ::::::::::::: :: @: : :: @:::#:::::::@:::::::::@::
+     |:::: @:::: :::::::::: ::::::::::::: :: @: : :: @:::#:::::::@:::::::::@::
+     |: :: @:::: :::::::::: ::::::::::::: :: @: : :: @:::#:::::::@:::::::::@::
+     |: :: @:::: :::::::::: ::::::::::::: :: @: : :: @:::#:::::::@:::::::::@::
+   0 +----------------------------------------------------------------------->GB
+     0                                                                   6.696
+
+Number of snapshots: 69
+ Detailed snapshots: [5, 37, 42, 47 (peak), 55, 65]
+
+--------------------------------------------------------------------------------
+  n        time(B)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+  0              0                0                0             0            0
+  1     99,117,608       39,312,888       39,311,208         1,680            0
+  2    201,015,112       39,985,528       39,983,317         2,211            0
+  3    311,446,768       41,436,384       41,433,838         2,546            0
+  4    378,814,768       41,436,384       41,433,838         2,546            0
+  5    518,649,384      115,265,512      115,253,946        11,566            0
+99.99% (115,253,946B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->48.01% (55,342,080B) 0x2361CD: int_ff_omp_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->48.01% (55,342,080B) 0x23FCEC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->48.01% (55,342,080B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->48.01% (55,342,080B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|       
+->33.34% (38,432,000B) 0x28CD43: preread_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->33.34% (38,432,000B) 0x28D59E: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->33.34% (38,432,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->07.33% (8,448,880B) 0x2388FC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->07.33% (8,448,880B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->07.33% (8,448,880B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->07.20% (8,294,400B) 0x1F815E: transition_omp_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->07.20% (8,294,400B) 0x28E114: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->07.20% (8,294,400B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->04.11% (4,736,586B) in 162 places, all below massif's threshold (1.00%)
+  
+--------------------------------------------------------------------------------
+  n        time(B)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+  6    626,002,544      115,265,376      115,253,823        11,553            0
+  7    696,199,344      115,265,376      115,253,823        11,553            0
+  8    783,704,944      115,265,376      115,253,823        11,553            0
+  9    889,480,944      115,265,376      115,253,823        11,553            0
+ 10    996,218,544      115,265,376      115,253,823        11,553            0
+ 11  1,103,917,744      115,265,376      115,253,823        11,553            0
+ 12  1,231,810,544      115,265,376      115,253,823        11,553            0
+ 13  1,307,296,144      115,265,376      115,253,823        11,553            0
+ 14  1,386,628,144      115,265,376      115,253,823        11,553            0
+ 15  1,473,172,144      115,265,376      115,253,823        11,553            0
+ 16  1,566,447,344      115,265,376      115,253,823        11,553            0
+ 17  1,666,453,744      115,265,376      115,253,823        11,553            0
+ 18  1,771,268,144      115,265,376      115,253,823        11,553            0
+ 19  1,878,005,744      115,265,376      115,253,823        11,553            0
+ 20  1,984,743,344      115,265,376      115,253,823        11,553            0
+ 21  2,092,442,544      115,265,376      115,253,823        11,553            0
+ 22  2,245,817,744      115,265,376      115,253,823        11,553            0
+ 23  2,343,900,944      115,265,376      115,253,823        11,553            0
+ 24  2,441,984,144      115,265,376      115,253,823        11,553            0
+ 25  2,540,067,344      115,265,376      115,253,823        11,553            0
+ 26  2,638,150,544      115,265,376      115,253,823        11,553            0
+ 27  2,736,233,744      115,265,376      115,253,823        11,553            0
+ 28  2,834,316,944      115,265,376      115,253,823        11,553            0
+ 29  2,932,400,144      115,265,376      115,253,823        11,553            0
+ 30  3,030,483,344      115,265,376      115,253,823        11,553            0
+ 31  3,128,566,544      115,265,376      115,253,823        11,553            0
+ 32  3,226,649,744      115,265,376      115,253,823        11,553            0
+ 33  3,324,732,944      115,265,376      115,253,823        11,553            0
+ 34  3,475,434,896      115,265,376      115,253,823        11,553            0
+ 35  3,629,714,000      115,265,376      115,253,823        11,553            0
+ 36  3,783,993,104      115,265,376      115,253,823        11,553            0
+ 37  3,938,272,208      115,265,376      115,253,823        11,553            0
+99.99% (115,253,823B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->48.01% (55,342,080B) 0x2361CD: int_ff_omp_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->48.01% (55,342,080B) 0x23FCEC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->48.01% (55,342,080B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->48.01% (55,342,080B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|       
+->33.34% (38,432,000B) 0x28CD43: preread_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->33.34% (38,432,000B) 0x28D59E: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->33.34% (38,432,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->07.33% (8,448,880B) 0x2388FC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->07.33% (8,448,880B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->07.33% (8,448,880B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->07.20% (8,294,400B) 0x1F815E: transition_omp_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->07.20% (8,294,400B) 0x28E114: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->07.20% (8,294,400B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->04.11% (4,736,463B) in 162 places, all below massif's threshold (1.00%)
+  
+--------------------------------------------------------------------------------
+  n        time(B)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 38  4,092,551,312      115,265,376      115,253,823        11,553            0
+ 39  4,246,830,416      115,265,376      115,253,823        11,553            0
+ 40  4,401,109,520      115,265,376      115,253,823        11,553            0
+ 41  4,555,388,624      115,265,376      115,253,823        11,553            0
+ 42  4,709,667,728      115,265,376      115,253,823        11,553            0
+99.99% (115,253,823B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->48.01% (55,342,080B) 0x2361CD: int_ff_omp_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->48.01% (55,342,080B) 0x23FCEC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->48.01% (55,342,080B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->48.01% (55,342,080B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|       
+->33.34% (38,432,000B) 0x28CD43: preread_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->33.34% (38,432,000B) 0x28D59E: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->33.34% (38,432,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->07.33% (8,448,880B) 0x2388FC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->07.33% (8,448,880B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->07.33% (8,448,880B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->07.20% (8,294,400B) 0x1F815E: transition_omp_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->07.20% (8,294,400B) 0x28E114: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->07.20% (8,294,400B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->04.11% (4,736,463B) in 162 places, all below massif's threshold (1.00%)
+  
+--------------------------------------------------------------------------------
+  n        time(B)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 43  4,786,807,280      115,265,376      115,253,823        11,553            0
+ 44  4,863,946,832      115,265,376      115,253,823        11,553            0
+ 45  4,941,086,384      115,265,376      115,253,823        11,553            0
+ 46  5,018,225,936      115,265,376      115,253,823        11,553            0
+ 47  5,140,820,888      205,228,744      205,217,118        11,626            0
+99.99% (205,217,118B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->26.97% (55,342,080B) 0x2361CD: int_ff_omp_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->26.97% (55,342,080B) 0x23FCEC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->26.97% (55,342,080B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->26.97% (55,342,080B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|       
+->23.41% (48,040,000B) 0x16BA37: schcc_erwin_mgr_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->23.41% (48,040,000B) 0x22FD29: solvecc_mgr_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->23.41% (48,040,000B) 0x23E226: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->23.41% (48,040,000B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|       ->23.41% (48,040,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|         
+->23.41% (48,040,000B) 0x230210: makevcoup_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->23.41% (48,040,000B) 0x23F838: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->23.41% (48,040,000B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->23.41% (48,040,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|       
+->18.73% (38,432,000B) 0x28CD43: preread_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->18.73% (38,432,000B) 0x28D59E: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->18.73% (38,432,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->04.12% (8,448,880B) 0x2388FC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->04.12% (8,448,880B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->04.12% (8,448,880B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->03.37% (6,914,158B) in 184 places, all below massif's threshold (1.00%)
+  
+--------------------------------------------------------------------------------
+  n        time(B)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 48  5,238,584,416      107,868,992      107,861,318         7,674            0
+ 49  5,335,819,112      205,092,840      205,081,090        11,750            0
+ 50  5,433,713,904      107,883,440      107,875,690         7,750            0
+ 51  5,530,924,120      205,092,840      205,081,090        11,750            0
+ 52  5,628,819,168      107,883,440      107,875,690         7,750            0
+ 53  5,726,029,864      205,092,840      205,081,090        11,750            0
+ 54  5,823,924,912      107,883,440      107,875,690         7,750            0
+ 55  5,921,135,128      205,092,840      205,081,090        11,750            0
+99.99% (205,081,090B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->26.98% (55,342,080B) 0x2361CD: int_ff_omp_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->26.98% (55,342,080B) 0x23FCEC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->26.98% (55,342,080B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->26.98% (55,342,080B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|       
+->23.42% (48,040,000B) 0x16BA37: schcc_erwin_mgr_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->23.42% (48,040,000B) 0x22FD29: solvecc_mgr_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->23.42% (48,040,000B) 0x23E226: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->23.42% (48,040,000B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|       ->23.42% (48,040,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|         
+->23.42% (48,040,000B) 0x230210: makevcoup_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->23.42% (48,040,000B) 0x23F838: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->23.42% (48,040,000B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->23.42% (48,040,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|       
+->18.74% (38,432,000B) 0x28CD43: preread_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->18.74% (38,432,000B) 0x28D59E: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->18.74% (38,432,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->04.12% (8,448,880B) 0x2388FC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->04.12% (8,448,880B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->04.12% (8,448,880B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->03.30% (6,778,130B) in 195 places, all below massif's threshold (1.00%)
+  
+--------------------------------------------------------------------------------
+  n        time(B)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 56  6,019,030,368      107,883,440      107,875,690         7,750            0
+ 57  6,116,241,064      205,092,840      205,081,090        11,750            0
+ 58  6,214,136,304      107,883,440      107,875,690         7,750            0
+ 59  6,311,346,520      205,092,840      205,081,090        11,750            0
+ 60  6,409,241,984      107,883,440      107,875,690         7,750            0
+ 61  6,506,452,680      205,092,840      205,081,090        11,750            0
+ 62  6,604,348,144      107,883,440      107,875,690         7,750            0
+ 63  6,701,558,360      205,092,840      205,081,090        11,750            0
+ 64  6,799,454,048      107,883,440      107,875,690         7,750            0
+ 65  6,896,664,744      205,092,840      205,081,090        11,750            0
+99.99% (205,081,090B) (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+->26.98% (55,342,080B) 0x2361CD: int_ff_omp_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->26.98% (55,342,080B) 0x23FCEC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->26.98% (55,342,080B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->26.98% (55,342,080B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|       
+->23.42% (48,040,000B) 0x16BA37: schcc_erwin_mgr_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->23.42% (48,040,000B) 0x22FD29: solvecc_mgr_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->23.42% (48,040,000B) 0x23E226: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->23.42% (48,040,000B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|       ->23.42% (48,040,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|         
+->23.42% (48,040,000B) 0x230210: makevcoup_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->23.42% (48,040,000B) 0x23F838: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->23.42% (48,040,000B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|     ->23.42% (48,040,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|       
+->18.74% (38,432,000B) 0x28CD43: preread_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->18.74% (38,432,000B) 0x28D59E: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->18.74% (38,432,000B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->04.12% (8,448,880B) 0x2388FC: cdcc_ (in /home/amoro/cloud/programs/thox/github/thox)
+| ->04.12% (8,448,880B) 0x28DF42: MAIN__ (in /home/amoro/cloud/programs/thox/github/thox)
+|   ->04.12% (8,448,880B) 0x10B768: main (in /home/amoro/cloud/programs/thox/github/thox)
+|     
+->03.30% (6,778,130B) in 195 places, all below massif's threshold (1.00%)
+  
+--------------------------------------------------------------------------------
+  n        time(B)         total(B)   useful-heap(B) extra-heap(B)    stacks(B)
+--------------------------------------------------------------------------------
+ 66  6,994,560,432      107,883,440      107,875,690         7,750            0
+ 67  7,091,770,648      205,092,840      205,081,090        11,750            0
+ 68  7,189,666,560      107,883,440      107,875,690         7,750            0

@@ -4,7 +4,7 @@ c     Build & solve CDCC equations
 c *** ---------------------------------------------------
       use channels, only:jpiset,jpsets,jptset,tset,targdef !MGR
       use nmrv, only: hort,rmort,vcoup,rvec
-      use telp_mod, only: iftelp_val, rank_telp, sum_wU, sum_w
+      use telp_mod, only: iftelp_val, rank_telp, sum_wU, sum_w, utelp
       use xcdcc   , only: nex,jpch,exch,parch,iftrans,
      &            lamax,hcm,nmatch,elab,ecm,smats,
      &            jtmin,jtmax,rvcc,rmaxcc,nrcc,method,
@@ -159,6 +159,18 @@ c     ------------------------------------------------------------
       do ir=1,nrcc
         rvcc(ir)=dble(ir-1)*hcm
       enddo
+
+! TELP: allocate accumulation arrays after the radial grid is known
+      if (iftelp_val) then
+        if (allocated(sum_wU)) deallocate(sum_wU)
+        if (allocated(sum_w))  deallocate(sum_w)
+        if (allocated(utelp))  deallocate(utelp)
+        allocate(sum_wU(nrcc), sum_w(nrcc), utelp(nrcc))
+        sum_wU(:) = (0d0, 0d0)
+        sum_w(:)  = 0d0
+        utelp(:)  = (0d0, 0d0)
+        write(*,'(5x,"[TELP mode: first pass -> accumulate CC wfs]")') 
+      endif
 
 ! Added by JLei for IAV input
       call initial_cdcc_wf_smoothie()
@@ -611,7 +623,28 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
        endif
 
        call flush(6) 
-330    enddo !ijt
+ 330    enddo !ijt  ! <<< end of FIRST J/pi pass
+
+! TELP: construct U_TELP from accumulated sums and run second pass
+      if (iftelp_val) then
+        write(*,'(5x,"[TELP: constructing U_TELP(R) ...]")') 
+        do ir=1,nrcc
+          if (sum_w(ir) .gt. 1d-14) then
+            utelp(ir) = sum_wU(ir) / sum_w(ir)
+          else
+            utelp(ir) = (0d0, 0d0)
+          endif
+        enddo
+        open(newunit=itex, file='telp_pot.dat', status='unknown')
+        write(itex,'(a)') '# r (fm)   Re[U_TELP]   Im[U_TELP]'
+        do ir=1,nrcc
+           write(itex,'(3e15.6)') rvcc(ir), real(utelp(ir)), 
+     &                            aimag(utelp(ir))
+        enddo
+        close(itex)
+
+        write(*,'(5x,"[TELP: potential written to telp_pot.dat]")')
+      endif
       lpmax=0
       jpmax=0.0d0
       istatemax=0
@@ -899,6 +932,7 @@ c *** Calculate coupling matrix for CC set
       use xcdcc,     only: lamax,ffc,nrcc,nex,hcm,parch,rvcc,realwf
       use channels,  only: jptset
       use nmrv,      only: vcoup
+      use telp_mod,  only: rank_telp, utelp
       use sistema
       use globals,   only: verb, debug,nfacmax
       use memory

@@ -1,0 +1,10 @@
+--- scatcc.f90
++++ scatcc.f90
+@@ -21,6 +21,7 @@
+         complex*16 :: telp_num
+ 
+         if (iftelp_val .and. rank_telp.eq.0) then
++          write(*,*) 'TELP loop: nr = ', nr, ' size(wf,2) = ', size(wf, 2)
+           do ir=1,nr
+             telp_num = (0d0,0d0)
+             do n=1,nch

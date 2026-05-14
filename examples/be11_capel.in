@@ -21,12 +21,12 @@
  &pauli n=0 /
 
 #Bound
-  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=20 nsp=0 exmin=-1 exmax=0.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=0 nodes=2 /
-  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=20  nsp=0 exmin=-15 exmax=0.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /
+  &JPSET bastype=6 mlst=4 gamma=1.84 bosc=1.6 nho=20 nsp=0 exmin=-1 exmax=0.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=0 nodes=2 changepot=T/
+!  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=20  nsp=0 exmin=-15 exmax=0.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /
 
 #Cont
 !  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=40 nsp=0 exmin=-15 exmax=15.0 bas2=0 JTOT=1.5 PARITY=-1  lmax=1 /
-  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=10  nsp=0 exmin=0 exmax=50.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=1 /
+!  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=10  nsp=0 exmin=0 exmax=50.0 bas2=0 JTOT=0.5 PARITY=+1  lmax=1 /
 !  &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=40  nsp=0 exmin=0 exmax=15.0 bas2=0 JTOT=0.5 PARITY=-1  lmax=1 /
 !   &JPSET bastype=1 mlst=4 gamma=1.84 bosc=1.6 nho=40 nsp=0 exmin=-15 exmax=15.0 bas2=0 JTOT=2.5 PARITY=+1  lmax=2 /
   &JPSET /

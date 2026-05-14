@@ -1,25 +1,77 @@
 d+ 58Ni E=80 MeV CDCC (s+d);                                                    
 NAMELIST
- &Fresco  hcm= 0.050 rmatch= 100.000 rintp=  0.25 rsp= 100.0
-     jtmin=   0.0 jtmax=     40.0 absend=    0.0010 pset= 0
-     thmin=  0.00 thmax= -180.00 thinc=  1.00  cutl=  0.00 cutr=-15.00 cutc=  0.00
-     ips= 0.0000  it0= 0 iter=  0 iblock=  6 pade=0 nnu= 24
+ &Fresco  hcm= 0.050 rmatch= 100.000 rintp=  0.25 rsp=  60.0
+     jtmin=   0.0 jtmax=     50.0 absend=    0.0010 pset= 0
+     thmin=  0.00 thmax= 180.00 thinc=  1.00  cutl=  0.00 cutr= -8.00 cutc=  0.00
+     ips= 0.0000  it0= 0 iter=  0 iblock= 32 pade=0 nnu= 24
      smallchan= 1.00E-12  smallcoup= 1.00E-12
-     chans= 1 listcc= 0 treneg= 0 cdetr= 0 smats= 4 xstabl= 1
-     waves= 0 lampl= 0 veff= 0 kfus= 0 wdisk= 0 nlpl= 0 melfil= 0 cdcc= 1 rela='  '
+     chans= 1 listcc= 0 treneg= 0 cdetr= 0 smats= 2 xstabl= 1
+     waves= 0 lampl= 0 veff= 1 kfus= 0 wdisk= 0 nlpl= 0 melfil= 0 cdcc= 0 rela='  '
      elab=    80.0000    pel=1 exl=1 lab=1 lin=1 lex=1 /
 
- &Partition namep='d       ' massp=  2.0140 zp=  1 nex=  5 pwf=F                
+ &Partition namep='d       ' massp=  2.0140 zp=  1 nex= 31 pwf=F                
             namet='58Ni    ' masst= 58.0000 zt= 28 qval=  2.2250/               
  &States jp= 0.0 ptyp= 1 ep=  0.0000  cpot=  1                                  
          jt= 0.0 ptyt= 1 et=  0.0000/                                           
- &States jp= 0.0 ptyp= 1 ep=  3.0438  cpot=  1                                  
+ &States jp= 0.0 ptyp= 1 ep=  2.3626  cpot=  1                                  
          copyt= 1/                                                              
- &States jp= 0.0 ptyp= 1 ep=  6.0438  cpot=  1                                  
+ &States jp= 0.0 ptyp= 1 ep=  2.7901  cpot=  1                                  
          copyt= 1/                                                              
- &States jp= 2.0 ptyp= 1 ep=  3.0438  cpot=  1                                  
+ &States jp= 0.0 ptyp= 1 ep=  3.5621  cpot=  1                                  
          copyt= 1/                                                              
- &States jp= 2.0 ptyp= 1 ep=  6.0438  cpot=  1                                  
+ &States jp= 0.0 ptyp= 1 ep=  4.6786  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 0.0 ptyp= 1 ep=  6.1395  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 0.0 ptyp= 1 ep=  7.9450  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 0.0 ptyp= 1 ep= 10.0949  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 0.0 ptyp= 1 ep= 12.5893  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 0.0 ptyp= 1 ep= 15.4282  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 0.0 ptyp= 1 ep= 18.6116  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 0.0 ptyp= 1 ep= 22.1395  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 0.0 ptyp= 1 ep= 26.0119  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 0.0 ptyp= 1 ep= 30.2288  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 0.0 ptyp= 1 ep= 34.7901  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 0.0 ptyp= 1 ep= 39.6960  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep=  2.3626  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep=  2.7901  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep=  3.5621  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep=  4.6786  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep=  6.1395  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep=  7.9450  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep= 10.0949  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep= 12.5893  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep= 15.4282  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep= 18.6116  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep= 22.1395  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep= 26.0119  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep= 30.2288  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep= 34.7901  cpot=  1                                  
+         copyt= 1/                                                              
+ &States jp= 2.0 ptyp= 1 ep= 39.6960  cpot=  1                                  
          copyt= 1/                                                              
  &Partition namep='p       ' massp=  1.0078 zp=  1 nex= -1 pwf=F                
             namet='58Ni  +n' masst= 59.0087 zt= 28 qval=  0.0000/               
@@ -53,19 +105,97 @@ NAMELIST
                                                                                 
  &Overlap kn1=   1 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
           kind=0 nn= 1 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
-    kbpot= 4 be=  2.2250 isc= 1 ipc=0 nfl=-20 /                                         
+    kbpot= 4 be=  2.2250 isc= 1 ipc=0 /                                         
  &Overlap kn1=   2 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
           kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
-          kbpot= 4 be= -0.8188 isc=12 ipc=2 nk=  50 er= -1.6176 /               
+          kbpot= 4 be= -0.1376 isc=12 ipc=2 nk=  50 er= -0.2552 /               
  &Overlap kn1=   3 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
           kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
-          kbpot= 4 be= -3.8188 isc=12 ipc=2 nk=  50 er= -4.3824 /               
+          kbpot= 4 be= -0.5651 isc=12 ipc=2 nk=  50 er= -0.5997 /               
  &Overlap kn1=   4 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
-          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
-          kbpot= 4 be= -0.8188 isc= 2 ipc=2 nk=  50 er= -1.6176 /               
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be= -1.3371 isc=12 ipc=2 nk=  50 er= -0.9442 /               
  &Overlap kn1=   5 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be= -2.4536 isc=12 ipc=2 nk=  50 er= -1.2887 /               
+ &Overlap kn1=   6 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be= -3.9145 isc=12 ipc=2 nk=  50 er= -1.6332 /               
+ &Overlap kn1=   7 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be= -5.7200 isc=12 ipc=2 nk=  50 er= -1.9777 /               
+ &Overlap kn1=   8 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be= -7.8699 isc=12 ipc=2 nk=  50 er= -2.3222 /               
+ &Overlap kn1=   9 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-10.3643 isc=12 ipc=2 nk=  50 er= -2.6667 /               
+ &Overlap kn1=  10 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-13.2032 isc=12 ipc=2 nk=  50 er= -3.0112 /               
+ &Overlap kn1=  11 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-16.3866 isc=12 ipc=2 nk=  50 er= -3.3556 /               
+ &Overlap kn1=  12 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-19.9145 isc=12 ipc=2 nk=  50 er= -3.7001 /               
+ &Overlap kn1=  13 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-23.7869 isc=12 ipc=2 nk=  50 er= -4.0446 /               
+ &Overlap kn1=  14 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-28.0038 isc=12 ipc=2 nk=  50 er= -4.3891 /               
+ &Overlap kn1=  15 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-32.5651 isc=12 ipc=2 nk=  50 er= -4.7336 /               
+ &Overlap kn1=  16 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 0 lmax=0 sn=0.0 j= 0.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-37.4710 isc=12 ipc=2 nk=  50 er= -5.0781 /               
+ &Overlap kn1=  17 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
           kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
-          kbpot= 4 be= -3.8188 isc= 2 ipc=2 nk=  50 er= -4.3824 /               
+          kbpot= 4 be= -0.1376 isc= 2 ipc=2 nk=  50 er= -0.2552 /               
+ &Overlap kn1=  18 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be= -0.5651 isc= 2 ipc=2 nk=  50 er= -0.5997 /               
+ &Overlap kn1=  19 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be= -1.3371 isc= 2 ipc=2 nk=  50 er= -0.9442 /               
+ &Overlap kn1=  20 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be= -2.4536 isc= 2 ipc=2 nk=  50 er= -1.2887 /               
+ &Overlap kn1=  21 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be= -3.9145 isc= 2 ipc=2 nk=  50 er= -1.6332 /               
+ &Overlap kn1=  22 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be= -5.7200 isc= 2 ipc=2 nk=  50 er= -1.9777 /               
+ &Overlap kn1=  23 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be= -7.8699 isc= 2 ipc=2 nk=  50 er= -2.3222 /               
+ &Overlap kn1=  24 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-10.3643 isc= 2 ipc=2 nk=  50 er= -2.6667 /               
+ &Overlap kn1=  25 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-13.2032 isc= 2 ipc=2 nk=  50 er= -3.0112 /               
+ &Overlap kn1=  26 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-16.3866 isc= 2 ipc=2 nk=  50 er= -3.3556 /               
+ &Overlap kn1=  27 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-19.9145 isc= 2 ipc=2 nk=  50 er= -3.7001 /               
+ &Overlap kn1=  28 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-23.7869 isc= 2 ipc=2 nk=  50 er= -4.0446 /               
+ &Overlap kn1=  29 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-28.0038 isc= 2 ipc=2 nk=  50 er= -4.3891 /               
+ &Overlap kn1=  30 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-32.5651 isc= 2 ipc=2 nk=  50 er= -4.7336 /               
+ &Overlap kn1=  31 kn2=   0 ic1=1 ic2=2 in= 1 ia=0 ib=  0 dm=  0.0000           
+          kind=0 nn= 0 l= 2 lmax=0 sn=0.0 j= 2.0 nam=1 ampl=  1.0000            
+          kbpot= 4 be=-37.4710 isc= 2 ipc=2 nk=  50 er= -5.0781 /               
  &Overlap /   ! END OF DEFINING OVERLAPS                                        
                                                                                 
  &Coupling icto= 1 icfrom= 2 kind=3 ip1= 2 ip2= 0 ip3= 0                        
@@ -74,7 +204,33 @@ NAMELIST
    &Cfp  in= 1 ib=  2 ia=  1 kn=   2  a=  1.0000     /                          
    &Cfp  in= 1 ib=  3 ia=  1 kn=   3  a=  1.0000     /                          
    &Cfp  in= 1 ib=  4 ia=  1 kn=   4  a=  1.0000     /                          
-   &Cfp  in=-1 ib=  5 ia=  1 kn=   5  a=  1.0000     /                          
+   &Cfp  in= 1 ib=  5 ia=  1 kn=   5  a=  1.0000     /                          
+   &Cfp  in= 1 ib=  6 ia=  1 kn=   6  a=  1.0000     /                          
+   &Cfp  in= 1 ib=  7 ia=  1 kn=   7  a=  1.0000     /                          
+   &Cfp  in= 1 ib=  8 ia=  1 kn=   8  a=  1.0000     /                          
+   &Cfp  in= 1 ib=  9 ia=  1 kn=   9  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 10 ia=  1 kn=  10  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 11 ia=  1 kn=  11  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 12 ia=  1 kn=  12  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 13 ia=  1 kn=  13  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 14 ia=  1 kn=  14  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 15 ia=  1 kn=  15  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 16 ia=  1 kn=  16  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 17 ia=  1 kn=  17  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 18 ia=  1 kn=  18  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 19 ia=  1 kn=  19  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 20 ia=  1 kn=  20  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 21 ia=  1 kn=  21  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 22 ia=  1 kn=  22  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 23 ia=  1 kn=  23  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 24 ia=  1 kn=  24  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 25 ia=  1 kn=  25  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 26 ia=  1 kn=  26  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 27 ia=  1 kn=  27  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 28 ia=  1 kn=  28  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 29 ia=  1 kn=  29  a=  1.0000     /                          
+   &Cfp  in= 1 ib= 30 ia=  1 kn=  30  a=  1.0000     /                          
+   &Cfp  in=-1 ib= 31 ia=  1 kn=  31  a=  1.0000     /                          
  ! *******  END OF CDCC INPUTS *******                                          
 
  Please check that your input numbers have sufficient

@@ -413,7 +413,7 @@ c < n | r^lambda | m >
          endif
 
 c SIMULTANEOUS Core and Valence contribution --------------------------
-      if (lambda.gt.0) then
+      if (lambda.gt.1 .and. cindexi(n).eq.cindex(m)) then
         do ikterm = 1, maxlamb
          do ilv = 1, maxlamb
            rkt = dble(ikterm)
@@ -445,7 +445,7 @@ c SIMULTANEOUS Core and Valence contribution --------------------------
               term_pref = sqrt(4d0 * pi) * dfactratio(lambda, ikterm) 
      &                 * ((-av)/(ac+av))**(ilv)
            else
-              term_pref = 1.0d0
+              cycle   ! k+lv != lambda: not present in the multipole expansion
            endif
            term_mix = matmix(rkt, rlv, lambdar, sn, 
      &                       qlir(n), qji(n), jtoti, qjci(n),
@@ -629,7 +629,7 @@ c < n | r^lambda | m >
          endif
 
 c SIMULTANEOUS Core and Valence contribution --------------------------
-      if (lambda.gt.0) then
+      if (lambda.gt.1 .and. cindexi(n).eq.cindex(m)) then
         do ikterm = 1, maxlamb
          do ilv = 1, maxlamb
            rkt = dble(ikterm)
@@ -660,12 +660,11 @@ c SIMULTANEOUS Core and Valence contribution --------------------------
               term_pref = sqrt(4d0 * pi) * dfactratio(lambda, ikterm) 
      &                 * ((-av)/(ac+av))**(ilv)
            else
-              term_pref = 1.0d0
+              cycle   ! k+lv != lambda: not present in the multipole expansion
            endif
            term_mix = matmix(rkt, rlv, lambdar, sn, 
      &                       qlir(n), qji(n), jtoti, qjci(n),
      &                       qlr(m), qj(m), jtot, qjc(m))
-           write(0,*)'term_mix=',term_mix
            Elamcont = Elamcont + term_pref * term_mix * rkcore * resc 
      &                * sqrt(pi/2) * (4*pi) / kcont
          enddo
@@ -681,7 +680,7 @@ c ----------------------------------------------------------------------------
      &      + (2*jtot+1)*abs(Elamcont)**2/(2*jtoti+1)
      &      *mu12*kcont/hc**2/(2*pi)**3
         Elam=0d0
-!        write(0,*)'engs=',engs, 'jtoti=',jtoti, 'excore=',excore
+        write(0,*)'engs=',engs, 'jtoti=',jtoti, 'excore=',excore
 !        kphot=(econt+excore+engs)/hc!MGR 2022
         kphot=(econt+excore-engs)/hc !AMM2022
 
