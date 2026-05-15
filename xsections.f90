@@ -76,12 +76,14 @@
       pi=acos(-1d0)
       thmin=0; thmax=0; dth=0; thcut=0;thcut_min=0;thcut_max=0
       ecut_min=0; ecut_max=0.
-      doublexs=.false. ; triplexs=.false. ; phixs=.false.
+      doublexs=.false. ; triplexs=.false. ; phixs=.false.; 
+      alphaxs=.false.
       rel=.false.
       ermin=-1; ermax=-1
       jsets(:)=.true.        
       fileamp=""
       ner=0
+      icore=1
       
 !c     -----------------------------------------------------------
       rewind(kin); 

@@ -1,6 +1,6 @@
 
       subroutine belam() !,jtot,partot
-c ** Calculates B(E;lambda) distributions using THO pseudostates
+!c ** Calculates B(E;lambda) distributions using THO pseudostates
       use globals !, only: written,mu12,pi,verb
       use constants, only: hc,pi,amu,e2
       use hmatrix, only: hmatx
@@ -680,9 +680,9 @@ c ----------------------------------------------------------------------------
      &      + (2*jtot+1)*abs(Elamcont)**2/(2*jtoti+1)
      &      *mu12*kcont/hc**2/(2*pi)**3
         Elam=0d0
-        write(0,*)'engs=',engs, 'jtoti=',jtoti, 'excore=',excore
+!        write(0,*)'engs=',engs, 'jtoti=',jtoti, 'excore=',excore
 !        kphot=(econt+excore+engs)/hc!MGR 2022
-        kphot=(econt+excore-engs)/hc !AMM2022
+        kphot=(econt+excore+abs(engs))/hc !AMM2022
 
         eta=conv*zc*zv*e2/kcont/2
 *
@@ -705,12 +705,14 @@ c ----------------------------------------------------------------------------
 *
 * S-factor
 *     
-        sfactcap=econt*exp(2*pi*eta)*capxs!MGR 2022
+        sfactcap=econt*exp(2*pi*eta)*capxs! MGR 2022
         
         write(96,*) econt+excore,BEl,photoxs,capxs,sfactphoto,sfactcap,
      &  dbde(1,ik)
+        write(98,*) econt+excore,sfactcap 
         besum=besum+BEl*hc**2*kcont/mu12*dk    !de=de/dk*dk
-        apol= apol +BEl*hc**2*kcont/mu12*dk/(econt-engs)*(8*pi/9.)*e2
+        apol= apol +
+     &        BEl*hc**2*kcont/mu12*dk/(econt+abs(engs))*(8*pi/9.)*e2
         enddo ! ik
         write(*,'(3x, "For inc chan=",i3," B(El)=",1f8.3)') iil,besum
         write(96,*)'&'

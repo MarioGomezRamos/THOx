@@ -193,9 +193,9 @@
         ecmi=elab*mt/(mp+mt)
         mupt=mp*mt/(mp+mt)!*amu
         kcmi=sqrt(2*mupt*ecmi)/hc
-        write(*,*)' ** USING NON-RELATIVISTIC KINEMATICS **'
+        write(*,*)' -- USING NON-RELATIVISTIC KINEMATICS --'
       else                     ! relativistic
-        write(*,*)' ** USING RELATIVISTIC KINEMATICS **'
+        write(*,*)' -- USING RELATIVISTIC KINEMATICS --'
         sinv=((mp+mt))**2+2*mt*elab
         etcm=sqrt(sinv)          ! total relativistic energy
         ecmi=etcm-mp-mt       ! kinetic energy in initial channel
