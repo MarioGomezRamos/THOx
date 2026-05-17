@@ -85,10 +85,19 @@ Core+valence central and deformed (coupling) potentials:
   *This namelist can be repeated if more than one Pauli forbidden state is present. After the last state is included, an empty PAULI namelist must be included.*
 
 ### JPSET namelist: bastype, mlst, gamma, bosc, nho, nsp, exmin, exmax, bas2, JTOT, PARITY, lmax
-- bastype: index to specify the basis type: 
+- bastype: index to specify the basis type:
     0 = HO basis
-    1 = THO basis
-    2 = bins 
+    1 = THO basis (default)
+    2 = CC bins (complex)
+    3 = Complex Gaussian (CG) basis
+    4 = Real CC bins
+    5 = External wavefunctions (read from file, see `filewf`)
+    6 = Exact bound state via EIGCC matching method (Thompson/FRESCO)
+    7 = Charged THO (cTHO, Coulomb LST)
+    8 = R-matrix bound state on Lagrange-Legendre mesh (Hesse et al. NPA 640, 1998)
+        Required extra namelist parameters: `nodes`, `changepot`
+        Optional: `nlag` (set internally to 40), `rmax` from the GRID namelist
+
 - bosc: oscillator parameters used in the HO and THO bases.
 - mlst, gamma: parameters for the local scale transformation (LST) in the THO basis  
 - eta: Sommerfeld parameter for Coulomb LST by J.A. Lay.

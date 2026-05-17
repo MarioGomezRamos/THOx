@@ -65,7 +65,7 @@ c
         integer, parameter:: maxpauli=5   
         integer, parameter:: maxsets=100    ! max number of jp/parity sets
         integer           :: maxl=10
-        integer, parameter:: maxeset=100
+        integer, parameter:: maxeset=200
         integer, parameter:: maxch  =1000  ! max number of channels per JTOT/PI
       end module parameters
 
@@ -120,7 +120,9 @@ c
 
 
       TYPE PCHANNEL
-          integer  bastype         ! basis type (1=THO, 2=CC Bins...)
+          integer  bastype         ! basis type:
+          !   0=HO, 1=THO, 2=CC bins, 3=CG, 4=Real CC bins,
+          !   5=External, 6=EIGCC (matching), 7=cTHO, 8=R-matrix (Hesse)
           integer  partot          ! parity of composite
           real*8:: jtot            ! total spin of composite
           real*8:: sn              ! spin of valence (not really needed here)
@@ -144,6 +146,7 @@ c
           logical  complex         ! real/complex wfs?
           real*8   vscale          ! scaling factor for v-c central potential
           logical  energy          ! if true, bins uniform in energy; otherwise uniform in momentum
+          integer  nlag            ! number of Lagrange points for R-matrix
 !          type(spchannel) qnsp(maxchan)
       END TYPE
       TYPE(PCHANNEL),allocatable:: jpiset(:)

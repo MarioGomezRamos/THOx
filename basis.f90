@@ -9,7 +9,7 @@ c     nchan={Ic,lsj} configurations
       use potentials, only: vscale
       implicit none
       logical fail3,tres,ehat,merge,lscoupl,energy
-      integer l,lmin,lmax,bastype,mlst,nodes
+      integer l,lmin,lmax,bastype,mlst,nodes,nlag
       real*8:: xl,j,jn,jcore,ex,st,stot
       real*8:: bosc,gamma,r1,rnmax
       real*8:: eta
@@ -40,7 +40,7 @@ c     nchan={Ic,lsj} configurations
      &                wcut,   ! mininum weight per channel to be retained (default 1) 
      &                vscale, ! scaling factor for v-core potential
      &                r1,rnmax,  !CG	
-     &                nodes,changepot,  !Nodes for bound state,change energy or potential 
+     &                nodes,changepot,nlag,  !Nodes for bound state,change energy or potential 
      &                st,    ! total spin of valence+core for LS coupling
      &                lscoupl ! if TRUE, use LS coupling scheme instead of JJ
 !     &                realcc ! if TRUE, calculate real multichannel states instead of scat. states
@@ -59,6 +59,7 @@ c Initialize variables and assign default values
       vscale=1.
       nho=0 
       r1=0; rnmax=0
+      nlag=0
       changepot=.false.
 
       lscoupl=.false.
@@ -102,6 +103,7 @@ c      endif
       jpiset(nset)%bastype = bastype
       jpiset(nset)%vscale  = vscale
       jpiset(nset)%energy  = energy
+      jpiset(nset)%nlag    = nlag
  
 !      write(0,*)'set',nset,'scaled by',vscale
 
@@ -397,32 +399,6 @@ c        endif
 		
 		! Cierra el archivo
 		close(unit_out)
-	   
-c -------------------------------------------------------------	   
-! Base Creada por Daniel Arjona:
-  
-       case(3) !Complex Gaussian Basis (CG)
-
-        write(*,*)' ** COMPLEX GAUSSIAN BASIS **'		 
-        write(0,252) r1,rnmax,nho 
-252     format(" - CG basis with r1,rmax=",
-     & 2f8.3,2x,"and N=",i3," states")
-
-	open(unit_out, file='FuncionesBaseCG.dat', status='replace') !!!Añadido 15/05/24
-		 
-       allocate(wftho(nho,0:lmax,nr))
-       do l=0,lmax
-       call cgbasis(l,r1,rnmax,nho)
-        do n = 1, nho
-	do i = 1, nr
-        write(unit_out,*) rvec(i), wftho(n, l, i)
-        enddo
-	write(unit_out,*)'&'
-        enddo
-        enddo
-		
-        close(unit_out)	   
-   
 
 
 c -------------------------------------------------------------
@@ -430,8 +406,8 @@ c -------------------------------------------------------------
         write(*,*)' ** RADIAL BASIS **'
 
         if (gamma<1e-6) then
-!        gamma=bosc*(8*mu12*abs(egs)/hc/hc)**(1d0/4d0)
-          write(*,*)'( gamma=0 ! => aborting )';stop
+        gamma=bosc*(8*mu12*abs(egs)/hc/hc)**(1d0/4d0)
+!          write(*,*)'( gamma=0 ! => aborting )';stop
         endif
         write(*,250) mlst,bosc,gamma,nho
 250     format(" - THO basis with m=",i2,2x,
@@ -456,6 +432,35 @@ c -------------------------------------------------------------
        write(*,*)' bas2=',bas2,' not implemented!'
        endif
 
+
+	   
+c --------------------------------------------------	   
+! After Daniel Arjona's TFM
+c --------------------------------------------------  
+       case(3) !Complex Gaussian Basis (CG)
+
+        write(*,*)' ** COMPLEX GAUSSIAN BASIS **'		 
+        write(0,252) r1,rnmax,nho 
+252     format(" - CG basis with r1,rmax=",
+     & 2f8.3,2x,"and N=",i3," states")
+
+	open(unit_out, file='wfs_CG.dat', status='replace') !!!Añadido 15/05/24
+		 
+       allocate(wftho(nho,0:lmax,nr))
+       do l=0,lmax
+       call cgbasis(l,r1,rnmax,nho)
+        do n = 1, nho
+	do i = 1, nr
+        write(unit_out,*) rvec(i), wftho(n, l, i)
+        enddo
+	write(unit_out,*)'&'
+        enddo
+        enddo
+		
+        close(unit_out)	   
+   
+
+
 c      -----------------------------------------------------
        case(7)  ! cTHO
 c      -----------------------------------------------------
@@ -474,7 +479,7 @@ c      -----------------------------------------------------
         if (abs(eta)<1e-6) then
          eta=zv*zc*e2/dsqrt(2.*mu12*abs(egs)/hc/hc)*mu12/hc/hc
         endif
-         write(*,*)'eta=',eta
+!         write(*,*)'eta=',eta
        allocate(wftho(nho,0:lmax,nr))
        do l=0,lmax
          call cthobasis(l,mlst,bosc,gamma,eta,nho)	
@@ -495,7 +500,6 @@ c      -----------------------------------------------------
 
 
 c -------------------------------------------------------------
-c -------------------------------------------------------------
        case(2) ! CC bins
        write(*,*)' ** BIN wfs ** '
 
@@ -508,8 +512,14 @@ c -------------------------------------------------------------
        write(*,*)' ** External wfs ** '
 
 c -------------------------------------------------------------
-       case(6) ! Exact bound wf
+       case(6) ! Exact bound wf from EIGCC routine by I.J.Thompson (FRESCO)
        write(*,*)' ** Exact bound wf ** '
+
+c -------------------------------------------------------------
+       case(8) ! R-matrix bound state (Hesse et al. NPA 640, 1998)
+       write(*,*)' ** R-matrix bound state (Lagrange mesh) ** '
+       ! No THO/HO basis needed; Lagrange-Legendre mesh built internally
+       ! by eigcc_rmat. wftho is not allocated for this bastype.
 
 c -------------------------------------------------------------
        case default ! undefined bastype

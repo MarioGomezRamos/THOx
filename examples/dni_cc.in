@@ -1,14 +1,14 @@
 # d+58Ni CDCC (no spins)
 # ---------------------------------------------------------------------------------------------
  &SYSTEM  Zv=0. Av=1.0087   sn=0.0
-          Zc=1. Ac=1.0078  egs=2.225 /
+          Zc=1. Ac=1.0078  egs=-2.225 /
 
  &corestates spin=0.0 parity=+1 ex=0.0 /
  &corestates /
 
  &output wfout(:)=1 5   xcdcc=F verb=0 solapout(:)=0  cdccwf=F  /
 
- &GRID  rmin=0.0 rmax=60.0 dr=0.05 rlast=60 /
+ &GRID  rmin=0.0 rmax=15.0 dr=0.05 rlast=20 /
 
 # p-n potential
  &POTENTIAL ptype=3 ap=1 at=0 
@@ -20,9 +20,9 @@
  &pauli n=0 /
 
 
-  &JPSET bastype=1 mlst=4 gamma=1.5 bosc=1.6 nho=30 nsp=0 exmin=-5 exmax=0 bas2=0 JTOT=0.0 PARITY=1 lmax=0 changepot=T nodes=1 /  l=0   /
-  &JPSET bastype=2 exmin=0.1  exmax=40.1 nk=50 nbins=15 lmax=0  JTOT=0.0 PARITY=1  /
-  &JPSET bastype=2 exmin=0.1  exmax=40.1 nk=50 nbins=15 lmax=2  JTOT=2.0 PARITY=1  /
+  &JPSET bastype=6 mlst=4 gamma=1.5 bosc=1.6 nho=30 nsp=0 exmin=-5 exmax=0 bas2=0 JTOT=0.0 PARITY=1 lmax=0 changepot=t nodes=1 nlag=100 /  l=0   /
+!&JPSET bastype=2 exmin=0.1  exmax=40.1 nk=50 nbins=15 lmax=0  JTOT=0.0 PARITY=1  /
+!  &JPSET bastype=2 exmin=0.1  exmax=40.1 nk=50 nbins=15 lmax=2  JTOT=2.0 PARITY=1  /
 
 ! &JPSET bastype=1 mlst=4 gamma=1.5 bosc=1.6 nho=20 nsp=0 exmin=0 exmax=25 bas2=0 JTOT=1.0 PARITY=-1 lmax=1 /  l=1 /
 !  &JPSET bastype=1 mlst=4 gamma=1.5 bosc=1.6 nho=20 nsp=0 exmin=0 exmax=25 bas2=0 JTOT=2.0 PARITY=1  lmax=2 /l=2 /
@@ -43,7 +43,7 @@
 # (if no basis sets have been defined, this section will be skipped)
 # ############################################################################################
 
-&TRANS skip=f  rcc=5.032  writeff=T   /
+&TRANS skip=t  rcc=5.032  writeff=T   /
 
 &coupling qcmax=0  ncoul=0  lamax=2 /
 
@@ -73,7 +73,7 @@
          3=Raynal
          4=Modified Numerov used in Fresco
 
-&numerov hcm=0.05 rmaxcc=100  hort=0 method=4 jtmin=0 jtmax=50 skip=f telpflag=T /   
+&numerov hcm=0.05 rmaxcc=100  hort=0 method=4 jtmin=0 jtmax=50 skip=t telpflag=f /   
 
 
 ######################### TRIPLE DIFFERENTIAL CROSS SECTINS ##############################

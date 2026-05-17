@@ -1,0 +1,47 @@
+# d+58Ni  –  test of bastype=8 (R-matrix bound-state solver)
+# Based on examples_iav/dni_cc.in; only the first JPSET is changed.
+# ----------------------------------------------------------------------------
+ &SYSTEM  Zv=0. Av=1.0087   sn=0.0
+          Zc=1. Ac=1.0078  /
+
+ &corestates spin=0.0 parity=+1 ex=0.0 /
+ &corestates /
+
+ &output wfout(:)=1   xcdcc=F verb=2 solapout(:)=0  cdccwf=F  /
+
+ &GRID  rmin=0.0 rmax=60.0 dr=0.05 rlast=60 /
+
+# p-n potential
+ &POTENTIAL ptype=3 ap=1 at=0
+   vl0(0:2)=-72.150 -38.150 -72.150
+   r0=0   a0=1.484  /
+
+  &potential ptype=0 /
+
+ &pauli n=0 /
+
+! --- Ground state via R-matrix (bastype=8) ---
+!     nodes=0  : deuteron ground state (no nodes)
+!     changepot=F : search in energy (THETA=1/fconv, P=egs)
+  &JPSET bastype=8 JTOT=0.0 PARITY=1 lmax=0 nodes=0 changepot=F /
+ &JPSET /
+
+ &SCATWF ifcont=F /
+
+ &belambda  ifbel=f /
+
+############################    REACTION       ####################################
+&reaction elab=80   namep='d' mp=2.014 mt=58 namet='58Ni' zt=28 jt=0.0 /
+
+&TRANS skip=T /
+
+&coupling qcmax=0  ncoul=0  lamax=2 /
+
+&grid nquad=60  radmax=100.d0 rstep=0.2 rmax=60 rextrap=0 rvecin=0.1d0 drvec=0.025d0 hin=0.1 /
+
+&corepotential  ptype=0 /
+&valencepotential ptype=0 /
+
+&numerov hcm=0.05 rmaxcc=60  hort=0 method=4 jtmin=0 jtmax=0 skip=T /
+
+&xsections thmin=0.1 thmax=179.1 dth=0.5 doublexs=f triplexs=F /

@@ -53,7 +53,7 @@ c     -----------------------------------------------------------------------
         if (allocated(wfpau)) deallocate(wfpau)
         allocate(wfpau(nr))
       endif
-
+      if (allocated(ccmat)) deallocate(ccmat)
       allocate (ccmat(nchan,nchan,nr))
       ccmat(1:nchan,1:nchan,1:nr)=0d0
       fact=hc*hc/2d0/mu12

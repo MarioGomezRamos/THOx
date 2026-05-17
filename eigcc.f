@@ -226,7 +226,7 @@ c *** ----------------------------------------------
         r=rmin+dr*dble(ir-1)
         if (r> rlast) cycle
 !        write(100+i,'(1f8.3,2x,10g14.6)') r,(r*wfeig(i,m,ir),m=1,nchan)   
-        write(101,'(1f8.3,2x,10f14.6)') r,
+        write(101,'(1f8.3,2x,10g14.6)') r,
      &   (dble(wfc(nset,1,m,ir)),m=1,nchan)   
         
 !        write(200+i,'(1f8.3,2x,10g14.6)') r,(vertex(m,ir),m=1,nchan)

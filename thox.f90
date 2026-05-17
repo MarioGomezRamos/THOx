@@ -236,8 +236,13 @@
       case(5) ! External   
        call readwfs(filename,nset,nchan)
 
-      case(6) ! Eigcc   
+      case(6) ! Eigcc (matching-method)
        call pre_eigcc(nset,nchan,nodes,changepot)
+
+
+      case(8) ! R-matrix bound state (Hesse et al. NPA 640, 1998)
+      write(*,*)'THIS OPTION IS IN PROGRESS!'
+       call pre_eigcc_rmat(nset,nchan,nodes,changepot)
 
       end select 
       
@@ -468,7 +473,7 @@
       real*8:: exmin,exmax,j,jtold,rmin,rmax,dr,rlast,rint
       real*8:: bosc,gamma,kband,wcut(1:maxchan),vscale,r1,rnmax,st
       integer:: ichsp,ic,iset,nchsp,nfmax,nho,parity
-      integer:: nk,nbins,inc,nodes
+      integer:: nk,nbins,inc,nodes,nlag
       logical changepot,lscoupl
       character*40 filewf
 
@@ -482,7 +487,7 @@
      &                bas2,                                             &
      &                nk, nbins,energy,inc,tres,ehat,filewf,wcut,merge, &
      &                vscale,                                           &
-     &                r1,rnmax,nodes,changepot,st,lscoupl ! CG Basis 
+     &                r1,rnmax,nodes,changepot,nlag,st,lscoupl ! CG Basis 
 
       
       jpsets=0; inpsets=0

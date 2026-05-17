@@ -118,7 +118,7 @@ c     --------------------------------------------------------------------------
       endif
         
 c     ------------------------------ GS WF  -----------------------------------
-      write(*,'("- Calculating B(E",i1,"; gs->n)")')lambda
+      write(*,'("o B(E",i1,"; gs->n) for PSs")')lambda
       write(95,'("#Calculating B(E",i1,"; gs->set ",i2,")")')lambda,jset
       write(96,'("#Calculating B(E",i1,"; gs->set ",i2,")")')lambda,jset
 
@@ -143,7 +143,7 @@ c     ------------------------------ GS WF  -----------------------------------
       
       if (abs(engs).lt.1e-6)  engs=energ(jseti,ni)
       
-      write(*,'(2x,"Initial state:",/, 5x,"Jset=",i3,3x, "J/pi=",a5,  
+      write(*,'(3x,"Initial state:",/, 5x,"Jset=",i3,3x, "J/pi=",a5,  
      & 3x,"Nb. chans:",i2,3x,"Energy:",1f8.3, "MeV")')
      &  jseti,jpi(jtoti,partoti),ncni,engs
 !
@@ -158,7 +158,7 @@ c     ------------------------------ GS WF  -----------------------------------
         enddo !ir
         write(*,'(5x,"[ Norm=",1f10.5,"]")') aux
       else !....................................EXTERNAL GS WF (ASSUMED REAL!!!!!)
-      write(*,'(2x,"Initial WF from file: ",a)') uwfgsfile
+      write(*,'(3x,"Initial WF from file: ",a)') uwfgsfile
       open(20,file=uwfgsfile)
       read(20,246)ncni,eneri
       allocate(ugs(nr,ncni))
@@ -226,7 +226,7 @@ c     Select FINAL j/pi set and check triangularity condition -----------------.
       jtot  =jpiset(jset)%jtot
       nex   =jpiset(jset)%nex
       nchan =jpiset(jset)%nchan
-      write(*,'(2x,"Final states:",/, 5x,"Jset=",i3,3x, "J/pi=",a5,  
+      write(*,'(2x,"Final state(s):",/, 5x,"Jset=",i3,3x, "J/pi=",a5,  
      & 3x,"Nb. chans:",i2,3x,"Nb. states:",i3)')
      &  jset,jpi(jtot,partot),nchan,nex
 !     & ' chans:',nchan,' nex=',nex
@@ -255,12 +255,12 @@ c     Select FINAL j/pi set and check triangularity condition -----------------.
       
      
       if (partoti*partot.ne.(-1)**lambda) then
-         write(*,'("!! B(E",i2,") does not satisfy parity")')lambda
+         write(*,'("ERROR: B(E",i2,") does not satisfy parity!")')lambda
          stop
       endif
       lambdar=lambda
       if (fail3(jtoti,lambdar,jtot)) then
-        write(*,'("!! B(E",i2,") does not couple this Js")')lambda
+        write(*,'("ERROR: B(E",i2,") does not couple this J!")')lambda
         stop
       endif
 c     --------------------------------------------------------------------------
@@ -482,16 +482,17 @@ c        written(95)=.true.
         write(*,*)'- From Pseudo-States:'
         write(*,'(30x,"Total BE=",1f10.6," e2.fm",i1)')besum,2*lambda
         write(*,*)'- From Sum Rule: (only for SP excitation!)'
-        write(*,'(1x,"- Polarizability=",1f10.6," fm^3")') apol
         call sumrule(qlr)
         write(*,'(30x,"Total BE=",1f10.6," e2.fm",i1)')besr,2*lambda 
+        write(*,'(30x,"- Polarizability=",1f10.6," fm^3")') apol
 !        write(*,*)"(** sum rule only intended for sp excitations)"
 
 
 c------------------------------------------------
 c B(Elambda) from scattering states (version by AMM)
 c------------------------------------------------ 
-      write(*,*)'Computation of B(Elambda) from scattering states:'
+      write(*,*)
+      write(*,*)'B(Elambda) for scattering states:'
       apol=0.0
       written(96)=.true.
       rm=av*ac/(av+ac)
@@ -716,6 +717,7 @@ c ----------------------------------------------------------------------------
         enddo ! ik
         write(*,'(3x, "For inc chan=",i3," B(El)=",1f8.3)') iil,besum
         write(96,*)'&'
+        write(98,*)'&'
         enddo ! iil
         write(*,*)'- From Continuum wfs:'
         write(*,'(30x,"Total BE=",1f10.6," e^2 fm^",i1)')besum,2*lambda

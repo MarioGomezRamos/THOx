@@ -45,7 +45,7 @@ OBJ=modules.o coul90.o precision.o gpu_solver_interface.o rmat_solvers.o rmatrix
      continuum.o belam.o bmlam.o ham.o  transition_targdef.o\
         transition.o transition_omp.o  clebsg.o  projpot.o fragpot.o xsections_alpha_1d.o \
         rmatel.o solvecc.o rmatrix.o ccbins.o xsections.o xsections_alpha.o rsc.o\
-	bincc2.o ceigen.o readwf.o  thox.o eigcc.o
+	bincc2.o ceigen.o readwf.o  thox.o eigcc.o eigcc_rmat.o
 
 # Add CUDA object if GPU enabled, otherwise use stub
 ifeq ($(GPU_ENABLED),true)
@@ -162,6 +162,8 @@ writecdccwf.o:writecdccwf.f
 	$(FC) $(FFLAGS) -c writecdccwf.f
 eigcc.o:eigcc.f modules.f90
 	$(FC) $(FFLAGS1) -c eigcc.f
+eigcc_rmat.o:eigcc_rmat.f90 modules.f90 rmatrix.o
+	$(FC) $(FFLAGS_FREE) -c eigcc_rmat.f90
 rsc.o:rsc.f90
 	$(FC) $(FFLAGS) -c rsc.f90
 
