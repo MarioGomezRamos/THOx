@@ -195,7 +195,7 @@ c     ------------------------------ GS WF  -----------------------------------
         aux=aux+ugs(ir,ich)**2*dr
         enddo !ich
         enddo !ir
-        write(*,'(5x,"[ Norm=",1f10.5,"]")'),aux
+        write(*,'(5x,"[ Norm=",1f10.5,"]")')aux
       else !....................................EXTERNAL GS WF (ASSUMED REAL!!!!!)
       write(*,'(2x,"Initial WF from file: ",a)') uwfgsfile
       open(20,file=uwfgsfile)

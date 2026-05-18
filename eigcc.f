@@ -299,7 +299,7 @@ C     IF(NP.GT.MAXN.OR.NR.GT.MM2) STOP 101
       IF(NP.GT.MAXN.OR.NR.GT.MM2) CALL ABEND(8)
       IF(PCON.GE.3) WRITE(KO,207) NODES,MC
   207 FORMAT(/'    Parameters      Mismatch   Nodes ->',I2,' in ch',i3/)
-102   DO 21 J=1,M
+102   DO J=1,M
       CENT(J) = Ql(J) * (Ql(J)+1)
       K = SQRT(ABS(KAP2(J) + THETA*P)) * AB
 !      write(*,*) 'K',k
@@ -309,7 +309,8 @@ C     IF(NP.GT.MAXN.OR.NR.GT.MM2) STOP 101
       CALL WHIT(ETA,RN+H,K,E,L,WL,WLD,IE)
       COUTP(J) = WL(L+1)
       CALL WHIT(ETA,RN,K,E,L,WL,WLD,IE)
-21    COUT(J) = WL(L+1)
+      COUT(J) = WL(L+1)
+      ENDDO
       I   =(NP + 1) *3/4
          IMAX = NP/2
          DEL = -SQRT(FPMAX)
@@ -341,113 +342,130 @@ C     IF(NP.GT.MAXN.OR.NR.GT.MM2) STOP 101
       else
       write(*,*) 'p= 2mu/hbar2*(V-Vmod)',p
       endif
-      DO 30 J=1,M
-      DO 25 IT=1,M
+      DO J=1,M
+      DO IT=1,M
       ZM(IT,J) = 0.0
-25    ZI(IT,J) = 0.0
+      ZI(IT,J) = 0.0
+      ENDDO
       ZM(J,J) = COUTP(J)
-30    ZI(J,J) = COUT(J)
+      ZI(J,J) = COUT(J)
+      ENDDO
 C
 C      outer integration,  zi from np to map
       NT = -1
       NF = NP
       NO = NT * (MAP-NP) + 1
-40    DO 60 III=1,NO
+40    DO III=1,NO
          I = NF + (III-1)*NT
          II= (I + MIN0(NT,0)) + 1
          RRI= 1.0/(II-1.)**2
-      DO 42 IT=1,M
-      DO 42 J=1,M
-42    F(I,J,IT) = ZI(IT,J) * (1. + CENT(J)*RRI*R12 )
-       DO 45 J=1,M
-       DO 45 L=1,M
-         C = 0.0
-            T = CCMAT(L,J,II)
-            if (abs(theta).lt.1e-5 .and. L.eq.mc .and. j.eq.mc) then
-!            if (ii.eq.11) write(*,*)'P',p,pot(II),ii,t
-             T= T+P*pot(II)
-            endif
-         C = C + T 
-425      CONTINUE
-         IF(L.EQ.J) C = C - KAP2(J) - THETA * P
-       COUPL(L,J) = C
-       IF(C.EQ.0) GO TO 44
-       C = C * HP12
-          DO 43 IT=1,M
-43         F(I,L,IT) = F(I,L,IT) - C * ZI(IT,J)
-44    CONTINUE
-45    CONTINUE
-      DO 49 IT=1,M
-         DO 49 L=1,M
-49       MAT(IT,L) = 0.0
-      DO 54 L=1,M
-      DO 54 J=1,M
-      C = COUPL(L,J)
-      IF(C.EQ.0.0) GO TO 54
-      C = C * HP
-      DO 53 IT=1,M
-53      MAT(IT,L) = MAT(IT,L) + C * F(I,J,IT)
-!        write(*,*) 'IT',IT, 'count',count,'C',c,'F',F(I,:,:)
-!53      write(*,*) 'IT',IT, 'count',count,'MAT',mat
-54    CONTINUE
-      DO 55 J=1,M
-      DO 55 IT=1,M
-      ZP(IT,J) = 2*ZI(IT,J) - ZM(IT,J) - MAT(IT,J)
+         DO IT=1,M
+            DO J=1,M
+               F(I,J,IT) = ZI(IT,J) * (1. + CENT(J)*RRI*R12 )
+            ENDDO
+         ENDDO
+         DO J=1,M
+            DO L=1,M
+               C = 0.0
+               T = CCMAT(L,J,II)
+               if (abs(theta).lt.1e-5 .and. L.eq.mc .and. j.eq.mc) then
+                  T= T+P*pot(II)
+               endif
+               C = C + T 
+               IF(L.EQ.J) C = C - KAP2(J) - THETA * P
+               COUPL(L,J) = C
+               IF(C.NE.0.0) THEN
+                  C = C * HP12
+                  DO IT=1,M
+                     F(I,L,IT) = F(I,L,IT) - C * ZI(IT,J)
+                  ENDDO
+               ENDIF
+            ENDDO
+         ENDDO
+         DO IT=1,M
+            DO L=1,M
+               MAT(IT,L) = 0.0
+            ENDDO
+         ENDDO
+         DO L=1,M
+            DO J=1,M
+               C = COUPL(L,J)
+               IF(C.NE.0.0) THEN
+                  C = C * HP
+                  DO IT=1,M
+                     MAT(IT,L) = MAT(IT,L) + C * F(I,J,IT)
+                  ENDDO
+               ENDIF
+            ENDDO
+         ENDDO
+         DO J=1,M
+            DO IT=1,M
+               ZP(IT,J) = 2*ZI(IT,J) - ZM(IT,J) - MAT(IT,J)
      &                      + F(I,J,IT) * CENT(J) * RRI
-      ZM(IT,J) = ZI(IT,J)
-55    ZI(IT,J) = ZP(IT,J)
+               ZM(IT,J) = ZI(IT,J)
+               ZI(IT,J) = ZP(IT,J)
+            ENDDO
+         ENDDO
 C                              now check for incipient overflows:
-      DO 59 IT=1,M
-      C = 0.
-      DO 57 J=1,M
-57    C = MAX(C,ABS(F(I,J,IT)))
-      IF(C .LT. FPMAX) GO TO 59
-      C = SMALLR
-      DO 58 J=1,M
-         ZI(IT,J) = ZI(IT,J) * C
-         ZM(IT,J) = ZM(IT,J) * C
-         DO 58 L=1,III
-            I = NF + (L-1)*NT
-58       F(I,J,IT) = F(I,J,IT) * C
-59    CONTINUE
-!      write(777,*) I,dble(ZI)
-60    CONTINUE
+         DO IT=1,M
+            C = 0.
+            DO J=1,M
+               C = MAX(C,ABS(F(I,J,IT)))
+            ENDDO
+            IF(C .LT. FPMAX) THEN
+               CYCLE
+            ENDIF
+            C = SMALLR
+            DO J=1,M
+               ZI(IT,J) = ZI(IT,J) * C
+               ZM(IT,J) = ZM(IT,J) * C
+               DO L=1,III
+                  I = NF + (L-1)*NT
+                  F(I,J,IT) = F(I,J,IT) * C
+               ENDDO
+            ENDDO
+         ENDDO
+      ENDDO
 !      write(777,*)
 !      write(777,*)
 C
       NT = -NT
       IF(NT.LE.0) GO TO 3
-      DO 65 J=1,M
-      DO 64 IT=1,M
+      DO J=1,M
+      DO IT=1,M
       ZM(IT,J) = 0.0
-64    ZI(IT,J) = 0.0
-65    ZI(J,J) = 1E-10 * H**(Ql(J)+1) / EXP(0.5 * FACT(Ql(J)+1))
+      ZI(IT,J) = 0.0
+      ENDDO
+      ZI(J,J) = 1E-10 * H**(Ql(J)+1) / EXP(0.5 * FACT(Ql(J)+1))
+      ENDDO
 C      inner integration,  zi from 1 to mam
       NF = 1
       NO = NT * (MAM-1) + 1
       GO TO 40
 3     COUNT = COUNT + 1
 C   now calc. derivatives at matching pt. inner(zm) & outer(zp)
-      DO 80 J=1,M
+      DO J=1,M
          MAT(J,NR) = 0.0
          MAT(J+M,NR) = 0.0
-      DO 75 IT=1,M
+         DO IT=1,M
       DEL =147.0*F(MAM,J,IT)-360.0*F(MAM-1,J,IT)+450.0*F(MAM-2,J,IT)
      1 -400.0*F(MAM-3,J,IT)+225.0*F(MAM-4,J,IT)
      2 -72*F(MAM-5,J,IT)+10.0*F(MAM-6,J,IT)
-      ZM(IT,J) = 1  * DEL / (60.0 * H)
+            ZM(IT,J) = 1  * DEL / (60.0 * H)
       DEL =147.0*F(MAP,J,IT)-360.0*F(MAP+1,J,IT)+450.0*F(MAP+2,J,IT)
      1 -400.0*F(MAP+3,J,IT)+225.0*F(MAP+4,J,IT)
      2 -72*F(MAP+5,J,IT)+10.0*F(MAP+6,J,IT)
-      ZP(IT,J) =(-1)* DEL / (60.0 * H)
+            ZP(IT,J) =(-1)* DEL / (60.0 * H)
 !      WRITE(KO,*) j,it,zm(it,j)/f(mam,j,it)-zp(it,j)/f(map,j,it)
-      MAT(J,IT) = F(MAM,J,IT)
-      MAT(J,IT+M) = -F(MAP,J,IT)
-      MAT(J+M,IT) = ZM(IT,J)
-75    MAT(J+M,IT+M) = - ZP(IT,J)
-80    CONTINUE
-      DO 78 IT=1,MM2
-78    MAT(M+MC,IT) = 0.0
+            MAT(J,IT) = F(MAM,J,IT)
+            MAT(J,IT+M) = -F(MAP,J,IT)
+            MAT(J+M,IT) = ZM(IT,J)
+            MAT(J+M,IT+M) = - ZP(IT,J)
+         ENDDO
+      ENDDO
+      DO IT=1,MM2
+         MAT(M+MC,IT) = 0.0
+      ENDDO
       MAT(M+MC,M+MC) = 1.0
       MAT(M+MC,NR)  = 1.0
 c     do 81 j=1,nr
@@ -456,15 +474,19 @@ c81        continue
        RMAT=dble(MAT)
        CALL GAUSSr(2*M,MM2,RMAT,SING,DET,SMALL,.false.)
        IF(SING) GO TO 200
-       DO 88 L=1,M
+       DO L=1,M
           DO I=1,NP
           PSI(I,L) = 0.0
           enddo
-       DO 88 IT=1,M
-       DO 87 I=2,MAM
-87     PSI(I,L) = PSI(I,L) + F(I-1,L,IT) * RMAT(IT,NR)
-       DO 88 I=MAP,NP
-88     PSI(I,L) = PSI(I,L) + F(I,L,IT) * RMAT(IT+M,NR)
+          DO IT=1,M
+             DO I=2,MAM
+                PSI(I,L) = PSI(I,L) + F(I-1,L,IT) * RMAT(IT,NR)
+             ENDDO
+             DO I=MAP,NP
+                PSI(I,L) = PSI(I,L) + F(I,L,IT) * RMAT(IT+M,NR)
+             ENDDO
+          ENDDO
+       ENDDO
        DERIN = 0.0
        DEROUT= 0.0
        DO 90 IT=1,M
@@ -472,34 +494,39 @@ c81        continue
        DEROUT= DEROUT+ dble(ZP(IT,MC)) * RMAT(IT+M,NR)
 90     CONTINUE
        NCO = 1
-       DO 91 I=3,NP
+       DO I=3,NP
 C 91     IF(PSI(I,MC)*PSI(I-1,MC).LT.0.) NCO = NCO + 1
        IF(dble(PSI(I,MC)).GT.0 .AND. dble(PSI(I-1,MC)).LT.0.) NCO=NCO+1
-91     IF(dble(PSI(I,MC)).LT.0 .AND. dble(PSI(I-1,MC)).GT.0.) NCO=NCO+1
+       IF(dble(PSI(I,MC)).LT.0 .AND. dble(PSI(I-1,MC)).GT.0.) NCO=NCO+1
+       ENDDO
        DEN = 0.0
-       DO  96 J=1,M
-       DO  96 L=1,M
-       if (abs(theta).lt.1e-5) then
+       DO J=1,M
+          DO L=1,M
+             if (abs(theta).lt.1e-5) then
 !       write(*,*) 'np',np
-       DO 92 IMAX=NP,1,-1
-!            write(*,*) imax   ,pot(imax), PSI(IMAX,L)  
-92          IF(ABS(pot(imax)).GT.SMALLR .AND.
-     X         ABS(PSI(IMAX,L)).GT.SMALLQ) GO TO 925
-925         DO  93 I=2,IMAX
+                DO IMAX=NP,1,-1
+                   IF(ABS(pot(imax)).GT.SMALLR .AND.
+     X                ABS(PSI(IMAX,L)).GT.SMALLQ) GO TO 925
+                ENDDO
+925             DO I=2,IMAX
 !            write(778,*) I,dble(CCMAT(J,L,I))
-        if (j.eq.mc .and. l.eq.mc) then
+                   if (j.eq.mc .and. l.eq.mc) then
 !           write(*,*)'i,j',i,j,pot(i),psi(i,j)
-           DEN = DEN + dble(PSI(I,J))*pot(i)*dble(PSI(I,L))
-        endif
-93      continue
+                      DEN = DEN + dble(PSI(I,J))*pot(i)*dble(PSI(I,L))
+                   endif
+                ENDDO
 !        write(*,*) den,imax  ,smallr,smallq ,pot(imax+1), PSI(IMAX+2,L)    
 !         write(778,*)
 !         write(778,*)
-       endif
-         IF(THETA.EQ.0.0 .OR. J.NE.L) GO TO 96
-         DO 95 I=2,NP
-95       DEN = DEN - dble(PSI(I,J))*THETA*dble(PSI(I,L))
-96    CONTINUE
+             endif
+             IF(THETA.EQ.0.0 .OR. J.NE.L) then
+                cycle
+             endif
+             DO I=2,NP
+                DEN = DEN - dble(PSI(I,J))*THETA*dble(PSI(I,L))
+             ENDDO
+          ENDDO
+       ENDDO
        DEL =(dble(DEROUT) - dble(DERIN)) / dble(PSI(MAP,MC))
        IF(PCON.GE.3) WRITE(KO,217) P,DEL,NCO,MAM
 C 217    format(e14.6,e15.3,i6)
@@ -535,21 +562,26 @@ C 217    format(e14.6,e15.3,i6)
       P = P + 0.5*Q
       GO TO 99
 7     Q = 0.0
-      DO 700 J=1,M
-      DO 700 I=1,NP
-700   Q = Q + PSI(I,J)**2
-         PIC = 1.0
+      DO J=1,M
+         DO I=1,NP
+            Q = Q + PSI(I,J)**2
+         ENDDO
+      ENDDO
+      PIC = 1.0
       Q = SIGN(PIC,dble(PSI(3,MC))) / SQRT(Q * H)
-      DO 710 J=1,M
-      DO 710 I=1,NP
-710   PSI(I,J) = PSI(I,J) * Q
+      DO J=1,M
+         DO I=1,NP
+            PSI(I,J) = PSI(I,J) * Q
+         ENDDO
+      ENDDO
       IF(PCON.EQ.0) RETURN
       IF(MOD(PCON,2).EQ.0)      RETURN
-      DO 996 J=1,M
+      DO J=1,M
 !      WRITE(KO,992) J,Ql(J),0.0,0
 !  992 FORMAT(/' For Channel #',I3,' with l =',I2,',  j =',F5.1,
 !     &  ', around core state #',I3,             //,'   R    Y(R)')
-  996 WRITE(KO,998) ((I-1)*H,PSI(I,J),I=1,NP,MR)
+         WRITE(KO,998) ((I-1)*H,PSI(I,J),I=1,NP,MR)
+      ENDDO
   998 FORMAT(6(1X,0P,F6.2,2X,1P,E11.4,', '))
       RETURN
 200   IFAIL = 1
@@ -582,29 +614,35 @@ c	use io
 C      DO 201 I=1,N
 C201   IF(SHOW) WRITE(KO,402) (            A(I,J)  ,J=1,NPM)
       DET = 1
-      DO 9 K = 1, N
-      DET = DET * A(K,K)
-      IF (ABS (A(K,K)) .GT. EPS ) GO TO 5
+      DO K = 1, N
+         DET = DET * A(K,K)
+         IF (ABS (A(K,K)) .GT. EPS ) GO TO 5
          SING = .TRUE.
          WRITE(KO,3) K,DET
     3    FORMAT(//' THE MATRIX IS SINGULAR AT',I3,'  determinant is ',
      &  E16.8/)
-      DO 401 I=1,N
-401   IF(SHOW) WRITE(KO,402) (            A(I,J)  ,J=1,NPM)
+         DO I=1,N
+            IF(SHOW) WRITE(KO,402) (            A(I,J)  ,J=1,NPM)
+         ENDDO
 402   FORMAT( 1X,20F6.3/(1X,20F6.3))
          RETURN
-    5 KP1 = K + 1
+    5    KP1 = K + 1
          RA = 1.0/A(K,K)
-      DO 6 J = KP1, NPM
-    6 A(K,J) = A(K,J) * RA
-      A(K,K) = 1
-      DO 9 I = 1, N
-      IF (I .EQ. K  .OR. ABS (A(I,K)) .EQ. 0) GO TO 9
+         DO J = KP1, NPM
+            A(K,J) = A(K,J) * RA
+         ENDDO
+         A(K,K) = 1
+         DO I = 1, N
+            IF (I .EQ. K  .OR. ABS (A(I,K)) .EQ. 0) THEN
+               CYCLE
+            ENDIF
 Cdir$ ivdep
-         DO 8 J = KP1, NPM
-    8    A(I,J) = A(I,J) - A(I,K)*A(K,J)
-         A(I,K) = 0
-    9 CONTINUE
+            DO J = KP1, NPM
+               A(I,J) = A(I,J) - A(I,K)*A(K,J)
+            ENDDO
+            A(I,K) = 0
+         ENDDO
+      ENDDO
       IF(SHOW) WRITE(KO,15 ) DET
 15    FORMAT(/' The determinant is ',E16.8)
       RETURN

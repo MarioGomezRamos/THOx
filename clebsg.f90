@@ -139,7 +139,13 @@ C
 	X=1.0d0/(H(MM1)*H(MM2)*H(MM3)*H(MM4)*H(MM5)*H(N5+1))
 	IX=-J(MM1)-J(MM2)-J(MM3)-J(MM4)-J(MM5)-J(N5+1)
 C
-  800 IF(IX+IY)900,210,110
+  800 if(ix+iy.lt.0) then
+         goto 900
+      else if(ix+iy.eq.0) then
+         goto 210
+      else
+         goto 110
+      endif
   900 X=X/ten
 	IX=IX+1
 	GOTO 800
@@ -153,7 +159,13 @@ C*UL  510 N5PAR=-N5PAR
 	N5PAR=-N5PAR
 	N5=N5+1
 C
-  610 IF(N5-N4)700,700,810
+  610 if(n5-n4.lt.0) then
+         goto 700
+      else if(n5-n4.eq.0) then
+         goto 700
+      else
+         goto 810
+      endif
 C
  710  CLEBSH=0.0d0
 	IERR=1
@@ -278,7 +290,13 @@ C
      X *H(M5-N5)*H(N5-M6)*H(N5-M7))
 	IX=J(M1-N5)-J(N5+1)-J(M2-N5)-J(M3-N5)-J(M4-N5)
      X -J(M5-N5)-J(N5-M6)-J(N5-M7)
-  240 IF(IX+IYY)340,440,540
+  240 if(ix+iyy.lt.0) then
+         goto 340
+      else if(ix+iyy.eq.0) then
+         goto 440
+      else
+         goto 540
+      endif
   340 X=X/ten
 	IX=IX+1
 	GOTO 240

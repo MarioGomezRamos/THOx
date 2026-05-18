@@ -708,24 +708,29 @@
 ! initialise
       
       rsp = 1.0/sqrt(pi)
-      do 2 i=1,4
-      sp(5+i) =-sp(5-i)
-2     w(5+i)  = w(5-i)
-      do 15 k=0,qmax
-15    c(k) = sqrt((2.*k+1.)/4.)
+      do i=1,4
+         sp(5+i) =-sp(5-i)
+         w(5+i)  = w(5-i)
+      enddo
+      do k=0,qmax
+         c(k) = sqrt((2.*k+1.)/4.)
+      enddo
 !	write(10,*) 'potdef initialised for qmax =',qmax
 !      endif
-      do 18 k=0,qmax
-18    vdef(k) = 0.
+      do k=0,qmax
+         vdef(k) = 0.
+      enddo
          pl(0) = 1.
-      do 50 nu=1,9
+      do nu=1,9
          u = sp(nu)
          pl(1) = u
-         do 20 k=2,qmax
-20       pl(k) = ((2*k-1)*u*pl(k-1) - (k-1)*pl(k-2))/dble(k)
+         do k=2,qmax
+            pl(k) = ((2*k-1)*u*pl(k-1) - (k-1)*pl(k-2))/dble(k)
+         enddo
       sh  = 0.0
-      do 25 k=2,qmax
-25       sh = sh + c(k)*rsp * pl(k) * def(k)
+      do k=2,qmax
+         sh = sh + c(k)*rsp * pl(k) * def(k)
+      enddo
          r = rnc - sh
          vcr=0d0
          if(r.le.rvec(nr)) then 
@@ -737,15 +742,15 @@
 !         p1=ws(r,-56.00d0,2.483d0,0.65d0)
 !         write(97,*) r,vcr,p1
 !!!! 
-	 do 40 k=0,qmax
+	 do k=0,qmax
 !	    if(k.ge.2) then
 !	    	if(def(k).eq.0d0) go to 40
 !	    endif
             cns = w(nu) * pl(k) * c(k)
 !          vdef(k)=vdef(k) + cns * vc(l,r,ib)
           vdef(k)=vdef(k) + cns * vcr
-40      continue
-50      continue
+         enddo
+      enddo
 !c       vdefr=vdef(qmax)
 	return
       end

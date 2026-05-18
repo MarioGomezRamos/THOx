@@ -31,7 +31,11 @@ C              NOW L = NO. OF VALUES TO FIND
       LP1=L+1
       RHO=AK*R
 	S(:) = 0
-      IF(L-50)1,1,2
+      IF(L.LE.50) THEN
+         goto 1
+      ELSE
+         goto 2
+      ENDIF
     1 LM=60
       GO TO 3
     2 LM=L+10
@@ -41,17 +45,33 @@ C              NOW L = NO. OF VALUES TO FIND
       H=max(INT(PJE),4)
       H=RHO/H
       RHOA=10.0*(ETA+1.0)
-      IF(RHOA-RHO)13,13,14
+      IF(RHOA.LE.RHO) THEN
+         goto 13
+      ELSE
+         goto 14
+      ENDIF
    13 IFEQL=1
       RHOA=RHO
       GO TO 15
    14 IFEQL=0
    15 PJE=RHOA/H+0.5
       RHOA=H*INT(PJE)
-      IF(IFEQL)16,16,18
-   16 IF(RHOA-RHO-1.5*H)17,18,18
+      IF(IFEQL.LE.0) THEN
+         goto 16
+      ELSE
+         goto 18
+      ENDIF
+   16 IF(RHOA-RHO.LT.1.5*H) THEN
+         goto 17
+      ELSE
+         goto 18
+      ENDIF
    17 RHOA=RHO+2.0*H
-   18 IF(EE)55,55,19
+   18 IF(EE.LE.0.0) THEN
+         goto 55
+      ELSE
+         goto 19
+      ENDIF
    19 STOP 'WHIT'
    27 A=2.0-10.0/12.0*H*H*EE
       B=1.0/6.0*H*ETA
@@ -70,9 +90,13 @@ C              NOW L = NO. OF VALUES TO FIND
       T(3)=B/FLOAT(JS-1)
       S(7)=((A+10.0*T(2))*S(6)-(C-T(1))*S(5))/(C-T(3))
       JS=JS-1
-      IF(ABS(S(7)).LE.FPMAX) GO TO 29
-       DO 285 I=2,7
-  285   S(I) = S(I) / FPMAX
+      IF(ABS(S(7)).LE.FPMAX) THEN
+         CONTINUE
+      ELSE
+        DO I=2,7
+           S(I) = S(I) / FPMAX
+        END DO
+      ENDIF
    29 CONTINUE
       T(1)=S(4)
       T(2)=(1.0/60.0*(S(1)-S(7))+0.15*(S(6)-S(2))+0.75*(S(3)-S(5)))/H
@@ -96,9 +120,17 @@ C              NOW L = NO. OF VALUES TO FIND
       F(1)=A*F(1)
 c      FD(1)=A*FD(1)
       FD(1)=A*FD(1) * (-1d0 - 2*ETA/(RHOA))
-      IF(IFEQL)57,57,61
+      IF(IFEQL.LE.0) THEN
+         goto 57
+      ELSE
+         goto 61
+      ENDIF
    57 S(IS)=F(1)
-      IF(IS-7)27,58,27
+      IF(IS.NE.7) THEN
+         goto 27
+      ELSE
+         goto 58
+      ENDIF
    58 IS=6
       RHOA=RHOA+H
       GO TO 55
@@ -129,15 +161,17 @@ c      FD(1)=A*FD(1)
       ZP=Z**2
       V=(1.,0.)
       S=(0.,0.)
-      DO 1 J=1,6
-      S=V*A(J)+S
-    1 V=V*ZP
+      DO J=1,6
+         S=V*A(J)+S
+         V=V*ZP
+      END DO
       ZP=S*Z/V
       U=Z-(0.5,0.)
       CLGAMM = LOG(Z)*U-U+ZP+C
       IF(I.EQ.0)RETURN
-      DO 2 J=1,I
-      Z=Z-(1.,0.)
-    2 CLGAMM=CLGAMM - LOG(Z)
+      DO J=1,I
+         Z=Z-(1.,0.)
+         CLGAMM=CLGAMM - LOG(Z)
+      END DO
       RETURN
       END

@@ -27,8 +27,8 @@ c  the matrix elements of the kinetic energy and of the Bloch operator
 c  roots and weights of the Legendre quadrature
       call legzo(nr,xle,wle)
 c  matrix elements of the kinetic energy and of the Bloch operator
-      do 31 is=1,ns
-      do 30 i1=1,nr
+      do is=1,ns
+      do i1=1,nr
       xi=xle(i1)
       xi2=xi*(1-xi)
       if(is.eq.1)then
@@ -42,7 +42,7 @@ c  matrix elements of the kinetic energy and of the Bloch operator
       blo1(i1,i1)=(1-xi)/xi
       blo2(i1,i1)=xi/(1-xi)
       end if
-      do 30 i2=1,i1-1
+      do i2=1,i1-1
       xj=xle(i2)
       xj2=xj*(1-xj)
       if(is.eq.1)then
@@ -67,7 +67,8 @@ c  matrix elements of the kinetic energy and of the Bloch operator
       blo0(i2,i1)=blo0(i1,i2)
       blo1(i2,i1)=blo1(i1,i2)
       blo2(i2,i1)=blo2(i1,i2)
-   30 continue
+      end do
+      end do
       if(is.eq.1)then
       q2(:,1)=1/sqrt(xle(:)*(1-xle(:)))
       q1(:,1)=0
@@ -78,7 +79,7 @@ c  matrix elements of the kinetic energy and of the Bloch operator
       if(mod(nr,2).eq.1)q2(1:nr,is)=-q2(1:nr,is)
       q1(1:nr:2,is)=-q1(1:nr:2,is)
       q2(1:nr:2,is)=-q2(1:nr:2,is)
-   31 continue
+      end do
       tc=tc/rmax0**2
       blo0=blo0/rmax0
       blo1=blo1/rmax0
@@ -219,21 +220,22 @@ c Inverse of matrix C
       call cminv_sym(ch(1,1,is),ntot2,ntot2)
 c Calculation of the R matrix
       m1=0
-      do 15 i1=1,ntot
+      do i1=1,ntot
       m2=0
-      do 16 i2=1,ntot
+      do i2=1,ntot
       cx=0
-      do 17 ir1=1,nr
-      do 17 ir2=1,nr
+      do ir1=1,nr
+      do ir2=1,nr
       cx(1)=cx(1)+ch(m1+ir1,m2+ir2,is)*q2(ir1,is)*q2(ir2,is)
       cx(2)=cx(2)+ch(m1+ir1,m2+ir2,is)*q1(ir1,is)*q2(ir2,is)
       cx(3)=cx(3)+ch(m1+ir1,m2+ir2,is)*q1(ir1,is)*q1(ir2,is)
-   17 continue
+      end do
+      end do
       crma(i1,i2,:,is)=cx
       m2=m2+nr
-   16 continue
+      end do
       m1=m1+nr
-   15 continue
+      end do
       cz=crma(:,:,3,is)+crma0(:,:,is-1)*rmax1
       call cminv_sym(cz,ntot,ntot)
       crma0(:,:,is)=matmul(transpose(crma(:,:,2,is)),cz)
@@ -243,12 +245,13 @@ c Calculation of the R matrix
    21 continue
 
 c Calculation of matrices Z_I and Z_O
-      do 20 m1=1,nopen
+      do m1=1,nopen
       i1=npo(m1,1)
-      do 20 m2=1,nopen
+      do m2=1,nopen
       i2=npo(m2,1)
       crma2(m1,m2,1:ns)=crma0(i1,i2,1:ns)*sqrt(qk(i1)/qk(i2))
-   20 continue
+      end do
+      end do
       do 22 m1=1,nopen
       cz(1:nopen,m1)=-crma2(1:nopen,m1,ns)*cop(m1)
       cu(1:nopen,m1)=-crma2(1:nopen,m1,ns)*conjg(cop(m1))
@@ -281,20 +284,22 @@ c Loop over the entrance channels
   102 continue
       do 110 is=1,ns
       m1=0
-      do 111 i1=1,nch
-      do 111 ir1=1,nr
+      do i1=1,nch
+      do ir1=1,nr
       m1=m1+1
       cy=0
       m2=0
-      do 112 i2=1,nch
-      do 112 ir2=1,nr
+      do i2=1,nch
+      do ir2=1,nr
       m2=m2+1
       cy=cy+ch(m1,m2,is)*(q2(ir2,is)*cfp(i2,is)-
      1 q1(ir2,is)*cfp(i2,is-1)) 
-  112 continue
+      end do
+      end do
       mm1=(is-1)*nr+ir1
       cf(mm1,i1,ic)=cy
-  111 continue
+      end do
+      end do
   110 continue
 c Calculation of bound-state amplitudes
       do 120 m1=1,nclo
@@ -386,37 +391,41 @@ C Downloaded from http://jin.ece.illinois.edu/routines/routines.html
         DIMENSION X(N),W(N)
         data pi/3.1415926535898d0/,one/1/
         N0=(N+1)/2
-        DO 45 NR=1,N0
+        DO NR=1,N0
 c          Z=COS(pi*(NR-0.25D0)/N)
            Z=COS(pi*(NR-0.25D0)/(N+0.5d0))
 10         Z0=Z
            P=1
-           DO 15 I=1,NR-1
-15            P=P*(Z-X(I))
+           DO I=1,NR-1
+              P=P*(Z-X(I))
+           ENDDO
            F0=1
            IF (NR.EQ.N0.AND.N.NE.2*INT(N/2)) Z=0
            F1=Z
-           DO 20 K=2,N
+           DO K=2,N
               PF=(2-one/K)*Z*F1-(1-one/K)*F0
               PD=K*(F1-Z*PF)/(1-Z*Z)
               F0=F1
-20            F1=PF
+              F1=PF
+           ENDDO
            IF (Z.EQ.0) GO TO 40
            FD=PF/P
            Q=0
-           DO 35 I=1,NR-1
+           DO I=1,NR-1
               WP=1
-              DO 30 J=1,NR-1
+              DO J=1,NR-1
                  IF (J.NE.I) WP=WP*(Z-X(J))
-30            CONTINUE
-35            Q=Q+WP
+              ENDDO
+              Q=Q+WP
+           ENDDO
            GD=(PD-Q*FD)/P
            Z=Z-FD/GD
            IF (ABS(Z-Z0).GT.ABS(Z)*1.0D-15) GO TO 10
 40         X(NR)=Z
            X(N+1-NR)=-Z
            W(NR)=2/((1-Z*Z)*PD*PD)
-45         W(N+1-NR)=W(NR)
+           W(N+1-NR)=W(NR)
+        ENDDO
         x(1:n)=(1+x(n:1:-1))/2
         w(1:n)=w(n:1:-1)/2
         RETURN
@@ -550,7 +559,7 @@ C
       XL  = XLL
       RL  = ONE
       EL  = ZERO
-      DO 6  LP = 1,LXTRA
+      DO LP = 1,LXTRA
          IF(ETANE0) EL = ETA/XL
          IF(ETANE0) RL = DSQRT(ONE + EL*EL)
          SL    =  EL  + XL*XI
@@ -561,14 +570,16 @@ C
          FC(L) =  FCL
          IF(MODE .EQ. 1) FCP(L)  = FPL
          IF(MODE .NE. 3 .AND. ETANE0) GC(L+1) = RL
-	 if(abs(FCL).gt.BIG) then
-		do 55 LP1=L,M1+LXTRA
-      		IF(MODE .EQ. 1) FCP(LP1) = FCP(LP1)*1d-20
- 55                    		FC (LP1) = FC(LP1)*1d-20
-		FCL=FC(L)
-		FPL=FPL*1d-20
-		endif
-    6 XL = XL - ONE
+         if(abs(FCL).gt.BIG) then
+            do LP1=L,M1+LXTRA
+               IF(MODE .EQ. 1) FCP(LP1) = FCP(LP1)*1d-20
+               FC (LP1) = FC(LP1)*1d-20
+            enddo
+            FCL=FC(L)
+            FPL=FPL*1d-20
+         endif
+         XL = XL - ONE
+      ENDDO
       IF(FCL .EQ. ZERO) FCL = ACC
       F  = FPL/FCL
 C ***    NOW WE HAVE REACHED LAMBDA = XLMIN = XLM
@@ -650,21 +661,28 @@ C *** RENORMALISE FC,FCP AT EACH LAMBDA AND CORRECT REGULAR DERIVATIVE
 C ***    XL   = XLM HERE  AND RL = ONE , EL = ZERO FOR BESSELS
          W    = BETA*W/DABS(FCL)
          MAXL = L1 - 1
-      DO 12 L = M1,MAXL
-                      IF(MODE .EQ. 3)           GO TO 12
-                      XL = XL + ONE
+      DO L = M1,MAXL
+         IF(MODE .EQ. 3) THEN
+            FC(L+1) = W* FC(L+1)
+            CYCLE
+         ENDIF
+         XL = XL + ONE
          IF(ETANE0)   EL = ETA/XL
          IF(ETANE0)   RL = GC(L+1)
                       SL = EL + XL*XI
          GCL1     = ((SL - ALPHA)*GCL - GPL)/RL
-		IF(ABS(GCL1).gt.BIG) GO TO 140
+         IF(ABS(GCL1).gt.BIG) GO TO 140
          GPL      =   RL*GCL -  (SL + ALPHA)*GCL1
          GCL      = GCL1
          GC(L+1)  = GCL1
-                      IF(MODE .EQ. 2)           GO TO 12
+         IF(MODE .EQ. 2) THEN
+            FC(L+1) = W* FC(L+1)
+            CYCLE
+         ENDIF
          GCP(L+1) = GPL
          FCP(L+1) = W*(FCP(L+1) - ALPHA*FC(L+1))
-   12 FC(L+1)     = W* FC(L+1)
+         FC(L+1)  = W* FC(L+1)
+      ENDDO
       RETURN
 C
 C ***    ERROR MESSAGES
@@ -719,43 +737,49 @@ C        THE ROUTINE DOES ITS OWN EVALUATION FOR DOUBLE SUBSCRIPTING OF
 C        ARRAY A.
       IPIVC=1-KDIM
 C        MAIN LOOP TO INVERT THE MATRIX
-      DO 11 MAIN=1,N
+      DO MAIN=1,N
       PIVOT=0
       IPIVC=IPIVC+KDIM
 C        SEARCH FOR NEXT PIVOT IN COLUMN MAIN.
       IPIVC1=IPIVC+MAIN-1
       IPIVC2=IPIVC +NMIN1
-      DO 2 I1=IPIVC1,IPIVC2
-      IF(ABS(A(I1))-ABS(PIVOT)) 2,2,1
-    1 PIVOT=A(I1)
-      LPIV=I1
-    2 CONTINUE
+      DO I1=IPIVC1,IPIVC2
+         IF (ABS(A(I1)) .GT. ABS(PIVOT)) THEN
+            PIVOT=A(I1)
+            LPIV=I1
+         ENDIF
+      ENDDO
 C        IS PIVOT DIFFERENT FROM ZERO
       pivot2=pivot
-      IF(PIVOT2) 3,15,3
+      IF (pivot2 .EQ. 0.0) THEN
+         GO TO 15
+      ENDIF
 C        GET THE PIVOT-LINE INDICATOR AND SWAP LINES IF NECESSARY
     3 ICOL=LPIV-IPIVC+1
       INDE(MAIN)=ICOL
-      IF(ICOL-MAIN) 6,6,4
+      IF (ICOL .GT. MAIN) THEN
 C        COMPLEMENT THE DETERMINANT
-    4 DETER=-DETER
+         DETER=-DETER
 C        POINTER TO LINE PIVOT FOUND
-      ICOL=ICOL-KDIM
+         ICOL=ICOL-KDIM
 C        POINTER TO EXACT PIVOT LINE
-      I3=MAIN-KDIM
-      DO 5 I=1,IEMAT
-      ICOL=ICOL+KDIM
-      I3=I3+KDIM
-      SWAP=A(I3)
-      A(I3)=A(ICOL)
-    5 A(ICOL)=SWAP
+         I3=MAIN-KDIM
+         DO I=1,IEMAT
+            ICOL=ICOL+KDIM
+            I3=I3+KDIM
+            SWAP=A(I3)
+            A(I3)=A(ICOL)
+            A(ICOL)=SWAP
+         ENDDO
+      ENDIF
 C        COMPUTE DETERMINANT
     6 DETER=DETER*PIVOT
       PIVOT=1/PIVOT
 C        TRANSFORM PIVOT COLUMN
       I3=IPIVC+NMIN1
-      DO 7 I=IPIVC,I3
-    7 A(I)=-A(I)*PIVOT
+      DO I=IPIVC,I3
+         A(I)=-A(I)*PIVOT
+      ENDDO
       A(IPIVC1)=PIVOT
 C        PIVOT ELEMENT TRANSFORMED
 C
@@ -764,35 +788,39 @@ C        NOW CONVERT REST OF THE MATRIX
 C        POINTER TO PIVOT LINE ELEMENTS
       ICOL=1-KDIM
 C        GENERAL COLUMN POINTER
-      DO 10 I=1,IEMAT
-      ICOL=ICOL+KDIM
-      I1=I1+KDIM
+      DO I=1,IEMAT
+         ICOL=ICOL+KDIM
+         I1=I1+KDIM
 C        POINTERS MOVED
-      IF(I-MAIN) 8,10,8
+         IF (I .NE. MAIN) THEN
 C        PIVOT COLUMN EXCLUDED
-    8 JCOL=ICOL+NMIN1
-      SWAP=A(I1)
-      I3=IPIVC-1
-      DO 9 I2=ICOL,JCOL
-      I3=I3+1
-    9 A(I2)=A(I2)+SWAP*A(I3)
-      A(I1)=SWAP*PIVOT
-   10 CONTINUE
-   11 CONTINUE
+            JCOL=ICOL+NMIN1
+            SWAP=A(I1)
+            I3=IPIVC-1
+            DO I2=ICOL,JCOL
+               I3=I3+1
+               A(I2)=A(I2)+SWAP*A(I3)
+            ENDDO
+            A(I1)=SWAP*PIVOT
+         ENDIF
+      ENDDO
+      ENDDO
 C        NOW REARRANGE THE MATRIX TO GET RIGHT INVERS
-      DO 14 I1=1,N
-      MAIN=N+1-I1
-      LPIV=INDE(MAIN)
-      IF(LPIV-MAIN) 12,14,12
-   12 ICOL=(LPIV-1)*KDIM+1
-      JCOL=ICOL+NMIN1
-      IPIVC=(MAIN-1)*KDIM+1-ICOL
-      DO 13 I2=ICOL,JCOL
-      I3=I2+IPIVC
-      SWAP=A(I2)
-      A(I2)=A(I3)
-   13 A(I3)=SWAP
-   14 CONTINUE
+      DO I1=1,N
+         MAIN=N+1-I1
+         LPIV=INDE(MAIN)
+         IF (LPIV .NE. MAIN) THEN
+            ICOL=(LPIV-1)*KDIM+1
+            JCOL=ICOL+NMIN1
+            IPIVC=(MAIN-1)*KDIM+1-ICOL
+            DO I2=ICOL,JCOL
+               I3=I2+IPIVC
+               SWAP=A(I2)
+               A(I2)=A(I3)
+               A(I3)=SWAP
+            ENDDO
+         ENDIF
+      ENDDO
       DETERM=DETER
       NERROR=0
       RETURN

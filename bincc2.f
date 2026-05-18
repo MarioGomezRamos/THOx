@@ -92,10 +92,11 @@ C     INTP = DK/SQRT(KMAX-KMIN) * SQRT(2.0/PI)
       INTP = DK * SQRT(2.0/PI)
       NP = 2*M + 1
 
-       DO 12 L=1,M
-         DO 10 N=1,NMAXP
-10       Y(N,L) = 0.0
-12     CONTINUE
+       DO L=1,M
+         DO N=1,NMAXP
+            Y(N,L) = 0.0
+         ENDDO
+       ENDDO
         YINT = 0.0
         IF(PCON.GE.5) then
        WRITE(KO,998)
@@ -116,18 +117,18 @@ C
          K = KMIN + (IK-1)*DK
          KP= K*K
          NOP = 0
-         do 20 J=1,M
+         do J=1,M
          TKJ = K2(IL) + KP-K2(J)
          if(TKJ>0.) then
             write(222,*) ik,tkj/conv
             NOP = NOP+1
             IOP(NOP) = J
             endif
-20	 continue
+         enddo
 C
 !      ZI(:,:)=cmplx(0d0,0d0) ! AMoro
 
-      DO 30 L=1,M
+      DO L=1,M
           X = (K2(IL) + KP-K2(L))/CONV
  	  if(Abs(X).lt.0.002) then
  		write(KO,15) KP/CONV,L,X
@@ -135,10 +136,12 @@ C
      X    ' at energy',f8.4,': too close to threshold!')
     		go to 90
  		endif
-      DO 28 J=1,M
-      ZI(J,L) = 0.0
-28    ZM(J,L) = 0.0
-30    ZI(L,L) = H**(QL(L)+1) / EXP(0.5 * DLFAC(QL(L))) ! changed QNF -> QL
+          DO J=1,M
+             ZI(J,L) = 0.0
+             ZM(J,L) = 0.0
+          ENDDO
+          ZI(L,L) = H**(QL(L)+1) / EXP(0.5 * DLFAC(QL(L))) ! changed QNF -> QL
+      ENDDO
 C
       F(1,:,:) = 0d0
 
@@ -146,62 +149,62 @@ C
 !         write(97,*)j,zi(j,j)
 !      enddo
 
-      DO 60 I=2,NMAXP
+      DO I=2,NMAXP
          RRI= 1.0/(I-1.)**2
-      DO 42 IT=1,M
-      DO 42 J=1,M
-! AMoro
-42    F(I,J,IT) = ZI(IT,J) * (1. + QL(J)*(QL(J)+1.d0)*RRI*R12 )
-
-	
-       DO 45 J=1,M
-       DO 45 L=1,M
-! AMoro
-         C = 0.0
-!         DO 425 JF=1,NF
-!            T = CC(L,J,JF,1)
-!            IF(ABS(T).LT.SMALL) GO TO 425
-!         C = C + T * FORMF(I,JF)
-!425      CONTINUE
-         C=ccmat(l,j,i)
-!         write(226,'(1f8.3,2x,2g16.5)') (I-1)*h,-c/conv ! AMM
-         IF(L.EQ.J) C = C + K2(IL) + KP-K2(J)
-       COUPL(L,J) = C
-       IF(C.EQ.0) GO TO 44
-       C = C * HP12
-          DO 43 IT=1,M
-43         F(I,L,IT) = F(I,L,IT) - C * ZI(IT,J)
-44    CONTINUE
-45    CONTINUE
-
-
-
-      DO 49 IT=1,M
-         DO 49 L=1,M
-49       MAT(IT,L) = 0.0
-      DO 54 L=1,M
-      DO 54 J=1,M
-      C = COUPL(L,J)
-      IF(C.EQ.0.0) GO TO 54
-      C = C * HP
-      DO 53 IT=1,M
-53    MAT(IT,L) = MAT(IT,L) + C * F(I,J,IT)
-54    CONTINUE
-      DO 55 J=1,M
-      DO 55 IT=1,M
-      ZP(IT,J) = 2*ZI(IT,J) - ZM(IT,J) - MAT(IT,J)
-     &           + F(I,J,IT) * QL(J)*(QL(J)+1) * RRI
-      ZM(IT,J) = ZI(IT,J)
-55    ZI(IT,J) = ZP(IT,J)
-60    CONTINUE
+         DO IT=1,M
+            DO J=1,M
+               F(I,J,IT) = ZI(IT,J) * (1. + QL(J)*(QL(J)+1.d0)*RRI*R12 )
+            ENDDO
+         ENDDO
+         DO J=1,M
+            DO L=1,M
+               C = ccmat(l,j,i)
+               IF(L.EQ.J) C = C + K2(IL) + KP-K2(J)
+               COUPL(L,J) = C
+               IF(C.NE.0.0) THEN
+                  C = C * HP12
+                  DO IT=1,M
+                     F(I,L,IT) = F(I,L,IT) - C * ZI(IT,J)
+                  ENDDO
+               ENDIF
+            ENDDO
+         ENDDO
+         DO IT=1,M
+            DO L=1,M
+               MAT(IT,L) = 0.0
+            ENDDO
+         ENDDO
+         DO L=1,M
+            DO J=1,M
+               C = COUPL(L,J)
+               IF(C.NE.0.0) THEN
+                  C = C * HP
+                  DO IT=1,M
+                     MAT(IT,L) = MAT(IT,L) + C * F(I,J,IT)
+                  ENDDO
+               ENDIF
+            ENDDO
+         ENDDO
+         DO J=1,M
+            DO IT=1,M
+               ZP(IT,J) = 2*ZI(IT,J) - ZM(IT,J) - MAT(IT,J)
+     &              + F(I,J,IT) * QL(J)*(QL(J)+1) * RRI
+               ZM(IT,J) = ZI(IT,J)
+               ZI(IT,J) = ZP(IT,J)
+            ENDDO
+         ENDDO
+      ENDDO
       X = (NMAXP-1) * H
-      DO 65 J=1,MAXNR1
-      DO 65 L=1,MAXNR
-65       MAT(L,J) = 0.0
-      DO 75 J=1,M
-         DO 70 IT=1,M
+      DO J=1,MAXNR1
+      DO L=1,MAXNR
+         MAT(L,J) = 0.0
+      ENDDO
+      ENDDO
+      DO J=1,M
+         DO IT=1,M
             MAT(J,IT) = F(NMAXP,J,IT)
-70          MAT(J+M,IT)=F(NMAX ,J,IT)
+            MAT(J+M,IT)=F(NMAX ,J,IT)
+         ENDDO
          TKJ = K2(IL) + KP-K2(J)
          KJ = SQRT(ABS(TKJ))
 	 L= QL(J) ! Amoro: changed from L= QNF(9,J)
@@ -215,10 +218,10 @@ C
 !             write(*,*)'coulfg: kj*x,cf(l+1)=',kj*x,cf(l+1)
          ELSE
          IE = 0
-           CALL WHIT(ETA,X,KJ,E,L,CF,CG,IE)
-           CH = CF(L+1) * (0.,.5)
-           CALL WHIT(ETA,X-H,KJ,E,L,CF,CG,IE)
-           CHD = CF(L+1) * (0.,.5)
+            CALL WHIT(ETA,X,KJ,E,L,CF,CG,IE)
+            CH = CF(L+1) * (0.,.5)
+            CALL WHIT(ETA,X-H,KJ,E,L,CF,CG,IE)
+            CHD = CF(L+1) * (0.,.5)
 !           write(*,*)'whit: e,ch,chd=',e,ch,chd
          ENDIF
       IF(PCON.GE.5) WRITE(142,*) J,TKJ/CONV,KJ,X,L,ETA,CH,CHD
@@ -231,7 +234,7 @@ C
 !             ENDIF
 	   MAT(J,2*M+J) = - CONJG(CH)
 	   MAT(J+M,2*M+J)=- CONJG(CHD)
-75      CONTINUE
+      ENDDO
 C
 
        CALL GAUSS5(2*M,MAXNR,MAT,M,SING,T,SMALL,PCON>=5)
@@ -256,11 +259,13 @@ C
       IN = IOP(IOUT)
       NP = 2*M + IN
 
-      DO 810 J=1,M		! so W = scattering wf at 1 energy
-      DO 810 IT=1,M
-      DO 810 N=1,NMAXP
+      DO J=1,M		! so W = scattering wf at 1 energy
+      DO IT=1,M
+      DO N=1,NMAXP
       W(N,J) = W(N,J) + F(N,J,IT) * MAT(IT,NP)  
-810    continue    
+      ENDDO
+      ENDDO
+      ENDDO
 
     
 !-------------------------------
@@ -328,10 +333,11 @@ c
       YINT = YINT + ABS(YFAC)**2 * DK
       write(460,'(i3,2g16.6)')ik,yfac
 C
-      DO 815 J=1,M
-      DO 815 N=1,NMAXP
+      DO J=1,M
+      DO N=1,NMAXP
       Y(N,J) = Y(N,J) + W(N,J) * YFAC * INTP
-815    continue
+      ENDDO
+      ENDDO
 
 
 ! amoro ---------------------
@@ -418,9 +424,11 @@ C
       IF(MOD(ISC,2).EQ.1) THEN
        X = 0.0
 C                        NORMALISE WAVE FUNCTION TO UNITY EXACTLY!!
-       DO 92 J=1,M
-       DO 92 N=2,NMAX
-  92   X = X + abs(Y(N,J))**2
+       DO J=1,M
+       DO N=2,NMAX
+       X = X + abs(Y(N,J))**2
+       ENDDO
+       ENDDO
        C = 1.0 / SQRT(X*H)
        WOLD = YINT/ABS(C)
       ELSE
@@ -428,35 +436,37 @@ C                   Normalise according to YINT
 C                    (if not TRES, then YINT = KMAX - KMIN)
        C = YINT
       ENDIF
-       DO 95 N=1,NMAX
-       DO 93 J=1,M
-93     Y(N,J) = Y(N,J) * C
-95     CONTINUE
+       DO N=1,NMAX
+       DO J=1,M
+       Y(N,J) = Y(N,J) * C
+       ENDDO
+       ENDDO
 C
       K = (KMIN+KMAX) * 0.5
       WNORM = 0.0
       RMS   = 0.0
       CD0   = 0.0
       CD1   = 0.0
-      DO 100 J=1,M
+      DO J=1,M
 ! AMoro
 !	if(QNF(9,J)>0) Y(1,J) = 0.0
-	if(QL(J)>0) Y(1,J) = 0.0
-      DO 100 N=2,NMAX
-      X=(N-1)*H
-      WNORM = WNORM + abs(Y(N,J))**2
-      RMS   = RMS   + abs(Y(N,J))**2 * X*X
-         WY = 0.0
+         if(QL(J)>0) Y(1,J) = 0.0
+         DO N=2,NMAX
+            X=(N-1)*H
+            WNORM = WNORM + abs(Y(N,J))**2
+            RMS   = RMS   + abs(Y(N,J))**2 * X*X
+            WY = 0.0
 ! AMoro --------------------
 !         DO 98 L=1,M
 !         DO 98 JF=1,NF
 !98       WY = WY + CC(L,J,JF,1) * FORMF(N,JF) * Y(N,L)
 !      CD0 = CD0 + X**(QNF(9,J)+1) * WY *H
 !      CD1 = CD1 + X**(QNF(9,J)+1) * Y(N,J)*H
-      CD0 = CD0 + X**(QL(J)+1) * WY *H
-      CD1 = CD1 + X**(QL(J)+1) * Y(N,J)*H
-      IF(N.EQ.MATCH.AND.J.EQ.IL) CWN = Y(N,J) * EXP(X*K) / SQFPI
-100   CONTINUE
+            CD0 = CD0 + X**(QL(J)+1) * WY *H
+            CD1 = CD1 + X**(QL(J)+1) * Y(N,J)*H
+            IF(N.EQ.MATCH.AND.J.EQ.IL) CWN = Y(N,J) * EXP(X*K) / SQFPI
+         ENDDO
+      ENDDO
       WNORM = SQRT(WNORM*H)
       RMS   = SQRT(RMS*H)/WNORM
       CD0 =-CD0 * SQFPI      /CONV

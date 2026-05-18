@@ -309,16 +309,17 @@ c *** Pauli blocking operator (used only with R-matrix solutions!) --------
         write(97,*)'&'
 
         ii=0
-        do 5 i=1,nbas
-        do 5 j=1,nbas
-        ii=ii+1
-        r=zrma(i)
-        rp=zrma(j)
-        aux =fival(r, rvec,wfpau,nr,alpha)
-        auxp=fival(rp,rvec,wfpau,nr,alpha)
-        cpnl(ii,ich,ich)=  cpnl(ii,ich,ich)
-     &                  + aux*auxp*pshift(ip,ncorei)*r*rp*factor
-    5   continue
+        do i=1,nbas
+           do j=1,nbas
+              ii=ii+1
+              r=zrma(i)
+              rp=zrma(j)
+              aux =fival(r, rvec,wfpau,nr,alpha)
+              auxp=fival(rp,rvec,wfpau,nr,alpha)
+              cpnl(ii,ich,ich)=  cpnl(ii,ich,ich)
+     &                        + aux*auxp*pshift(ip,ncorei)*r*rp*factor
+           enddo
+        enddo
         enddo !ich
         enddo !ip
 
@@ -2086,17 +2087,19 @@ c non-diagonal part of V matrix
       w0=w0-r12*coupl
       
       if (1>2) then
-      DO 24 ICH=1,NCH
-	 DO 24 IS=1,NCH
-        C = COUPL(is,ich) * R12
-	 if(C/=ZERO) y0(ich,1:nch) = y0(ich,1:nch) - C * z0(is,1:nch)
-24    CONTINUE
-        DO 34 ich=1,nch ! k
-        V(ich,:)  = ZERO 
-        DO 34 is=1,nch   ! j
-	 C = COUPL(is,ich)
- 	 if(C/=ZERO) V(ich,1:nch) = V(ich,1:nch) + C * y0(is,1:nch)
-34    CONTINUE
+      DO ICH=1,NCH
+         DO IS=1,NCH
+            C = COUPL(is,ich) * R12
+            if(C/=ZERO) y0(ich,1:nch) = y0(ich,1:nch) - C * z0(is,1:nch)
+         ENDDO
+      ENDDO
+      DO ich=1,nch ! k
+         V(ich,:)  = ZERO 
+         DO is=1,nch   ! j
+            C = COUPL(is,ich)
+            if(C/=ZERO) V(ich,1:nch) = V(ich,1:nch) + C * y0(is,1:nch)
+         ENDDO
+      ENDDO
       else  !..........Idem using builtin matrix multiplication 
         V(1:nch,1:nch)  = ZERO 
         y0=y0  - r12*matmul(coupl,z0)
@@ -2371,17 +2374,19 @@ c non-diagonal part of V matrix
       w0=w0-r12*coupl
       
       if (1>2) then
-      DO 24 ICH=1,NCH
-	 DO 24 IS=1,NCH
-        C = COUPL(is,ich) * R12
-	 if(C/=ZERO) y0(ich,1:nch) = y0(ich,1:nch) - C * z0(is,1:nch)
-24    CONTINUE
-        DO 34 ich=1,nch ! k
-        V(ich,:)  = ZERO 
-        DO 34 is=1,nch   ! j
-	 C = COUPL(is,ich)
- 	 if(C/=ZERO) V(ich,1:nch) = V(ich,1:nch) + C * y0(is,1:nch)
-34    CONTINUE
+      DO ICH=1,NCH
+         DO IS=1,NCH
+            C = COUPL(is,ich) * R12
+            if(C/=ZERO) y0(ich,1:nch) = y0(ich,1:nch) - C * z0(is,1:nch)
+         ENDDO
+      ENDDO
+      DO ich=1,nch ! k
+         V(ich,:)  = ZERO 
+         DO is=1,nch   ! j
+            C = COUPL(is,ich)
+            if(C/=ZERO) V(ich,1:nch) = V(ich,1:nch) + C * y0(is,1:nch)
+         ENDDO
+      ENDDO
       else  !..........Idem using builtin matrix multiplication 
         V(1:nch,1:nch)  = ZERO 
         y0=y0  - r12*matmul(coupl,z0)
@@ -5034,17 +5039,19 @@ c non-diagonal part of V matrix
       w0=w0-r12*coupl
       
       if (2>1) then
-      DO 24 ICH=1,NCH
-	 DO 24 IS=1,NCH
-        C = COUPL(is,ich) * R12
-	 if(C/=ZERO) y0(ich,1:nch) = y0(ich,1:nch) - C * z0(is,1:nch)
-24    CONTINUE
-        DO 34 ich=1,nch ! k
-        V(ich,:)  = ZERO 
-        DO 34 is=1,nch   ! j
-	 C = COUPL(is,ich)
- 	 if(C/=ZERO) V(ich,1:nch) = V(ich,1:nch) + C * y0(is,1:nch)
-34    CONTINUE
+      DO ICH=1,NCH
+         DO IS=1,NCH
+            C = COUPL(is,ich) * R12
+            if(C/=ZERO) y0(ich,1:nch) = y0(ich,1:nch) - C * z0(is,1:nch)
+         ENDDO
+      ENDDO
+      DO ich=1,nch ! k
+         V(ich,:)  = ZERO 
+         DO is=1,nch   ! j
+            C = COUPL(is,ich)
+            if(C/=ZERO) V(ich,1:nch) = V(ich,1:nch) + C * y0(is,1:nch)
+         ENDDO
+      ENDDO
       else  !..........Idem using builtin matrix multiplication 
         V(1:nch,1:nch)  = ZERO 
         y0=y0  - r12*matmul(coupl,z0)
@@ -6317,17 +6324,19 @@ c non-diagonal part of V matrix
       w0=w0-r12*coupl
       
       if (2>1) then
-      DO 24 ICH=1,NCH
-	 DO 24 IS=1,NCH
-        C = COUPL(is,ich) * R12
-	 if(C/=ZERO) y0(ich,1:nch) = y0(ich,1:nch) - C * z0(is,1:nch)
-24    CONTINUE
-        DO 34 ich=1,nch ! k
-        V(ich,:)  = ZERO 
-        DO 34 is=1,nch   ! j
-	 C = COUPL(is,ich)
- 	 if(C/=ZERO) V(ich,1:nch) = V(ich,1:nch) + C * y0(is,1:nch)
-34    CONTINUE
+      DO ICH=1,NCH
+         DO IS=1,NCH
+            C = COUPL(is,ich) * R12
+            if(C/=ZERO) y0(ich,1:nch) = y0(ich,1:nch) - C * z0(is,1:nch)
+         ENDDO
+      ENDDO
+      DO ich=1,nch ! k
+         V(ich,:)  = ZERO 
+         DO is=1,nch   ! j
+            C = COUPL(is,ich)
+            if(C/=ZERO) V(ich,1:nch) = V(ich,1:nch) + C * y0(is,1:nch)
+         ENDDO
+      ENDDO
       else  !..........Idem using builtin matrix multiplication 
         V(1:nch,1:nch)  = ZERO 
         y0=y0  - r12*matmul(coupl,z0)
@@ -6949,20 +6958,22 @@ c non-diagonal part of V matrix
       w0=w0-r12*coupl
       
       if (2>1) then
-      DO 24 ICH=1,NCH
-	 DO 24 IS=1,NCH
+      DO ICH=1,NCH
+         DO IS=1,NCH
 ! MODIFIED: C is complex*32
-        C = COUPL(is,ich) * R12
+            C = COUPL(is,ich) * R12
 ! MODIFIED: y0, z0 are complex*32
-	 if(C/=ZERO) y0(ich,1:nch) = y0(ich,1:nch) - C * z0(is,1:nch)
-24    CONTINUE
-        DO 34 ich=1,nch ! k
-        V(ich,:)  = ZERO 
-        DO 34 is=1,nch   ! j
-	 C = COUPL(is,ich)
+            if(C/=ZERO) y0(ich,1:nch) = y0(ich,1:nch) - C * z0(is,1:nch)
+         ENDDO
+      ENDDO
+      DO ich=1,nch ! k
+         V(ich,:)  = ZERO 
+         DO is=1,nch   ! j
+            C = COUPL(is,ich)
 ! MODIFIED: V, y0 are complex*32
- 	 if(C/=ZERO) V(ich,1:nch) = V(ich,1:nch) + C * y0(is,1:nch)
-34    CONTINUE
+            if(C/=ZERO) V(ich,1:nch) = V(ich,1:nch) + C * y0(is,1:nch)
+         ENDDO
+      ENDDO
       else  !..........Idem using builtin matrix multiplication 
 ! MODIFIED: V is complex*32
         V(1:nch,1:nch)  = ZERO 

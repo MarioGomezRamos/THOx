@@ -2190,7 +2190,13 @@
       num=nxy(i)/2
 !      if(num .lt.1) num=1
 55    if(max-min.lt.4) goto 70
-      if(xyt(i,num)-xyb(i)) 60,82,61
+      if (xyt(i,num) .lt. xyb(i)) then
+         goto 60
+      else if (xyt(i,num) .eq. xyb(i)) then
+         goto 82
+      else
+         goto 61
+      endif
 60    min=num
       num=num+(max-min+1)/2
       goto 55
@@ -2198,7 +2204,11 @@
       num=num-(max-min+1)/2
       goto 55
 70    num=max
-71    if(xyt(i,num)-xyb(i)) 82,82,81
+71    if (xyt(i,num) .le. xyb(i)) then
+         goto 82
+      else
+         goto 81
+      endif
 81    num=num-1
       goto 71
 !*     ---------------------------------------------------------------
@@ -2955,8 +2965,9 @@
 !     real*8 fival2d(ndm2)  !ndm2 stands for the other dimension of 2-dimension interpolation
       complex*16 fival2d(ndm2)  !ndm2 stands for the other dimension of 2-dimension interpolation
       IF(r.GT.xv(ndm)) go to 9
-      DO 5 k=1,ndm-2
- 5    IF(r.LT.xv(k)) go to 6
+      DO k=1,ndm-2
+         IF(r.LT.xv(k)) go to 6
+      END DO
       k=ndm-2
  6    nst=MAX(k-1,1)
       x1=xv(nst)
@@ -3011,17 +3022,19 @@
       
       nnn=nord+1
 !c          set up arrays for loop
-      do 40 j=1,nnx
- 40   xytab(1,j)=xtab(j)
-      do 45 j=1,nny
- 45   xytab(2,j)=ytab(j)
+      do j=1,nnx
+         xytab(1,j)=xtab(j)
+      end do
+      do j=1,nny
+         xytab(2,j)=ytab(j)
+      end do
       nxy(1)=nnx
       nxy(2)=nny
       xybar(1)=xbar
 !c          begin loop to determine the (order+1) x and y points over
 !c          which interpolation is made; 1=x, 2=y.
       xybar(2)=ybar
-      do 10 i=1,2
+      do i=1,2
 30    num=1
       if(xybar(i).lt.xytab(i,1))go to 85
       num=nxy(i)-nnn+1
@@ -3030,7 +3043,13 @@
       max=nxy(i)
       num=nxy(i)/2
 55    if(max-min.lt.4)goto70
-      if(xytab(i,num)-xybar(i))60,82,61
+      if (xytab(i,num) .lt. xybar(i)) then
+         goto 60
+      else if (xytab(i,num) .eq. xybar(i)) then
+         goto 82
+      else
+         goto 61
+      endif
 60     min=num
           num=num+(max-min+1)/2
       goto55 
@@ -3038,44 +3057,51 @@
       num=(max-min+1)/2
       goto55
   70   num=max
-  71  if(xytab(i,num)-xybar(i))82,82,81
+  71  if (xytab(i,num) .le. xybar(i)) then
+         goto 82
+      else
+         goto 81
+      endif
  81   num=num-1
       goto71
  82   num=max0(1,num-nnn/2)
       num=min0(num,nxy(i)-nnn+1)
  85   nbg(i)=num
- 10   continue
+      end do
 !c          end loop.  set up x, y, function arrays of required
 !c          (order+1)**2 points
       nx=nbg(1)
       ny=nbg(2)
-      do 20 i=1,nnn
-      x(i)=xytab(1,nx+i-1)
-      y(i)=xytab(2,ny+i-1)
-      do 20 j=1,nnn
-      fxy(i,j)=fxytab(nx+i-1,ny+j-1)
- 20   continue
+      do i=1,nnn
+         x(i)=xytab(1,nx+i-1)
+         y(i)=xytab(2,ny+i-1)
+         do j=1,nnn
+            fxy(i,j)=fxytab(nx+i-1,ny+j-1)
+         end do
+      end do
 !c          do interpolation
- 90   do 95 ii=2,nnn
-      do 95 jj=ii,nnn
-      do 95 mm=ii,nnn
-         if (abs(y(mm)-y(ii-1)).lt.1e-6) then
-            write(0,*)'error 1 in fint2d';stop
-         endif
-         if (abs(y(ii-1)-xybar(2)).lt.1e-6) then
-            write(0,*) y(ii-1),xybar(2)
-            write(0,*)'error 2 in fint2d';stop
-         endif
-         if (abs(x(jj)-xybar(1)).lt.1e-6) then
-            write(0,*)x(jj),xybar(1)
-            write(0,*)'error 3 in fint2d';stop
-         endif
-         
+ 90   do ii=2,nnn
+         do jj=ii,nnn
+            do mm=ii,nnn
+               if (abs(y(mm)-y(ii-1)).lt.1e-6) then
+                  write(0,*)'error 1 in fint2d';stop
+               endif
+               if (abs(y(ii-1)-xybar(2)).lt.1e-6) then
+                  write(0,*) y(ii-1),xybar(2)
+                  write(0,*)'error 2 in fint2d';stop
+               endif
+               if (abs(x(jj)-xybar(1)).lt.1e-6) then
+                  write(0,*)x(jj),xybar(1)
+                  write(0,*)'error 3 in fint2d';stop
+               endif
+               
       fxy(jj,mm)=((fxy(ii-1,ii-1)*(x(jj)-xybar(1))-fxy(jj,ii-1)*(x(ii-1) &
      & -xybar(1)))*(y(mm)-xybar(2))-(fxy(ii-1,mm)*(x(jj)-xybar(1))      &
      & -fxy(jj,mm)*(x(ii-1)-xybar(1)))*(y(ii-1)-xybar(2)))              &
      & /(x(jj)-x(ii-1))/(y(mm)-y(ii-1))
-  95   continue
+            end do
+         end do
+      end do
       fint2d=fxy(nnn,nnn)
       return
       end

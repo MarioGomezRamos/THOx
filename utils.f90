@@ -219,8 +219,9 @@ c *** ----------------------------------------------------
       REAL*8 fdis(ndm),y1,y2,y3,y4
       DIMENSION xv(ndm)
       IF(r.GT.xv(ndm)) go to 9
-      DO 5 k=1,ndm-2
- 5    IF(r.LT.xv(k)) go to 6
+      DO k=1,ndm-2
+         IF(r.LT.xv(k)) go to 6
+      END DO
       k=ndm-2
  6    nst=MAX(k-1,1)
       x1=xv(nst)
@@ -263,8 +264,9 @@ c *** ----------------------------------------------------
       COMPLEX*16 cfival,fdis(ndm),y1,y2,y3,y4
       DIMENSION xv(ndm)
       IF(r.GT.xv(ndm)) go to 9
-      DO 5 k=1,ndm-2
- 5    IF(r.LT.xv(k)) go to 6
+      DO k=1,ndm-2
+         IF(r.LT.xv(k)) go to 6
+      END DO
       k=ndm-2
  6    nst=MAX(k-1,1)
       x1=xv(nst)
@@ -319,24 +321,84 @@ c *** --------------------------------------------
       if=int(sign(1.d0,rif)*2.d0*(abs(rif)+.0001d0))
       wwww=-1.0d0
       cleb=0.0d0
-      if(id+ie-if) 7000,105,7000
+      if(id+ie-if.lt.0) then
+         goto 7000
+      else if(id+ie-if.eq.0) then
+         goto 105
+      else
+         goto 7000
+      endif
   105 k1=ia+ib+ic
-      if((-1)**k1) 7000,107,107
+      if(((-1)**k1).lt.0) then
+         goto 7000
+      else
+         goto 107
+      endif
   107 if(.not.((id.eq.0).and.(ie.eq.0))) go to 110
       k1=k1/2
-      if((-1)**k1) 7000,110,110
+      if(((-1)**k1).lt.0) then
+         goto 7000
+      else
+         goto 110
+      endif
   110 k1=ia+ib-ic
       k2=ic-iabs(ia-ib)
       k3=min0(k1,k2)
-      if(k3) 7000,130,130
-  130 if((-1)**(ib+ie)) 7000,7000,140
-  140 if((-1)**(ic+if)) 7000,7000,150
-  150 if(ia-iabs (id)) 7000,152,152
-  152 if(ib-iabs (ie)) 7000,154,154
-  154 if(ic-iabs (if)) 7000,160,160
-  160 if(ia) 7000,175,165
-  165 if(ib) 7000,175,170
-  170 if(ic) 7000,180,250
+      if(k3.lt.0) then
+         goto 7000
+      else
+         goto 130
+      endif
+  130 if(((-1)**(ib+ie)).lt.0) then
+         goto 7000
+      else if(((-1)**(ib+ie)).eq.0) then
+         goto 7000
+      else
+         goto 140
+      endif
+  140 if(((-1)**(ic+if)).lt.0) then
+         goto 7000
+      else if(((-1)**(ic+if)).eq.0) then
+         goto 7000
+      else
+         goto 150
+      endif
+  150 if(ia-iabs(id).lt.0) then
+         goto 7000
+      else
+         goto 152
+      endif
+  152 if(ib-iabs(ie).lt.0) then
+         goto 7000
+      else
+         goto 154
+      endif
+  154 if(ic-iabs(if).lt.0) then
+         goto 7000
+      else
+         goto 160
+      endif
+  160 if(ia.lt.0) then
+         goto 7000
+      else if(ia.eq.0) then
+         goto 175
+      else
+         goto 165
+      endif
+  165 if(ib.lt.0) then
+         goto 7000
+      else if(ib.eq.0) then
+         goto 175
+      else
+         goto 170
+      endif
+  170 if(ic.lt.0) then
+         goto 7000
+      else if(ic.eq.0) then
+         goto 180
+      else
+         goto 250
+      endif
   175 cleb=1.0d0
       go to 7000
   180 fb=float(ib+1)
@@ -364,7 +426,7 @@ c *** --------------------------------------------
       nzmx= min0(iabc,iamd,ibpe)
       if(nzmx.lt.nzmi) go to 7000
       s1=(wwww)**(nzmi-1)
-      do 400 nz=nzmi,nzmx
+      do nz=nzmi,nzmx
       nzm1=nz-1
       nzt1=iabc-nzm1
       nzt2=iamd-nzm1
@@ -375,7 +437,8 @@ c *** --------------------------------------------
      1           -flog(nzt3)-flog(nzt4)-flog(nzt5)
       ssterm=s1*exp (termlg)
       cleb=cleb+ssterm
-  400 s1=-s1
+      s1=-s1
+      enddo
  7000 return
       end
 
@@ -423,14 +486,28 @@ c     -------------------------------------------------------------------
       k7=ib+id-if
       k8=if-iabs(ib-id)
       k9= min0 (k1,k2,k3,k4,k5,k6,k7,k8)
-      if(k9) 7000,20,20
+      if(k9.lt.0) then
+         goto 7000
+      else
+         goto 20
+      endif
    20 k2=k1-2*(k1/2)
       k4=k3-2*(k3/2)
       k6=k5-2*(k5/2)
       k8=k7-2*(k7/2)
-      if(max0(k2,k4,k6,k8)) 7000,25,7000
+      if(max0(k2,k4,k6,k8).ne.0) then
+         goto 7000
+      else
+         goto 25
+      endif
    25 ltmin=min0(ia,ib,ic,id,ie,if)
-      if(ltmin) 7000,30,150
+      if(ltmin.lt.0) then
+         goto 7000
+      else if(ltmin.eq.0) then
+         goto 30
+      else
+         goto 150
+      endif
    30 lt(1)=ia
       lt(2)=ib
       lt(3)=ic
@@ -439,11 +516,12 @@ c     -------------------------------------------------------------------
       lt(6)=if
       ltmin=lt(1)
       kmin=1
-      do 40 n=2,6
-      if(lt(n)-ltmin) 35,40,40
-   35 ltmin=lt(n)
-      kmin=n
-   40 continue
+      do n=2,6
+         if(lt(n)-ltmin.lt.0) then
+            ltmin=lt(n)
+            kmin=n
+         endif
+      enddo
       s1=1.0d0
       f1=ie
       f2=if
@@ -550,9 +628,10 @@ c *** --------------------------------------------
        fl=0
        if(n>1) then
        FN = 1.                                                           
-       DO 10 I = 2,N                                                     
-       FN = FN + 1.                                                      
-   10  FL = FL +  LOG(FN)    
+       DO I = 2,N 
+          FN = FN + 1. 
+          FL = FL +  LOG(FN) 
+       ENDDO
       endif 
       logfac=fl                                 
       END FUNCTION
@@ -587,17 +666,17 @@ c
 
       m = ( n + 1 ) / 2
       e1 = n * ( n + 1 )
-      do 1 i = 1, m
+      do i = 1, m
         t = ( 4*i - 1 ) * pi / ( 4*n + 2 )
         x0 = ( 1.0 - ( 1.0 - 1.0/n ) / ( 8.0*n*n ) ) * cos(t)
         pkm1 = 1.0
         pk = x0
-        do 3 k = 2, n
+        do k = 2, n
           t1 = x0 * pk
           pkp1 = t1 - pkm1 - ( t1-pkm1 )/k + t1
           pkm1 = pk
           pk = pkp1
-3       continue
+        enddo
         den = 1.0 - x0*x0
         d1 = n * ( pkm1 - x0*pk )
         dpn = d1 / den
@@ -614,7 +693,7 @@ c
         fx = d1 - h*e1*(pk+0.5*h*(dpn+h/3.0*
      1                   (d2pn+0.25*h*(d3pn+0.2*h*d4pn))))
         weight(i) = 2.0 * ( 1.0 - poin16(i)*poin16(i)) / (fx*fx)
-1     continue
+      enddo
       if ( m + m .gt. n ) poin16(m) = 0.0
       do 10 i = n/2 + 1, n
         poin16(i) = poin16( n + 1 - i )
@@ -628,8 +707,9 @@ c        temp = pi4 * ( points(i) + 1.0 )
 c        points(i) = dtan(temp)
 c        weight(i) = pi4 * weight(i) / ( dcos(temp) ** 2 )
 c20    continue
-        do 30 i=1,n
- 30     points(i)=poin16(i)
+        do i=1,n
+           points(i)=poin16(i)
+        enddo
       return
       end
 c*
@@ -650,7 +730,7 @@ c*
 	g=f+sqrt(f*f+.25d0-al*al)
 	m=g/h+1
 	j=0
-	do 1 i=1,m
+	do i=1,m
 	z=h*i
 	v=polag(n,al,z)
 	c=v/y
@@ -658,19 +738,22 @@ c*
 	j=j+1
 	x(j)=z
 	end if
-1	y=v
+	y=v
+	enddo
 ! exact nodes
-	do 2 i=1,n
+	do i=1,n
 	xs=x(i)
 	call rootlag(xs,y,eps,n,al)
-2	x(i)=y
+	x(i)=y
+	enddo
 ! the weights
 	lal=al
 	s=exp(dlfac(n+lal)-dlfac(n+1))/(n+1)
-	do 3 i=1,n
+	do i=1,n
 	a=x(i)
 	b=polag(n+1,al,a)
-3	w(i)=s*x(i)/(b*b)
+	w(i)=s*x(i)/(b*b)
+	enddo
 	return
 	end
 	real*8 function lagnorm(n,al)	
@@ -722,10 +805,11 @@ calculates laguerre polynomials
 	   polag=b
 	   return
 	end if
-	do 1 i=2,n
+	do i=2,n
 	   c=((2.d0*i+al-1.d0-x)*b-(i+al-1.d0)*a)/i
 	   a=b
-1	   b=c
+	   b=c
+	enddo
 	polag=c
 	return
 	end
@@ -758,19 +842,21 @@ c without h^2/(2m*b^2) factor
       dlfac2(0)=0
       dlfac2(1)=0
       if (n.lt.1) return
-      do 1 i=1,n 
+      do i=1,n 
 	a=i
 	dlfac(i)=dlfac(i-1)+log(a)
 ! To avoid overflow
         if (dlfac(i).lt.logbig)then 
         fact(i)=exp(dlfac(i))
         endif
-1     if (i.ge.2) dlfac2(i)=dlfac2(i-2)+log(a)
+        if (i.ge.2) dlfac2(i)=dlfac2(i-2)+log(a)
+      enddo
 
 	dl2fac(0)=0.d0
-	do 2 i=1,n
+	do i=1,n
 	a=2.d0*i+1.d0
-2	dl2fac(i)=dl2fac(i-1)+log(a)
+	dl2fac(i)=dl2fac(i-1)+log(a)
+	enddo
 	continue
 	return
 	end
@@ -788,9 +874,11 @@ c without h^2/(2m*b^2) factor
       REAL*8 PL(NA,M+1),L,X
       N1 = N+1
       M1 = M+1
-      DO 10 J=1,M1
-      DO 10 I=1,N1
-10    PL(I,J)=0.
+      DO J=1,M1
+      DO I=1,N1
+      PL(I,J)=0.
+      ENDDO
+      ENDDO
       PL(1,1) = 1.
       PL(2,1) = X
       SX = SQRT(1.-X*X)
@@ -805,12 +893,14 @@ c without h^2/(2m*b^2) factor
 		if(J+1.le.N1) PL(J+1,J) = X*(2*mm+1.) * PL(J,J)
 15      CONTINUE
 	  
-	  DO 20 J=1,M1
-	   mm = J-1
-	  DO 20 I=J+2,N1
-	   ll = I-1
-      PL(I,J)=((2.*ll-1.)*X*PL(I-1,J) - (ll+mm-1.)*PL(I-2,J))/(ll-mm)	  
-20    CONTINUE
+      DO J=1,M1
+      mm = J-1
+      DO I=J+2,N1
+      ll = I-1
+      PL(I,J)=((2.*ll-1.)*X*PL(I-1,J) - (ll+mm-1.)*PL(I-2,J))/
+     &  (ll-mm)
+      ENDDO
+      ENDDO
       RETURN
       END
 
@@ -1081,8 +1171,9 @@ c----------------------------------¿que pasa con FAC(0)?
 C  FACT(I)= LN((I-1)!)
 C  THE VALUE OF L CORRESPONDS TO THE DIMENSION OF (FACT(
       FACT(1)=0.
-      DO 100 J=2,L
-  100 FACT(J)=FACT(J-1)+LOG(J-1D0)
+      DO J=2,L
+         FACT(J)=FACT(J-1)+LOG(J-1D0)
+      ENDDO
       RETURN
       END
 
@@ -1127,33 +1218,40 @@ C
       LOGICAL SING,SHOW
       SING  = .FALSE.
       NPM = N + M
-      DO 201 I=1,N
-201   IF(SHOW) WRITE(KO,402) (A(I,J)  ,J=1,NPM)
+      DO I=1,N
+         IF(SHOW) WRITE(KO,402) (A(I,J)  ,J=1,NPM)
+      ENDDO
       DET = 0.
-      DO 9 K = 1, N
-      IF (abs(A(K,K)) .NE. 0.0 ) GO TO 5
+      DO K = 1, N
+         IF (abs(A(K,K)) .NE. 0.0 ) GO TO 5
          SING = .TRUE.
          WRITE(KO,3) K,DET/LOG(10.)
     3  FORMAT(//' THE MATRIX IS SINGULAR AT',I3,', Log10 determinant is
      &  ',2E16.8/)
-      DO 401 I=1,N
-401   IF(SHOW) WRITE(KO,402) (            A(I,J)  ,J=1,NPM)
+         DO I=1,N
+            IF(SHOW) WRITE(KO,402) (            A(I,J)  ,J=1,NPM)
+         ENDDO
 C402   FORMAT( 1X,20F6.1/(1X,20F6.3))
-402   FORMAT( 1X,1P,14E9.1/(1X,24E9.1))
+402      FORMAT( 1X,1P,14E9.1/(1X,24E9.1))
          RETURN
-    5 KP1 = K + 1
-      DET = DET + LOG(A(K,K))
+    5    KP1 = K + 1
+         DET = DET + LOG(A(K,K))
          RA = 1.0/A(K,K)
-      DO 6 J = KP1, NPM
-    6 A(K,J) = A(K,J) * RA
-      A(K,K) = 1
-      DO 9 I = 1, N
-      IF (I .EQ. K  .OR. ABS (A(I,K)) .EQ. 0) GO TO 9
-CDIR$ IVDEP
-         DO 8 J = KP1, NPM
-    8    A(I,J) = A(I,J) - A(I,K)*A(K,J)
-         A(I,K) = 0
-    9 CONTINUE
+         DO J = KP1, NPM
+            A(K,J) = A(K,J) * RA
+         ENDDO
+         A(K,K) = 1
+         DO I = 1, N
+            IF (I .EQ. K  .OR. ABS (A(I,K)) .EQ. 0) THEN
+               CYCLE
+            ENDIF
+!CDIR$ IVDEP
+            DO J = KP1, NPM
+               A(I,J) = A(I,J) - A(I,K)*A(K,J)
+            ENDDO
+            A(I,K) = 0
+         ENDDO
+      ENDDO
       IF(SHOW) WRITE(KO,15 ) DET/LOG(10.)
 15    FORMAT(/' Log10 determinant is ',2F10.5)
       IF(SHOW) WRITE(KO,402) (A(I,N+1),I=1,N)
@@ -1255,7 +1353,11 @@ c ***
       k2=idint(2.d0*(rb+rf)+0.01d0)
       k3=idint(2.d0*(rd+rh)+0.01d0)
       maxrda=min0(k1,k2,k3)
-      if(minrda-maxrda) 30,30,20
+      if(minrda-maxrda.le.0) then
+         goto 30
+      else
+         goto 20
+      endif
    30 do 50 n1=minrda,maxrda,2
       r1=float(n1)/2.d0
       ramda2=n1

@@ -32,7 +32,7 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
   integer, allocatable :: ipiv2(:), ipiv_loc(:)
   real*8               :: cmat_min, cmat_max, tmpv
   real*8               :: a, b, fa, fb, fc, c, d, e, s, fs, tol1, xm, pbr, qbr, rbr
-  real*8, parameter :: ER_MIN = -200d0, ER_MAX = 200d0
+  real*8               :: ER_MIN, ER_MAX  ! Search range (adaptive based on problem type)
   real*8, dimension(12) :: samples
   real*8 :: sval
   real*8, allocatable :: xc1_old(:)
@@ -40,6 +40,26 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
   real*8               :: dummy_u(1,1)
   integer              :: ie_w
   real*8, parameter :: MAX_ESTEP = 100d0  ! Limit energy step size
+  logical              :: is_potential_scaling_search
+
+  !----- check NS=1 -------------------------------------------------------
+  if (NS /= 1) then
+    write(*,*) '[eigcc_rmat] WARNING: NS>1 not supported; using NS=1'
+  end if
+
+  ! Determine search range based on problem type
+  is_potential_scaling_search = abs(THETA) < 1d-5
+  if (is_potential_scaling_search) then
+    ! Searching for potential scaling factor (around p ≈ 1.0)
+    ER_MIN = 0.1d0
+    ER_MAX = 5.0d0
+    write(*,'(a)') '  [eigcc_rmat] Potential scaling search: range [0.1, 5.0]'
+  else
+    ! Searching for energy
+    ER_MIN = -200d0
+    ER_MAX = 200d0
+    write(*,'(a)') '  [eigcc_rmat] Energy search: range [-200, 200] MeV'
+  end if
 
   !----- check NS=1 -------------------------------------------------------
   if (NS /= 1) then
@@ -71,9 +91,12 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
   MAX_BC_IT = 8
   tol_bc = 1d-6
 
-  ! Initialize Bc = 0 by setting xc1_vec large (so 1/xc1 ~ 0)
+  ! IMPORTANT: Initialize boundary condition parameters from initial energy guess
+  ! This ensures the secular function det(Rmat - 1/xc1) has the correct behavior
+  call update_xc1_vec(P)
+  write(*,'(a)') '  [eigcc_rmat] Initial boundary condition parameters computed'
   do isc = 1, M
-    xc1_vec(isc) = 1d30
+    write(*,'(a,i3,a,1p,e14.6)') '    xc1_vec(',isc,')=',xc1_vec(isc)
   end do
 
   E_old = P
