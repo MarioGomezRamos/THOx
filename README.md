@@ -36,7 +36,9 @@ Controls the information printed out in stdout and auxiliary files.
 ### GRID namlist: ng, rmin, rint, rmax, dr, rlast
 Radial grid for projectile eigenfunctions:
  - rmin, rmax, dr: radial grid for core+valence relative motion
- - rint: when calculating the c+v scattering states, maximum radius up to which the equation will be integrated numerically. For r>rint, the asymptotic form will be assumed
+ - rint: when calculating the c+v scattering states, maximum radius up to which the equation will be integrated numerically. For r>rint, the asymptotic form will be assumed. For R-matrix bound states (bastype=8), it acts as the matching radius where the internal Lagrange-mesh solution is matched to the external Whittaker tail. If rint < rmax, the wavefunction is extrapolated up to rmax.
+ - rlast: radial wavefunctions are computed up to rmax, but printed out up to rlast, if rlast<rmax
+ >
 
 ### &POTENTIAL namelist: ptype, ap, at, Vl0(:), r0, a0, Vso, rso, aso, Vss,rss,ass,pcmodel, lambda, kband, lpot, cptype, Vcp0, rcp0, acp, delta, lsderiv 
 Core+valence central and deformed (coupling) potentials:
@@ -92,11 +94,17 @@ Core+valence central and deformed (coupling) potentials:
     3 = Complex Gaussian (CG) basis
     4 = Real CC bins
     5 = External wavefunctions (read from file, see `filewf`)
-    6 = Exact bound state via EIGCC matching method (Thompson/FRESCO)
+    6 = Exact bound state via EIGCC matching method (Thompson/FRESCO Numerov)
+        A highly accurate coupled-channels bound-state solver that performs a Numerov integration starting from the origin ($r=0$) outwards, and a second Numerov integration starting from the boundary ($r=R_{\text{max}}$) inwards using Whittaker asymptotic boundary conditions. The two solutions are matched at a midpoint matching radius, searching for the energy or potential scaling factor that aligns their logarithmic derivatives.
     7 = Charged THO (cTHO, Coulomb LST)
-    8 = R-matrix bound state on Lagrange-Legendre mesh (Hesse et al. NPA 640, 1998)
-        Required extra namelist parameters: `nodes`, `changepot`
-        Optional: `nlag` (set internally to 40), `rmax` from the GRID namelist
+    8 = R-matrix bound state on Lagrange-Legendre mesh (Hesse, Sparenberg, and Baye, NPA 640, 1998)
+        A state-of-the-art bound-state solver that expands the coupled-channels wavefunction in a Lagrange-Legendre basis.
+        - **Robust Eigenvalue-Based Search**: Uses a smooth, pole-free matching Hamiltonian eigenvalue search (Approach B) to solve the secular equations, completely eliminating the singularities and pole-jumps typical of standard R-matrix matching equations.
+        - **Wavefunction Reconstruction**: The radial wavefunctions are directly and cleanly reconstructed from the matching Hamiltonian's eigenvectors, avoiding the singular SVD and DGESV linear system solvers.
+        - **Namelist Parameters**:
+          - `nodes`: Number of nodes in the desired bound state.
+          - `changepot` (T/F): Set to `T` to search for the potential scaling factor (Option 1), or `F` to search for the bound state energy (Option 2).
+          - `nlag`: Number of Lagrange-Legendre mesh points (internally defaulted to 40).
 
 - bosc: oscillator parameters used in the HO and THO bases.
 - mlst, gamma: parameters for the local scale transformation (LST) in the THO basis  
@@ -205,6 +213,7 @@ Core+valence central and deformed (coupling) potentials:
    - hcm: radial step for projectile-target coordinate for solving the CC equations
    - jtmin, jtmax: min, max total angular momentum for solving the CC equations
    - hort: if nonzero, uses a stabilization procedure of the CC equations (see long text description)
+   - telpflag (T/F): if true, computes the Trivial Equivalent Local Potential (TELP) from the coupled-channels wavefunctions. The code performs a two-pass calculation, accumulates the TELP, and writes it to 'telp_pot.dat'.
 
 #### R-matrix parameters (for method=5,6):
 **Note:** For method=6 (HPRMAT), run `./setup.sh` before compiling to configure dependencies.

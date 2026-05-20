@@ -96,8 +96,8 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
   if (abs(P0) < 1d-12) P0 = -1d-3
   if (abs(P1) < 1d-12) P1 =  1d-3
 
-  call secular_fn(P0, fold); write(*,'(a,1p,2e14.6)') '    seed0: E,f=',P0,fold
-  call secular_fn(P1, fnew); write(*,'(a,1p,2e14.6)') '    seed1: E,f=',P1,fnew
+  call secular_fn(P0, fold)
+  call secular_fn(P1, fnew)
 
   ! Root Search Phase (Scan + Bisection)
   nbracket = 0
@@ -105,7 +105,7 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
   Emax = ER_MAX
   maxbracket = 100
   
-  write(*,'(a)') '  [eigcc_rmat] Scanning for root bracket...'
+
   call secular_fn(Emin, fold)
   do ibrac = 1, maxbracket
     Estep = (Emax - Emin) / maxbracket
@@ -115,12 +115,10 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
     call secular_fn(P0, fold)
     call secular_fn(P1, fnew)
     
-    write(*,'(a,i3,a,1p,e14.6,a,e14.6)') '    scan step ', ibrac, ' E=', P1, ' f=', fnew
     
     if (fold * fnew <= 0d0) then
       nbracket = 1
-      write(*,'(a,1p,e14.6,a,1p,e14.6,a,1p,e14.6,a,1p,e14.6,a)') &
-        '  [eigcc_rmat] Bracket found: E in [',P0,',',P1,'] with f=[',fold,',',fnew,']'
+      ! Bracket found
       exit
     end if
   end do
@@ -132,15 +130,14 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
     return
   end if
   
-  write(*,'(a)') '  [eigcc_rmat] Bisection phase...'
+
   maxiter_bis = 50
   do iter_bis = 1, maxiter_bis
     Emid = 0.5d0 * (P0 + P1)
     call secular_fn(Emid, fmid)
     
     if (abs(P1 - P0) < EPS_BIS) then
-      write(*,'(a,i3,a,1p,e14.6)') &
-        '  [eigcc_rmat] Bisection converged at iter=',iter_bis,'  E=',Emid
+
       P = Emid
       exit
     end if
@@ -181,7 +178,7 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
     end do
     
     call DSYEV('V', 'U', nb, cmat_wb, nb, w_ev, work_ev, 3*nb, info_ev)
-    write(*,*) '  [eigcc_rmat] Wavefunction DSYEV info =', info_ev
+
     if (info_ev == 0) then
       coefficients = cmat_wb(:, min(NODES + 1, nb))  ! Column corresponding to state with NODES nodes
     else
@@ -254,33 +251,21 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
     norm = norm + aux
   end do
   deallocate(integrand)
-  write(*,'(a,1p,e14.6)') '    computed norm (integral)=', norm
+
   if (norm > 1d-30) then
     PSI = PSI / sqrt(norm)
-    ! Enforce positive sign near r=0 (same as eigcc.f sign convention)
-    do ich = 1, M
-      if (PSI(min(3, NP), ich) < 0d0) then
-        PSI(:, ich) = -PSI(:, ich)
-      end if
-    end do
+    ! Enforce a single global sign (same as eigcc.f) based on the first channel
+    if (PSI(min(3, NP), 1) < 0d0) then
+      PSI = -PSI
+    end if
   end if
 
-  ! Diagnostic prints: sample PSI values and stats
-  write(*,'(a)') '  [eigcc_rmat] PSI diagnostics:'
-  write(*,'(a,1p,e14.6)') '    PSI norm after normalization=', sum(PSI(:,1)**2)
-  write(*,'(a)') '    sample PSI at radii:'
-  if (NP >= 1) then
-    write(*,'(a,i6,2x,1p,e14.6)') '      r idx=', 1, PSI(1,1)
-  end if
-  if (NP >= 2) then
-    write(*,'(a,i6,2x,1p,e14.6)') '      r idx=', NP/2, PSI((NP/2),1)
-  end if
-  write(*,'(a,i6,2x,1p,e14.6)') '      r idx=', NP, PSI(NP,1)
+
 
 
   do ich = 1, M
     call count_nodes(PSI(:,ich), NP, H, nodes_ich)
-    write(*,'(a,i3,a,i3)') '  [eigcc_rmat] Channel ', ich, ' nodes=', nodes_ich
+
   end do
 
   if (allocated(q2_sol)) deallocate(q2_sol)
@@ -318,9 +303,11 @@ contains
           end do
           fac = dble(ql(i1)) * (dble(ql(i1)) + 1d0)
           if (is_potential_scaling_search) then
-            kap_loc = -E_fixed * CONV
+            kap_loc = KAP2(i1)
+            if (abs(THETA) > 1d-5) kap_loc = kap_loc + THETA * E_fixed
           else
-            kap_loc = -E_trial * CONV
+            kap_loc = KAP2(i1)
+            if (abs(THETA) > 1d-5) kap_loc = kap_loc + THETA * E_trial
           end if
           do ir = 1, NLAG
             r_ir = xle(ir) * RMAX
@@ -352,18 +339,7 @@ contains
       m1 = m1 + NLAG
     end do
 
-    ! DSYEV Eigenvalue Diagnostic
-    block
-      real*8 :: cmat_copy(nb, nb), w_ev(nb), work_ev(3*nb)
-      integer :: info_ev
-      cmat_copy = cmat
-      call DSYEV('N', 'U', nb, cmat_copy, nb, w_ev, work_ev, 3*nb, info_ev)
-      write(*,*) 'DIAGNOSTIC build_cmat: DSYEV info =', info_ev
-      if (info_ev == 0) then
-        write(*,*) '  Lowest 5 eigenvalues of cmat:'
-        write(*,'(5(1p,e14.6,1x))') w_ev(1:min(5, nb))
-      end if
-    end block
+
 
   end subroutine build_cmat
 
@@ -379,15 +355,13 @@ contains
       eta_loc = 0.5d0 * ETAP(ii) / kap_loc_loc
       ie_w_loc = 0
       call WHIT(eta_loc, RMAX, kap_loc_loc, -kap_loc_loc**2, ql(ii), wl, wld, ie_w_loc)
-      write(*,*) 'DIAGNOSTIC update_xc1_vec: ii =', ii, ' eta_loc =', eta_loc, ' RMAX =', RMAX
-      write(*,*) '  kap_loc_loc =', kap_loc_loc, ' ie_w_loc =', ie_w_loc
-      write(*,*) '  wl =', wl(ql(ii)+1), ' wld =', wld(ql(ii)+1)
+
       if (abs(wl(ql(ii)+1)) > 1d-30) then
         xc1_c_loc = RMAX * wld(ql(ii)+1) / wl(ql(ii)+1)
       else
         xc1_c_loc = -RMAX * kap_loc_loc
       end if
-      write(*,*) '  xc1_c_loc =', xc1_c_loc
+
       kap_vec(ii) = kap_loc_loc
       xc1_vec(ii) = xc1_c_loc
     end do
@@ -435,6 +409,8 @@ contains
       if (wf(i) * wf(i+1) < 0d0) nodes = nodes + 1
     end do
   end subroutine count_nodes
+
+
 
 end subroutine eigcc_rmat
 
@@ -565,7 +541,11 @@ subroutine pre_eigcc_rmat(nset, nchan, nodes, changepot)
   do ir = 2, np_out
     rau = rmin + dr*dble(ir-1)
     if (rau > rlast) cycle
-    write(101,'(1f8.3,2x,10g14.6)') rau,(wfc(nset,1,ich,ir),ich=1,nchan)
+    write(101,'(1f8.3)', advance='no') rau
+    do ich = 1, nchan
+      write(101,'(1x,1p,e14.6)', advance='no') real(wfc(nset,1,ich,ir))
+    end do
+    write(101,*) ''
   end do
   write(101,*) '& '
   deallocate(psi_rmat)

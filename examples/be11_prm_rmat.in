@@ -9,7 +9,7 @@
 
  &output wfout(:)=1  verb=3 solapout(:)=0 froverlaps=1  /
 
- &GRID  ng=0 rmin=0.0 rint=15 rmax=100.0 dr=0.05 rlast=120 /
+ &GRID  ng=0 rmin=0.0 rint=15 rmax=25.0 dr=0.05 rlast=120 /
 
 
 # Projection on multipoles (cptype=2,3) Be12b
@@ -26,7 +26,7 @@
 
 
 #Bound
-  &JPSET bastype=8  mlst=4 gamma=2.4 bosc=1.6 nho=30 nsp=0 exmin=-1 exmax=0 bas2=0 JTOT=0.5 PARITY=1  lmax=2 changepot=T nlag=100 nodes=2 /
+  &JPSET bastype=8  mlst=4 gamma=2.4 bosc=1.6 nho=30 nsp=0 exmin=-1 exmax=0 bas2=0 JTOT=0.5 PARITY=1  lmax=2 changepot=F nlag=100 nodes=1 /
 !  &JPSET bastype=1  mlst=4 gamma=1.7 bosc=1.6 nho=20 nsp=0 exmin=-1 exmax=20 bas2=0 JTOT=0.5 PARITY=-1  lmax=3 /
 
 !  &JPSET bastype=1 mlst=4 gamma=1.6 bosc=1.6 nho=5 nsp=0 exmin=0 exmax=20.51 bas2=0 JTOT=1.5 PARITY=-1  lmax=2 /wcut(1)=0.0 /
