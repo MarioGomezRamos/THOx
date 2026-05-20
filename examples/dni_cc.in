@@ -8,7 +8,7 @@
 
  &output wfout(:)=1 5   xcdcc=F verb=0 solapout(:)=0  cdccwf=F  /
 
- &GRID  rmin=0.0 rmax=15.0 dr=0.05 rlast=20 /
+ &GRID  rmin=0.0 rmax=100.0 dr=0.05 rlast=100 rint=15.0 /
 
 # p-n potential
  &POTENTIAL ptype=3 ap=1 at=0 
@@ -20,7 +20,7 @@
  &pauli n=0 /
 
 
-  &JPSET bastype=6 mlst=4 gamma=1.5 bosc=1.6 nho=30 nsp=0 exmin=-5 exmax=0 bas2=0 JTOT=0.0 PARITY=1 lmax=0 changepot=t nodes=1 nlag=100 /  l=0   /
+&JPSET bastype=6 mlst=4 gamma=1.5 bosc=1.6 nho=30 nsp=0 exmin=-5 exmax=0 bas2=0 JTOT=0.0 PARITY=1 lmax=0 changepot=f nodes=1 nlag=100 /  l=0   /
 !&JPSET bastype=2 exmin=0.1  exmax=40.1 nk=50 nbins=15 lmax=0  JTOT=0.0 PARITY=1  /
 !  &JPSET bastype=2 exmin=0.1  exmax=40.1 nk=50 nbins=15 lmax=2  JTOT=2.0 PARITY=1  /
 
@@ -73,7 +73,7 @@
          3=Raynal
          4=Modified Numerov used in Fresco
 
-&numerov hcm=0.05 rmaxcc=100  hort=0 method=4 jtmin=0 jtmax=50 skip=t telpflag=f /   
+&numerov hcm=0.05 rmaxcc=100  hort=0 method=4 jtmin=0 jtmax=50 skip=t / telpflag=f /   
 
 
 ######################### TRIPLE DIFFERENTIAL CROSS SECTINS ##############################

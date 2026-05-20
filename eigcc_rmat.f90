@@ -41,6 +41,13 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
   integer              :: ie_w
   real*8, parameter :: MAX_ESTEP = 100d0  ! Limit energy step size
   logical              :: is_potential_scaling_search
+  
+  ! Adaptive bracketing variables
+  integer :: nbracket, maxbracket, ibrac
+  real*8  :: Emin, Emax, Estep, ftest, ftmp
+  integer :: iter_bis, maxiter_bis
+  real*8  :: Emid, fmid
+  real*8, parameter :: EPS_BIS = 1d-10  ! Bisection tolerance
 
   !----- check NS=1 -------------------------------------------------------
   if (NS /= 1) then
@@ -75,6 +82,14 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
   write(*,'(a,i3,a,i3,a,i5)') &
     '  [eigcc_rmat] nch=',M,' nlag=',NLAG,' nb=',nb
 
+  ! IMPORTANT: Initialize boundary condition parameters from initial energy guess
+  ! This ensures the secular function det(Rmat - 1/xc1) has the correct behavior
+  call update_xc1_vec(P)
+  write(*,'(a)') '  [eigcc_rmat] Initial boundary condition parameters computed'
+  do isc = 1, M
+    write(*,'(a,i3,a,1p,e14.6)') '    xc1_vec(',isc,')=',xc1_vec(isc)
+  end do
+
   ! Initial seeds
   P0 = P - 0.1d0
   P1 = P + 0.1d0
@@ -84,238 +99,152 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
   call secular_fn(P0, fold); write(*,'(a,1p,2e14.6)') '    seed0: E,f=',P0,fold
   call secular_fn(P1, fnew); write(*,'(a,1p,2e14.6)') '    seed1: E,f=',P1,fnew
 
-  ! ------------------------------------------------------------------
-  ! Bracketing scan and Brent root-finding (robust)
-  ! ------------------------------------------------------------------
-  ! Outer iteration over boundary parameters (Bc) as in Hesse et al.
-  MAX_BC_IT = 8
-  tol_bc = 1d-6
-
-  ! IMPORTANT: Initialize boundary condition parameters from initial energy guess
-  ! This ensures the secular function det(Rmat - 1/xc1) has the correct behavior
-  call update_xc1_vec(P)
-  write(*,'(a)') '  [eigcc_rmat] Initial boundary condition parameters computed'
-  do isc = 1, M
-    write(*,'(a,i3,a,1p,e14.6)') '    xc1_vec(',isc,')=',xc1_vec(isc)
-  end do
-
-  E_old = P
-  allocate(xc1_old(M))
-  do bc_iter = 1, MAX_BC_IT
-    write(*,'(a,i3)') '  [eigcc_rmat] Bc-iter=', bc_iter
-    write(*,'(a)') '  [eigcc_rmat] Scanning energy range for sign change...'
-    nscan = 400
-    br_found = 0
-    xc1_old = xc1_vec
-  a = ER_MIN
-  call secular_fn(a, fa)
-  do isc = 1, nscan
-    b = ER_MIN + isc * (ER_MAX - ER_MIN) / nscan
-    call secular_fn(b, fb)
-    if (fa * fb <= 0d0) then
-      br_found = 1
-      write(*,'(a,1p,e14.6,a,e14.6)') '    Bracket: [', a, ', ', b, ']  f=[', fa, ', ', fb, ']'
-      exit
-    end if
-    a = b
-    fa = fb
-  end do
-
-  if (br_found == 1) then
-    ! Brent's method initialization
-    c = a
-    call secular_fn(a, fa)
-    call secular_fn(b, fb)
-    fc = fa
-    d = b - a
-    e = d
-    do iter = 1, MAXC
-      if (fb * fc > 0d0) then
-        c = a
-        fc = fa
-        d = b - a
-        e = d
-      end if
-      if (abs(fc) < abs(fb)) then
-        a = b
-        b = c
-        c = a
-        fa = fb
-        fb = fc
-        fc = fa
-      end if
-      tol1 = 2d0 * 1d-15 * abs(b) + 0.5d0 * EPS
-      xm = 0.5d0 * (c - b)
-      if (abs(xm) <= tol1 .or. fb == 0d0) exit
-      if (abs(e) >= tol1 .and. abs(fa) > abs(fb)) then
-        ! Attempt inverse quadratic interpolation
-        s = fb / fa
-        if (a == c) then
-          pbr = 2d0 * xm * s
-          qbr = 1d0 - s
-        else
-          qbr = fa / fc
-          rbr = fb / fc
-          pbr = s * (2d0 * xm * qbr * (qbr - rbr) - (b - a) * (rbr - 1d0))
-          qbr = (qbr - 1d0) * (rbr - 1d0) * (s - 1d0)
-        end if
-        if (pbr > 0d0) qbr = -qbr
-        pbr = abs(pbr)
-        ! Accept interpolation only if it's within bounds
-        if (2d0 * pbr < 3d0 * xm * qbr - abs(tol1 * qbr) .and. pbr < abs(0.5d0 * e * qbr)) then
-          e = d
-          d = pbr / qbr
-        else
-          d = xm
-          e = d
-        end if
-      else
-        d = xm
-        e = d
-      end if
-      ! Move by at least tol1
-      if (abs(d) > tol1) then
-        s = b + d
-      else
-        s = b + sign(tol1, xm)
-      end if
-      call secular_fn(s, fs)
-      a = b
-      fa = fb
-      if (fa * fs < 0d0) then
-        b = s
-        call secular_fn(b, fb)
-      else
-        c = s
-        fc = fs
-      end if
-      write(*,'(a,i3,a,1p,e14.6,a,e12.4)') '    brent iter=',iter,'  E=',b,'  f=',fb
-      if (abs(fb) < EPS) exit
-    end do
-    P = b
-    if (iter > MAXC) IFAIL = 2
-    ! Update boundary parameters from the found energy and check convergence
-    call update_xc1_vec(P)
-    max_bc_diff = 0d0
-    do isc = 1, M
-      max_bc_diff = max(max_bc_diff, abs(xc1_vec(isc) - xc1_old(isc)))
-    end do
-    write(*,'(a,1p,e14.6,a,1p,e14.6)') '  [eigcc_rmat] after Bc-update: E=', P, '  max|dBc|=', max_bc_diff
-    if (max_bc_diff < tol_bc .and. abs(P - E_old) < EPS) then
-      write(*,'(a)') '  [eigcc_rmat] Bc and E converged; breaking outer loop'
-      exit
-    end if
-    E_old = P
-    ! continue outer loop (re-run root-finder with updated xc1_vec)
-  else
-    write(*,'(a)') '  [eigcc_rmat] No bracket found; printing sample secular_fn values and falling back to controlled secant'
-    ! Print sample secular function values for diagnosis
-    samples = (/ -50d0, -20d0, -10d0, -5d0, -2.5d0, -2.25d0, -2.2d0, -2.1d0, -1.5d0, -1.0d0, 0d0, 10d0 /)
-    write(*,'(a)') '    Sample E      f(E)'
-    do isc = 1, size(samples)
-      call secular_fn(samples(isc), sval)
-      write(*,'(a,1p,e14.6,a,1p,e14.6)') '    ', samples(isc), '  ', sval
-    end do
-    ! Fallback: limited secant from initial seeds
-    do iter = 1, MAXC
-      if (abs(fnew - fold) < 1d-20 * max(abs(fnew),1d0)) then
-        write(*,*) '[eigcc_rmat] stagnation'
-        IFAIL = 2; exit
-      end if
-      dP = fnew * (P1 - P0) / (fnew - fold)
-      if (abs(dP) > MAX_ESTEP) then
-        dP = sign(MAX_ESTEP, dP)
-      end if
-      P = P1 - dP
-      if (abs(P) < 1d-12) P = 1d-4
-      fold = fnew; P0 = P1; P1 = P
-      call secular_fn(P, fnew)
-      write(*,'(a,i3,a,1p,e14.6,a,e12.4)') '    iter=',iter,'  E=',P,'  f=',fnew
-      if (abs(fnew) < EPS) exit
-    end do
-    if (iter > MAXC) IFAIL = 2
-  end if
-
-  end do  ! end bc_iter loop
-  deallocate(xc1_old)
-
-  call secular_fn(P, fnew)
-  allocate(svals_m(M), VT_m(M, M), wk_m(5*M))
-  allocate(secmat_copy(M,M))
-  secmat_copy = secmat
-  call DGESVD('N', 'A', M, M, secmat_copy, M, svals_m, &
-               dummy_u, 1, VT_m, M, wk_m, 5*M, info_lap)
-  write(*,'(a,i3)') '  [eigcc_rmat] DGESVD info=', info_lap
-  write(*,'(a)') '  [eigcc_rmat] singular values:'
-  do i1 = 1, M
-    write(*,'(a,i3,a,1p,e14.6)') '    svals(', i1, ')=', svals_m(i1)
-  end do
-  write(*,'(a)') '  [eigcc_rmat] VT_m (rows):'
-  do i1 = 1, min(M,5)
-    write(*,'(a,i3,a)') '    VT row ', i1, ':'
-    do j = 1, M
-      write(*,'(1p,e14.6,1x)', advance='no') VT_m(i1,j)
-    end do
-    write(*,*)
-  end do
-  deallocate(secmat_copy)
+  ! Root Search Phase (Scan + Bisection)
+  nbracket = 0
+  Emin = ER_MIN
+  Emax = ER_MAX
+  maxbracket = 100
   
-  allocate(lag_vals(NLAG))
-  call build_cmat(P)
-  allocate(q2_sol(nb, M), ipiv_loc(nb))
-  q2_sol = 0d0
-  do ich = 1, M
-    do ir = 1, NLAG
-      q2_sol((ich-1)*NLAG + ir, ich) = ((-1d0)**(NLAG-ir) / sqrt(RMAX * xle(ir)*(1d0-xle(ir))))
-    end do
+  write(*,'(a)') '  [eigcc_rmat] Scanning for root bracket...'
+  call secular_fn(Emin, fold)
+  do ibrac = 1, maxbracket
+    Estep = (Emax - Emin) / maxbracket
+    P0 = Emin + (ibrac-1) * Estep
+    P1 = Emin + ibrac * Estep
+    
+    call secular_fn(P0, fold)
+    call secular_fn(P1, fnew)
+    
+    write(*,'(a,i3,a,1p,e14.6,a,e14.6)') '    scan step ', ibrac, ' E=', P1, ' f=', fnew
+    
+    if (fold * fnew <= 0d0) then
+      nbracket = 1
+      write(*,'(a,1p,e14.6,a,1p,e14.6,a,1p,e14.6,a,1p,e14.6,a)') &
+        '  [eigcc_rmat] Bracket found: E in [',P0,',',P1,'] with f=[',fold,',',fnew,']'
+      exit
+    end if
   end do
-  call DGESV(nb, M, cmat, nb, ipiv_loc, q2_sol, nb, info_lap)
-  write(*,'(a,i3)') '  [eigcc_rmat] DGESV(nb,M) info=', info_lap
-  write(*,'(a)') '  [eigcc_rmat] sample q2_sol first rows:'
-  do i1 = 1, min(5, nb)
-    write(*,'(a,i4,a)') '    row', i1, ':'
-    do j = 1, M
-      write(*,'(1p,e14.6,1x)', advance='no') q2_sol(i1,j)
-    end do
-    write(*,*)
+  
+  if (nbracket == 0) then
+    write(*,'(a)') '[eigcc_rmat] ERROR: No root bracket found in energy range'
+    write(*,'(a,1p,e14.6,a,1p,e14.6,a)') '  Scan range: [', ER_MIN, ',', ER_MAX, ']'
+    IFAIL = 1
+    return
+  end if
+  
+  write(*,'(a)') '  [eigcc_rmat] Bisection phase...'
+  maxiter_bis = 50
+  do iter_bis = 1, maxiter_bis
+    Emid = 0.5d0 * (P0 + P1)
+    call secular_fn(Emid, fmid)
+    
+    if (abs(P1 - P0) < EPS_BIS) then
+      write(*,'(a,i3,a,1p,e14.6)') &
+        '  [eigcc_rmat] Bisection converged at iter=',iter_bis,'  E=',Emid
+      P = Emid
+      exit
+    end if
+    
+    if (fold * fmid <= 0d0) then
+      P1 = Emid
+      fnew = fmid
+    else
+      P0 = Emid
+      fold = fmid
+    end if
   end do
-
-  write(*,'(a,1p,e14.6)') '  [eigcc_rmat] Rmat(1,1)=', Rmat(1,1)
-  write(*,'(a,1p,e14.6)') '  [eigcc_rmat] secmat(1,1)=', secmat(1,1)
-  write(*,'(a,1p,e14.6)') '  [eigcc_rmat] xc1_vec(1)=', xc1_vec(1)
-  if (abs(xc1_vec(1)) > 1d-30) write(*,'(a,1p,e14.6)') '  [eigcc_rmat] 1/xc1_vec(1)=', 1d0/xc1_vec(1)
-
-  ! Print cmat stats
-  cmat_min = 1d300
-  cmat_max = -1d300
-  do i1 = 1, nb
-    do j = 1, nb
-      tmpv = cmat(i1,j)
-      if (tmpv < cmat_min) cmat_min = tmpv
-      if (tmpv > cmat_max) cmat_max = tmpv
-    end do
-  end do
-  write(*,'(a,1p,e14.6,a,1p,e14.6)') '  [eigcc_rmat] cmat min=', cmat_min, ' max=', cmat_max
-
-  PSI = 0d0
-  do ir = 1, NP
-    rn = (ir-1) * H
-    xx = rn / RMAX
-    if (xx < 1d-10) xx = 1d-10
-    if (xx > 1d0-1d-10) xx = 1d0-1d-10
-    do irp = 1, NLAG
-      bval = 1d0
-      do i2 = 1, NLAG
-        if (i2 /= irp) bval = bval * (xx - xle(i2)) / (xle(irp) - xle(i2))
-      end do
-      bval = bval * sqrt(xx*(1d0-xx) / (xle(irp)*(1d0-xle(irp))))
-      do ich2 = 1, M
-        do ich = 1, M
-          PSI(ir, ich) = PSI(ir, ich) + VT_m(ich2, ich) * q2_sol((ich-1)*NLAG + irp, ich2) * bval
+  
+  ! Wavefunction reconstruction
+  block
+    real*8 :: cmat_wb(nb, nb), w_ev(nb), work_ev(3*nb), coefficients(nb)
+    integer :: info_ev, ich, ir, ir2, irp, i2, m1, ie_w_loc
+    real*8 :: bval, xx, rn, r_trans
+    real*8 :: u_boundary, kap_loc_loc, eta_loc
+    real*8, allocatable :: wl_rmax(:), wld_rmax(:), wl_rn(:), wld_rn(:)
+    
+    if (is_potential_scaling_search) then
+      call update_xc1_vec(E_fixed)
+    else
+      call update_xc1_vec(P)
+    end if
+    
+    call build_cmat(P)
+    cmat_wb = cmat
+    
+    do ich = 1, M
+      m1 = (ich-1)*NLAG
+      do ir = 1, NLAG
+        do ir2 = 1, NLAG
+          cmat_wb(m1+ir, m1+ir2) = cmat_wb(m1+ir, m1+ir2) - xc1_vec(ich) * blo0(ir, ir2) / RMAX
         end do
       end do
     end do
-  end do
+    
+    call DSYEV('V', 'U', nb, cmat_wb, nb, w_ev, work_ev, 3*nb, info_ev)
+    write(*,*) '  [eigcc_rmat] Wavefunction DSYEV info =', info_ev
+    if (info_ev == 0) then
+      coefficients = cmat_wb(:, 1)  ! Column corresponding to lowest eigenvalue
+    else
+      coefficients = 0d0
+      do ich = 1, M
+        coefficients((ich-1)*NLAG + 1) = 1.0d0
+      end do
+    end if
+    
+    PSI = 0d0
+    r_trans = RMAX * xle(NLAG)
+    
+    do ich = 1, M
+      ! Compute boundary value u(RMAX)
+      u_boundary = 0d0
+      do irp = 1, NLAG
+        u_boundary = u_boundary + coefficients((ich-1)*NLAG + irp) * q2(irp, 1)
+      end do
+      
+      ! Setup Whittaker function parameters
+      if (is_potential_scaling_search) then
+        kap_loc_loc = KAP2(ich) + THETA * E_fixed
+      else
+        kap_loc_loc = KAP2(ich) + THETA * P
+      end if
+      kap_loc_loc = sqrt(abs(kap_loc_loc))
+      if (kap_loc_loc < 1d-10) kap_loc_loc = 1d-10
+      eta_loc = 0.5d0 * ETAP(ich) / kap_loc_loc
+      
+      allocate(wl_rmax(ql(ich)+1), wld_rmax(ql(ich)+1))
+      call WHIT(eta_loc, RMAX, kap_loc_loc, -kap_loc_loc**2, ql(ich), wl_rmax, wld_rmax, ie_w_loc)
+      
+      allocate(wl_rn(ql(ich)+1), wld_rn(ql(ich)+1))
+      
+      do ir = 1, NP
+        rn = (ir-1) * H
+        if (rn < r_trans) then
+          ! Interior Lagrange-mesh expansion
+          xx = rn / RMAX
+          if (xx < 1d-10) xx = 1d-10
+          if (xx > 1d0-1d-10) xx = 1d0-1d-10
+          do irp = 1, NLAG
+            bval = 1d0
+            do i2 = 1, NLAG
+              if (i2 /= irp) bval = bval * (xx - xle(i2)) / (xle(irp) - xle(i2))
+            end do
+            bval = bval * sqrt(xx*(1d0-xx) / (xle(irp)*(1d0-xle(irp))))
+            PSI(ir, ich) = PSI(ir, ich) + coefficients((ich-1)*NLAG + irp) * bval / sqrt(RMAX * wle(irp))
+          end do
+        else
+          ! Exterior matched Whittaker tail
+          call WHIT(eta_loc, rn, kap_loc_loc, -kap_loc_loc**2, ql(ich), wl_rn, wld_rn, ie_w_loc)
+          if (abs(wl_rmax(ql(ich)+1)) > 1d-30) then
+            PSI(ir, ich) = u_boundary * wl_rn(ql(ich)+1) / wl_rmax(ql(ich)+1)
+          else
+            PSI(ir, ich) = 0d0
+          end if
+        end if
+      end do
+      
+      deallocate(wl_rmax, wld_rmax, wl_rn, wld_rn)
+    end do
+  end block
 
   allocate(integrand(NP))
   norm = 0d0
@@ -326,7 +255,15 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
   end do
   deallocate(integrand)
   write(*,'(a,1p,e14.6)') '    computed norm (integral)=', norm
-  if (norm > 1d-30) PSI = PSI / sqrt(norm)
+  if (norm > 1d-30) then
+    PSI = PSI / sqrt(norm)
+    ! Enforce positive sign near r=0 (same as eigcc.f sign convention)
+    do ich = 1, M
+      if (PSI(min(3, NP), ich) < 0d0) then
+        PSI(:, ich) = -PSI(:, ich)
+      end if
+    end do
+  end if
 
   ! Diagnostic prints: sample PSI values and stats
   write(*,'(a)') '  [eigcc_rmat] PSI diagnostics:'
@@ -346,63 +283,88 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
     write(*,'(a,i3,a,i3)') '  [eigcc_rmat] Channel ', ich, ' nodes=', nodes_ich
   end do
 
-  deallocate(q2_sol, ipiv_loc, svals_m, VT_m, wk_m, lag_vals)
-  deallocate(wl, wld, cmat, Rmat, secmat, kap_vec, xc1_vec, ipiv2)
+  if (allocated(q2_sol)) deallocate(q2_sol)
+  if (allocated(ipiv_loc)) deallocate(ipiv_loc)
+  if (allocated(svals_m)) deallocate(svals_m)
+  if (allocated(VT_m)) deallocate(VT_m)
+  if (allocated(wk_m)) deallocate(wk_m)
+  if (allocated(lag_vals)) deallocate(lag_vals)
+  if (allocated(wl)) deallocate(wl)
+  if (allocated(wld)) deallocate(wld)
+  if (allocated(cmat)) deallocate(cmat)
+  if (allocated(Rmat)) deallocate(Rmat)
+  if (allocated(secmat)) deallocate(secmat)
+  if (allocated(kap_vec)) deallocate(kap_vec)
+  if (allocated(xc1_vec)) deallocate(xc1_vec)
+  if (allocated(ipiv2)) deallocate(ipiv2)
 
 contains
 
   subroutine build_cmat(E_trial)
     real*8, intent(in) :: E_trial
-    integer :: m1, m2, ir2
-    real*8  :: kap_loc, xc_loc, r_ir
+    integer :: m1, m2, ir2, ir, i1, i2, idx_low, idx_high
+    real*8  :: kap_loc, xc_loc, r_ir, fac, t, v_val
 
     cmat = 0d0
     m1 = 0
     do i1 = 1, M
-      do ir = 1, NLAG
-        xi = xle(ir)
-        xi2 = xi * (1d0 - xi)
-        r_ir = xi * RMAX
-        xx = ((4d0*NLAG*(NLAG+1d0) + 3d0)*xi2 + 1d0 - 6d0*xi) / (3d0 * xi2**2)
-        cmat(m1+ir, m1+ir) = xx / RMAX**2
-        do ir2 = 1, ir - 1
-          xj = xle(ir2)
-          xj2 = xj * (1d0 - xj)
-          xx = ((-1d0)**(ir-ir2) / sqrt(xi2*xj2)) * (2d0 / (xi - xj)**2)
-          cmat(m1+ir, m1+ir2) = xx / RMAX**2
-          cmat(m1+ir2, m1+ir) = cmat(m1+ir, m1+ir2)
-        end do
-        fac = dble(ql(i1)) * (dble(ql(i1)) + 1d0)
-        kap_loc = -E_trial * CONV
-        if (r_ir < 1d-10) r_ir = 1d-10
-        cmat(m1+ir, m1+ir) = cmat(m1+ir, m1+ir) + fac/r_ir**2 + kap_loc
-        
-        if (abs(THETA) < 1d-5 .and. i1 == MC) then
-          irg = nint(r_ir / H) + 1
-          if (irg < 1)    irg = 1
-          if (irg > MAXN) irg = MAXN
-          cmat(m1+ir, m1+ir) = cmat(m1+ir, m1+ir) + (E_trial - 1.0d0) * POT(irg)
-        end if
-      end do
-
-      ! Note: boundary parameters `xc1_vec` are computed in an outer iteration
-      ! via `update_xc1_vec` (they must be kept fixed while searching for the
-      ! root). Here we only leave placeholders; `xc1_vec` will be used later
-      ! when forming `secmat` in `secular_fn`.
-      kap_vec(i1) = 0d0
-
-      m2 = 0
       do i2 = 1, M
+        m2 = (i2-1) * NLAG
+        if (i1 == i2) then
+          do ir = 1, NLAG
+            do ir2 = 1, NLAG
+              cmat(m1+ir, m1+ir2) = tc(ir, ir2, 1)
+            end do
+          end do
+          fac = dble(ql(i1)) * (dble(ql(i1)) + 1d0)
+          if (is_potential_scaling_search) then
+            kap_loc = -E_fixed * CONV
+          else
+            kap_loc = -E_trial * CONV
+          end if
+          do ir = 1, NLAG
+            r_ir = xle(ir) * RMAX
+            if (r_ir < 1d-10) r_ir = 1d-10
+            cmat(m1+ir, m1+ir) = cmat(m1+ir, m1+ir) + fac/r_ir**2 + kap_loc
+          end do
+        end if
         do ir = 1, NLAG
-          irg = nint(xle(ir) * RMAX / H) + 1
-          if (irg < 1)    irg = 1
-          if (irg > MAXN) irg = MAXN
-          cmat(m1+ir, m2+ir) = cmat(m1+ir, m2+ir) + dble(CCMAT(i1, i2, irg))
+          r_ir = xle(ir) * RMAX
+          idx_low = int(r_ir / H) + 1
+          idx_high = idx_low + 1
+          if (idx_low < 1)    idx_low = 1
+          if (idx_low > MAXN) idx_low = MAXN
+          if (idx_high < 1)    idx_high = 1
+          if (idx_high > MAXN) idx_high = MAXN
+          if (idx_low == idx_high) then
+            v_val = CCMAT(i1, i2, idx_low)
+          else
+            t = (r_ir - (idx_low - 1) * H) / H
+            v_val = (1d0 - t) * CCMAT(i1, i2, idx_low) + t * CCMAT(i1, i2, idx_high)
+          end if
+          if (is_potential_scaling_search .and. i1 == i2 .and. i1 == MC) then
+            cmat(m1+ir, m2+ir) = cmat(m1+ir, m2+ir) + E_trial * v_val
+          else
+            cmat(m1+ir, m2+ir) = cmat(m1+ir, m2+ir) + v_val
+          end if
         end do
-        m2 = m2 + NLAG
       end do
       m1 = m1 + NLAG
     end do
+
+    ! DSYEV Eigenvalue Diagnostic
+    block
+      real*8 :: cmat_copy(nb, nb), w_ev(nb), work_ev(3*nb)
+      integer :: info_ev
+      cmat_copy = cmat
+      call DSYEV('N', 'U', nb, cmat_copy, nb, w_ev, work_ev, 3*nb, info_ev)
+      write(*,*) 'DIAGNOSTIC build_cmat: DSYEV info =', info_ev
+      if (info_ev == 0) then
+        write(*,*) '  Lowest 5 eigenvalues of cmat:'
+        write(*,'(5(1p,e14.6,1x))') w_ev(1:min(5, nb))
+      end if
+    end block
+
   end subroutine build_cmat
 
   subroutine update_xc1_vec(E_bound)
@@ -417,11 +379,15 @@ contains
       eta_loc = 0.5d0 * ETAP(ii) / kap_loc_loc
       ie_w_loc = 0
       call WHIT(eta_loc, RMAX, kap_loc_loc, -kap_loc_loc**2, ql(ii), wl, wld, ie_w_loc)
+      write(*,*) 'DIAGNOSTIC update_xc1_vec: ii =', ii, ' eta_loc =', eta_loc, ' RMAX =', RMAX
+      write(*,*) '  kap_loc_loc =', kap_loc_loc, ' ie_w_loc =', ie_w_loc
+      write(*,*) '  wl =', wl(ql(ii)+1), ' wld =', wld(ql(ii)+1)
       if (abs(wl(ql(ii)+1)) > 1d-30) then
         xc1_c_loc = RMAX * wld(ql(ii)+1) / wl(ql(ii)+1)
       else
         xc1_c_loc = -RMAX * kap_loc_loc
       end if
+      write(*,*) '  xc1_c_loc =', xc1_c_loc
       kap_vec(ii) = kap_loc_loc
       xc1_vec(ii) = xc1_c_loc
     end do
@@ -430,47 +396,32 @@ contains
   subroutine secular_fn(E_trial, fval)
     real*8, intent(in)  :: E_trial
     real*8, intent(out) :: fval
-    real*8 :: work_mat(nb, nb), q2_sol(nb, M), qi
-    integer :: ipiv_loc(nb), info_loc, ich1, ich2
-    call build_cmat(E_trial)
-    work_mat = cmat
-    q2_sol = 0d0
-    do ich = 1, M
-      do ir = 1, NLAG
-        qi = ((-1d0)**(NLAG-ir) / sqrt(RMAX * xle(ir)*(1d0-xle(ir))))
-        q2_sol((ich-1)*NLAG + ir, ich) = qi
-      end do
-    end do
-    call DGESV(nb, M, work_mat, nb, ipiv_loc, q2_sol, nb, info_loc)
-    if (info_loc /= 0) then
-      fval = 1d10; return
+    real*8 :: cmat_wb(nb, nb), w_ev(nb), work_ev(3*nb)
+    integer :: info_ev, ich, ir, ir2, m1
+    
+    if (is_potential_scaling_search) then
+      call update_xc1_vec(E_fixed)
+    else
+      call update_xc1_vec(E_trial)
     end if
-    Rmat = 0d0
-    do ich1 = 1, M
-      do ich2 = 1, M
-        do ir = 1, NLAG
-          qi = ((-1d0)**(NLAG-ir) / sqrt(RMAX * xle(ir)*(1d0-xle(ir))))
-          Rmat(ich1, ich2) = Rmat(ich1, ich2) + qi * q2_sol((ich1-1)*NLAG + ir, ich2)
+    
+    call build_cmat(E_trial)
+    cmat_wb = cmat
+    
+    do ich = 1, M
+      m1 = (ich-1)*NLAG
+      do ir = 1, NLAG
+        do ir2 = 1, NLAG
+          cmat_wb(m1+ir, m1+ir2) = cmat_wb(m1+ir, m1+ir2) - xc1_vec(ich) * blo0(ir, ir2) / RMAX
         end do
       end do
     end do
-    Rmat = Rmat / RMAX
-    secmat = Rmat
-    do ich = 1, M
-      if (abs(xc1_vec(ich)) < 1d-30) then
-         secmat(ich,ich) = Rmat(ich,ich) - 1d20
-      else
-         secmat(ich,ich) = Rmat(ich,ich) - 1d0/xc1_vec(ich)
-      endif
-    end do
-    if (M == 1) then
-      fval = secmat(1, 1)
+    
+    call DSYEV('N', 'U', nb, cmat_wb, nb, w_ev, work_ev, 3*nb, info_ev)
+    if (info_ev /= 0) then
+      fval = 1d10
     else
-      call DGETRF(M, M, secmat, M, ipiv2, info2)
-      fval = 1d0
-      do ich = 1, M
-        fval = fval * secmat(ich, ich)
-      end do
+      fval = w_ev(1)
     end if
   end subroutine secular_fn
 
@@ -504,7 +455,7 @@ subroutine pre_eigcc_rmat(nset, nchan, nodes, changepot)
   integer, intent(out) :: nchan
   logical, intent(in)  :: changepot
   integer :: inc, ich, ir, np_out, nlag, ns_loc, ifail
-  real*8  :: fconv, ener, conv, rau, norm, aux, rms
+  real*8  :: fconv, ener, conv, rau, norm, aux, rms, rmat_boundary
   real*8  :: etap(maxchan), k2(maxchan), theta_loc, p_loc, ener_loc
   real*8, allocatable :: zrma(:), psi_rmat(:,:), integrand(:)
 
@@ -535,16 +486,24 @@ subroutine pre_eigcc_rmat(nset, nchan, nodes, changepot)
     allocate(wfc(jpsets, maxeset, maxchan, nr))
     allocate(energ(jpsets, maxeset))
   end if
+  if (rint > 0d0 .and. rint < rmax) then
+    rmat_boundary = rint
+    write(*,'(/,a,f8.3,a,f8.3,a)') &
+      '  [pre_eigcc_rmat] Extrapolating bound states: R-matrix boundary rint =', rint, &
+      ' fm, extrapolating to rmax =', rmax, ' fm'
+  else
+    rmat_boundary = rmax
+  end if
   allocate(zrma(ns_loc * nlag))
-  call rmat_ini(nlag, ns_loc, rmax, zrma)
+  call rmat_ini(nlag, ns_loc, rmat_boundary, zrma)
   deallocate(zrma)
   write(*,'(/,a,i3,a,i3,a,i3,a,f8.3,a)') &
     '  [pre_eigcc_rmat] nch=',nchan,' nlag=',nlag,' ns=',ns_loc, &
-    '  rmax=',rmax,' fm'
+    '  rmat_boundary=',rmat_boundary,' fm'
   allocate(psi_rmat(nr, nchan))
   call eigcc_rmat(psi_rmat, ccmat, etap, k2, theta_loc, p_loc, &
                   ener_loc, nr, inc, nodes, nr, dr, nchan,     &
-                  nlag, ns_loc, rmax, 300, 1d-6, ifail,        &
+                  nlag, ns_loc, rmat_boundary, 300, 1d-6, ifail, &
                   vcl(ql(inc), 1:nr) * conv, conv)
   if (ifail == 1) then
     write(*,*) '[pre_eigcc_rmat] singular matrix – stopping'; stop
