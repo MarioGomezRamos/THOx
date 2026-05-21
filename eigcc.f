@@ -60,7 +60,7 @@ c *** ----------------------------------------------
       inc     =jpiset(nset)%inc
       nchan   =jpiset(nset)%nchan
 
-      ener=egs
+      ener=abs(egs)
       conv=1/fconv 
       
       if (changepot) then
@@ -92,7 +92,7 @@ c *** ----------------------------------------------
       
       if (.not. changepot) then
       do ich=1,nchan
-      k2(ich)=k2(ich)-conv*egs
+      k2(ich)=k2(ich)-conv*abs(egs)
       enddo
       endif
       
@@ -147,7 +147,7 @@ c *** ----------------------------------------------
       write(*,*) 'Rescaling not applied to other channels!!!!'
       write(*,*) 'Energy',egs
       else
-      write(*,*) 'Energy:',p,'from',egs
+      write(*,*) 'Energy:',-p,'from',egs
       ener=p
       energ(nset,1)=-ener
       endif
@@ -222,12 +222,12 @@ c *** ----------------------------------------------
         r=rmin+dr*dble(ir-1)
        enddo !ir
              
-        do ir=2,np
+        do ir=1,np
         r=rmin+dr*dble(ir-1)
         if (r> rlast) cycle
 !        write(100+i,'(1f8.3,2x,10g14.6)') r,(r*wfeig(i,m,ir),m=1,nchan)   
         write(101,'(1f8.3,2x,10g14.6)') r,
-     &   (dble(wfc(nset,1,m,ir)),m=1,nchan)   
+     &   (r*dble(wfc(nset,1,m,ir)),m=1,nchan)   
         
 !        write(200+i,'(1f8.3,2x,10g14.6)') r,(vertex(m,ir),m=1,nchan)
         enddo !ir

@@ -1,2 +1,76 @@
+========================================================================
+                               CHANGELOG
+========================================================================
+
+2026-05-21:
+    * eigcc.f:
+      - Fixed matching-method solver (bastype=6) convergence by utilizing the positive binding energy abs(egs) for inner/outer integration, avoiding double-counting egs when input as absolute negative energy.
+      - Aligned fort.101 wavefunction formatting for bastype=6 to output the standard u(r) = r * R(r) format starting from ir=1.
+    * eigcc_rmat.f90, examples/dni_cc.in:
+      - Adopted the standard thox/FRESCO node convention (nodes=1 for Deuteron ground state) in the Lagrange-mesh R-matrix solver.
+      - Fixed bound state absolute energy assignment energ(nset, 1) during potential scaling search (changepot=t).
+      - Aligned fort.101 output energy sign and wavefunction normalization/format (printing u(r) = r * R(r)) to match other solvers.
+      - Diagnosed and fixed a critical R-matrix boundary condition bug at the origin (ir=1, r=0) where a small numerical residual in the Lagrange expansion divided by (rvec + 1d-10) caused a huge explosion of the radial wavefunction wfc, contaminating the 4-point FFC4 interpolation at small radii. Explicitly set u(0) = 0 and wfc(0) = 0.
+      - Verified excellent reaction cross-section consistency (within 0.27%) and identical unitarity between bastype=1 and bastype=8.
+    * scatcc.f90, rmatrix.f:
+      - Cleaned up R-matrix bound-state solver debug messages and prints.
+      - Updated inline code documentation.
+
+2026-05-20:
+    * scatcc.f90, rmatrix.f, examples/:
+      - Added support for root-search and wavefunction reconstruction for states
+        with arbitrary nodes (excited states) in the R-matrix solver.
+      - Fixed bound state energy matching and wavefunction extrapolation for
+        bastype=8 (Lagrange-mesh R-matrix solver) using the rint grid parameter.
+      - Added Be-11 potential scaling search and Deuteron-Ni bound state
+        extrapolation examples (be11_prm.in, dni_cc_b1.in, etc.).
+
+2026-05-18:
+    * hdiag.f90, fragpot.f90, projpot.f90, rmatrix.f, eigcc.f, bincc2.f, clebsg.f90, utils.f90, xsections.f90:
+      - Modernized obsolete and non-standard Fortran features to comply with
+        the Fortran 2018 standard (such as removing shared DO loop terminals,
+        replacing obsolescent operators, and correcting variable declarations).
+
+2026-05-17:
+    * scatcc.f90, rmatrix.f:
+      - Integrated preliminary implementation of Lagrange-mesh R-matrix bound state solver.
+
+2026-05-14:
+    * scatcc.f90:
+      - Fixed Trivially Equivalent Local Potential (TELP) potential calculations
+        (wavefunction propagation, QR orthogonalization corrections).
+    * belam.f90, bmlam.f90:
+      - Attempted simultaneous valence and core excitation inclusion in B(Elambda)
+        transition calculations.
+
+2026-05-06:
+    * xsections_alpha_1d.f90, scatcc.f90:
+      - Fixed cross section calculation in xsections_alpha_1d.
+      - Added support for reading S-matrices from previous runs to skip recalculations.
+
+2026-05-01:
+    * deprecated.f90:
+      - Cleaned up active codebase by moving unused/obsolete Fortran subroutines
+        to deprecated.f90.
+
+2026-04-27:
+    * scatcc.f90, xsections.f90:
+      - Added cuts to relative energy distribution (thcut_min, thcut_max variables).
+      - Added energy variable tracking in jpset.
+
+2026-04-05:
+    * xsections.f90:
+      - Optimized cross-section computation by avoiding phase-space calculations
+        for zero cross sections.
+
+2026-02-26:
+    * rmatrix_hp.F90:
+      - Integrated High Performance R-matrix solver (HPRMAT).
+      - Corrected complex system solver call (ZGESV).
+
+2025-12-22:
+    * bmlam.f90:
+      - Added verification of bmlambda namelist presence before reading.
+
 1/7/20: xsections.f90
         fixed computation of reaction cross section when more than one incoming channel is present

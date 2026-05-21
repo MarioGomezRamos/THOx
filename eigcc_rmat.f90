@@ -180,7 +180,7 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
     call DSYEV('V', 'U', nb, cmat_wb, nb, w_ev, work_ev, 3*nb, info_ev)
 
     if (info_ev == 0) then
-      coefficients = cmat_wb(:, min(NODES + 1, nb))  ! Column corresponding to state with NODES nodes
+      coefficients = cmat_wb(:, min(NODES, nb))  ! Column corresponding to state with NODES nodes
     else
       coefficients = 0d0
       do ich = 1, M
@@ -215,6 +215,10 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
       
       do ir = 1, NP
         rn = (ir-1) * H
+        if (ir == 1) then
+          PSI(ir, ich) = 0d0
+          cycle
+        end if
         if (rn < r_trans) then
           ! Interior Lagrange-mesh expansion
           xx = rn / RMAX
@@ -395,7 +399,7 @@ contains
     if (info_ev /= 0) then
       fval = 1d10
     else
-      fval = w_ev(min(NODES + 1, nb))
+      fval = w_ev(min(NODES, nb))
     end if
   end subroutine secular_fn
 
@@ -515,8 +519,11 @@ subroutine pre_eigcc_rmat(nset, nchan, nodes, changepot)
   end if
   do ich = 1, nchan
     do ir = 1, nr
-      wfc(nset,1,ich,ir) = psi_rmat(ir,ich) / (rvec(ir) + 1d-10)
-      if (ir == 1 .and. ql(ich) /= 0) wfc(nset,1,ich,ir) = 0d0
+      if (ir == 1) then
+        wfc(nset,1,ich,ir) = 0d0
+      else
+        wfc(nset,1,ich,ir) = psi_rmat(ir,ich) / rvec(ir)
+      end if
     end do
   end do
   deallocate(ccmat)

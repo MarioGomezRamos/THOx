@@ -70,7 +70,6 @@ c changed in v2.3
 !      faux=cfival(raux,rvec,yvp,nr,alpha) ! R(r)
       faux=FFC4((raux-rmin)/dr,yvp,nr)
       frad(jset,ie,iq,ich)=faux*raux     ! u(r)=r*R(r)
-!      write(95,'(1f8.3,2x,100g14.6)')raux,frad(jset,ie,iq,ich)
       enddo ! iq=quadrature point
       enddo ! ich=channel
       enddo ! ie = energy
