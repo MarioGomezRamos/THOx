@@ -180,7 +180,7 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
     call DSYEV('V', 'U', nb, cmat_wb, nb, w_ev, work_ev, 3*nb, info_ev)
 
     if (info_ev == 0) then
-      coefficients = cmat_wb(:, min(NODES, nb))  ! Column corresponding to state with NODES nodes
+      coefficients = cmat_wb(:, min(NODES + 1, nb))  ! Column corresponding to state with NODES nodes
     else
       coefficients = 0d0
       do ich = 1, M
@@ -401,7 +401,7 @@ contains
     if (info_ev /= 0) then
       fval = 1d10
     else
-      fval = w_ev(min(NODES, nb))
+      fval = w_ev(min(NODES + 1, nb))
     end if
   end subroutine secular_fn
 
