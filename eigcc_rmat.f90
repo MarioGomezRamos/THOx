@@ -209,6 +209,7 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
       eta_loc = 0.5d0 * ETAP(ich) / kap_loc_loc
       
       allocate(wl_rmax(ql(ich)+1), wld_rmax(ql(ich)+1))
+      ie_w_loc = 0
       call WHIT(eta_loc, RMAX, kap_loc_loc, -kap_loc_loc**2, ql(ich), wl_rmax, wld_rmax, ie_w_loc)
       
       allocate(wl_rn(ql(ich)+1), wld_rn(ql(ich)+1))
@@ -234,6 +235,7 @@ subroutine eigcc_rmat(PSI, CCMAT, ETAP, KAP2, THETA, P, E_fixed,  &
           end do
         else
           ! Exterior matched Whittaker tail
+          ie_w_loc = 0
           call WHIT(eta_loc, rn, kap_loc_loc, -kap_loc_loc**2, ql(ich), wl_rn, wld_rn, ie_w_loc)
           if (abs(wl_rmax(ql(ich)+1)) > 1d-30) then
             PSI(ir, ich) = u_boundary * wl_rn(ql(ich)+1) / wl_rmax(ql(ich)+1)
@@ -493,20 +495,68 @@ subroutine pre_eigcc_rmat(nset, nchan, nodes, changepot)
   energ(nset, 1) = -p_loc
   allocate(integrand(nr))
   norm = 0d0; rms = 0d0
-  do ich = 1, nchan
-    do ir = 1, nr-1
-      integrand(ir) = psi_rmat(ir,ich)**2
+  block
+    real*8, allocatable :: comp_norms(:), comp_rmss(:), comp_ancs(:)
+    allocate(comp_norms(nchan), comp_rmss(nchan), comp_ancs(nchan))
+    do ich = 1, nchan
+      do ir = 1, nr-1
+        integrand(ir) = psi_rmat(ir,ich)**2
+      end do
+      call sim(integrand, aux, 1, nr-1, dr, nr-1)
+      write(*,'(a,i3,a,5f6.2,a,f10.6)') '  Channel',ich,              &
+        ' (l,s,j,I,J)',dble(ql(ich)),sn,qj(ich),qjc(ich),jtot,'  Norm:',aux
+      norm = norm + aux
+      comp_norms(ich) = aux
+      
+      do ir = 1, nr-1
+        integrand(ir) = rvec(ir)**2 * psi_rmat(ir,ich)**2
+      end do
+      call sim(integrand, rau, 1, nr-1, dr, nr-1)
+      rms = rms + rau
+      comp_rmss(ich) = sqrt(rau / max(aux, 1d-30))
+
+      block
+        real*8 :: kap_loc_loc, eta_loc, u_boundary, anc_val
+        real*8, allocatable :: wl_rmax(:), wld_rmax(:)
+        integer :: ie_w_loc, ir_boundary
+        
+        ! Compute ANC
+        kap_loc_loc = k2(ich) + theta_loc * p_loc
+        kap_loc_loc = sqrt(abs(kap_loc_loc))
+        if (kap_loc_loc < 1d-10) kap_loc_loc = 1d-10
+        eta_loc = 0.5d0 * etap(ich) / kap_loc_loc
+        
+        allocate(wl_rmax(ql(ich)+1), wld_rmax(ql(ich)+1))
+        ie_w_loc = 0
+        call WHIT(eta_loc, rmat_boundary, kap_loc_loc, -kap_loc_loc**2, ql(ich), wl_rmax, wld_rmax, ie_w_loc)
+        
+        ir_boundary = nint(rmat_boundary / dr) + 1
+        if (ir_boundary < 1) ir_boundary = 1
+        if (ir_boundary > nr) ir_boundary = nr
+        u_boundary = psi_rmat(ir_boundary, ich)
+        
+        if (abs(wl_rmax(ql(ich)+1)) > 1d-30) then
+          anc_val = u_boundary / wl_rmax(ql(ich)+1)
+        else
+          anc_val = 0d0
+        end if
+        comp_ancs(ich) = anc_val
+        deallocate(wl_rmax, wld_rmax)
+      end block
     end do
-    call sim(integrand, aux, 1, nr-1, dr, nr-1)
-    write(*,'(a,i3,a,5f6.2,a,f10.6)') '  Channel',ich,              &
-      ' (l,s,j,I,J)',dble(ql(ich)),sn,qj(ich),qjc(ich),jtot,'  Norm:',aux
-    norm = norm + aux
-    do ir = 1, nr-1
-      integrand(ir) = rvec(ir)**2 * psi_rmat(ir,ich)**2
+
+    write(*,'(/,a)') '  ===================================================================================='
+    write(*,'(a)')   '                       Component Properties (bastype=8 R-matrix)'
+    write(*,'(a)')   '  ===================================================================================='
+    write(*,'(a)')   ' Chan      l      s      j      I      J       Norm       RMS (fm)     ANC (fm^-1/2)'
+    write(*,'(a)')   '  ------------------------------------------------------------------------------------'
+    do ich = 1, nchan
+      write(*,'(i5,5f7.2,f11.6,f15.4,es18.5)') &
+        ich, dble(ql(ich)), sn, qj(ich), qjc(ich), jtot, comp_norms(ich), comp_rmss(ich), comp_ancs(ich)
     end do
-    call sim(integrand, rau, 1, nr-1, dr, nr-1)
-    rms = rms + rau
-  end do
+    write(*,'(a)')   '  ===================================================================================='
+    deallocate(comp_norms, comp_rmss, comp_ancs)
+  end block
   write(*,'(a,f10.6)') '  Total norm   :', norm
   write(*,'(a,f10.6)') '  sqrt(rms) fm :', sqrt(rms / max(norm,1d-30))
   deallocate(integrand)
