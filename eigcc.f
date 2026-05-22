@@ -22,6 +22,11 @@ c     .....................................................
       real*8  :: ddk,ki,kf,kmin,kmax,kstep,kmid,k
       real*8  :: fconv,yint,rm,ener
       real*8 ,   allocatable  :: cph(:)
+      real*8 :: kap_loc_loc, eta_loc, u_boundary, anc_val
+      real*8, allocatable :: wl_rmax(:), wld_rmax(:)
+      real*8, allocatable :: comp_norms(:), comp_rmss(:)
+      real*8, allocatable :: comp_ancs(:)
+      integer :: ie_w_loc
 
       complex*16, parameter::iu=(0.,1.)
       complex*16 :: phc
@@ -33,7 +38,7 @@ c  bincc variables (Fresco)
       integer:: isc,il,pcon,lmax
       integer:: maxn,nnk(maxchan)
       real*8:: anc,k2(maxchan),conv
-      complex*16:: y(nr-1,maxchan)
+      complex*16:: y(nr,maxchan)
       real*8 etap(maxchan)
       real*8:: fmscal
       complex*16:: ccoup(maxchan,maxchan,nr)
@@ -104,26 +109,73 @@ c *** ----------------------------------------------
       
       energ(nset,1)=-ener
       
+      allocate(comp_norms(nchan))
+      allocate(comp_rmss(nchan))
+      allocate(comp_ancs(nchan))
       norm=0
       rms=0
       allocate(integrand(1:maxn-1))
       do ich=1,nchan
-      do ir=1,maxn-1
-        integrand(ir)=abs(y(ir,ich))**2
+         do ir=1,maxn-1
+            integrand(ir)=abs(y(ir,ich))**2
+         enddo
+         call sim(integrand,aux,1,maxn-1,dr,maxn-1)
+         write(*,1001) ich, aux
+ 1001    format('  Channel',i3,' Norm:',f10.6)
+         norm=norm+aux
+         comp_norms(ich)=aux
+         
+         do ir=1,maxn-1
+            integrand(ir)=((ir-1d0)*dr)**2*abs(y(ir,ich))**2
+         enddo
+         call sim(integrand,aux,1,maxn-1,dr,maxn-1)
+         rms=rms+aux
+         comp_rmss(ich)=sqrt(aux/max(comp_norms(ich),1d-30))
+         
+         kap_loc_loc = k2(ich) + theta * p
+         kap_loc_loc = sqrt(abs(kap_loc_loc))
+         if (kap_loc_loc < 1d-10) kap_loc_loc = 1d-10
+         eta_loc = 0.5d0 * etap(ich) / kap_loc_loc
+         
+         allocate(wl_rmax(ql(ich)+1))
+         allocate(wld_rmax(ql(ich)+1))
+         ie_w_loc = 0
+         call WHIT(eta_loc, rmax, kap_loc_loc, -kap_loc_loc**2, 
+     &        ql(ich), wl_rmax, wld_rmax, ie_w_loc)
+         
+         u_boundary = dble(y(nr, ich))
+         
+         if (abs(wl_rmax(ql(ich)+1)) > 1d-30) then
+            anc_val = u_boundary / wl_rmax(ql(ich)+1)
+         else
+            anc_val = 0d0
+         endif
+         comp_ancs(ich) = anc_val
+         deallocate(wl_rmax, wld_rmax)
       enddo
-      call sim(integrand,aux,1,maxn-1,dr,maxn-1)
-      write(*,*)'Channel',ich,'(l,s,j,I,J)',ql(ich),sn,qj(ich),qjc(ich),
-     & jtot,'Norm:',aux
-      norm=norm+aux
-      do ir=1,maxn-1
-        integrand(ir)=((ir-1d0)*dr)**2*abs(y(ir,ich))**2
-      enddo
-      call sim(integrand,aux,1,maxn-1,dr,maxn-1)
-      rms=rms+aux
-      enddo
+
+      write(*,*) ' '
+      write(*,*) '  ==============================================='
+     &     // '====================================='
+      write(*,*) '                       Component Properties '
+     &     // '(bastype=6 Numerov)'
+      write(*,*) '  ==============================================='
+     &     // '====================================='
+      write(*,*) ' Chan      l      s      j      I      J       '
+     &     // 'Norm       RMS (fm)     ANC (fm^-1/2)'
+      write(*,*) '  -----------------------------------------------'
+     &     // '-------------------------------------'
+      do ich = 1, nchan
+         write(*,1002) ich, dble(ql(ich)), sn, qj(ich), qjc(ich), 
+     &        jtot, comp_norms(ich), comp_rmss(ich), comp_ancs(ich)
+      end do
+ 1002 format(i5,5f7.2,f11.6,f15.4,es18.5)
+      write(*,*) '  ==============================================='
+     &     // '====================================='
+      
+      deallocate(comp_norms, comp_rmss, comp_ancs)
       
       write(*,*)'Total norm:',norm
-      
       write(*,*) 'sqrt(rms):', sqrt(rms/norm)
       
       if (zv.eq.0 .and. zc.eq.1.and. nint(ac+av).eq.2.and. nchan.ge.2)
@@ -302,12 +354,13 @@ C     IF(NP.GT.MAXN.OR.NR.GT.MM2) STOP 101
 102   DO J=1,M
       CENT(J) = Ql(J) * (Ql(J)+1)
       K = SQRT(ABS(KAP2(J) + THETA*P)) * AB
-!      write(*,*) 'K',k
+      IF (K.LT.1D-10) K = 1D-10
       ETA  = 0.5*ETAP(J)/K
       L = Ql(J)
       IE = 0
       CALL WHIT(ETA,RN+H,K,E,L,WL,WLD,IE)
       COUTP(J) = WL(L+1)
+      IE = 0
       CALL WHIT(ETA,RN,K,E,L,WL,WLD,IE)
       COUT(J) = WL(L+1)
       ENDDO

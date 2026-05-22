@@ -10,8 +10,8 @@ PARALLEL=-fopenmp
 #FFLAGS= -g -O2 -Wtabs  -ffixed-form -fno-align-commons 
 #FFLAGS1= -O2 -Wtabs  -ffixed-form -fno-align-commons 
 
-FFLAGS=  -O3  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) 
-FFLAGS1=  -O3  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) 
+FFLAGS=  -O3  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) -g
+FFLAGS1=  -O3  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) -g
 
 
 #FFLAGS= -g -O0 -Wtabs  -ffixed-form -fno-align-commons -fbounds-check -fbacktrace -ffpe-trap=zero $(PARALLEL) -pg
