@@ -695,7 +695,7 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
         enddo
       enddo
 
-          write(, '(A6)', advance='no') '# L'
+          write(446, '(A6)', advance='no') '# L'
       
 
        do iex = 1, istatemax
