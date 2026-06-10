@@ -695,7 +695,7 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
         enddo
       enddo
 
-          write(446, '(A6)', advance='no') '# L'
+          write(, '(A6)', advance='no') '# L'
       
 
        do iex = 1, istatemax
@@ -740,7 +740,7 @@ c     &    xsrj-xsinelj,xsrj,xsinelj
     ! Use a fixed format. I6 for the 'L' integer, and repeated E15.6 for data.
     ! 9999 is a safe repetition factor for standard compilers to cover all columns.
       do l = 0, lpmax
-         write(446, '(I6, 9999E15.6)') l, 
+         write(446, '(I6, 999999E15.6)') l, 
      &       (((xs_ch(l,iex,ijml,iinc), iinc=1,nincmax), 
      &          ijml=1,npmax), iex=1,istatemax)
       enddo
