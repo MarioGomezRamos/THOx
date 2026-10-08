@@ -837,6 +837,7 @@
 !AMM 
       if (phixs) then
        itphim=itphi/2+1
+!       itphim=itphi
        write(0,*) '- Triple diff xsections WITHOUT phi int. need ',     &
      &           nth*itv*iten*itphim*lr8/1e6,'MB' !AMM
       allocate(xs3body_phi(iten,itv,nth,itphim))
@@ -882,9 +883,9 @@
 !*     check if either theta is zero since no need to do multiple phi
 !*     calculations (if wanted, itphi>1) in this geometry
 !*     ---------------------------------------------------------------
-      itphim=itphi
+!      itphim=itphi
       itphik=itphi
-      !itphim=itphi/2+1
+      itphim=itphi/2+1
       !itphik=itphi/2+1
       iflag=0
       !zert=(abs(tcd).le.acc.or.abs(tvd).le.acc)
@@ -1398,7 +1399,7 @@
       xsig=sigphi(1)
       else if(iflag.eq.0) then
       call sim(sigphi,xsig,1,itphim,dphir,itphim)
-      !xsig=2.d0*xsig !MGR full phi range
+      xsig=2.d0*xsig !MGR full phi range
       else
       xsig=sigphi(1)*(phiu-phil)*degrad
       endif
