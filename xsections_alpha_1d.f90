@@ -1386,7 +1386,9 @@
 
       mult=mupt**2*mucv*m(kp)*m(bkp)/m(qp)/(2d0*pi*hc)**5/hc
 !      sigphi(ip)=sigphi(ip)+10.d0*mult*tmatsq
-      sigphi(ip)=sigphi(ip)+10.d0*mult*tmatsq*2d0*pi!integral over phik
+!       sigphi(ip)=sigphi(ip)+10.d0*mult*tmatsq*2d0*pi!integral over phik
+! Corrected 17/oct/26
+       sigphi(ip)=sigphi(ip)+10.d0*mult*tmatsq     !integral over phik
 
 !     -----------------------------------------------------------------
 !     close the phi loop
