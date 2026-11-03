@@ -647,7 +647,8 @@
       include "omp_lib.h"
 
 !c     ----------------------------------------------------------------------- 
-      character*40:: line,fileamp
+      character*256:: line
+      character*40:: fileamp
       logical :: writewf=.false.
       logical, parameter:: energy=.true.   ! NEEDED FOR FFC4 INTERPOLATION!! 
       logical :: jsets(maxsets),doublexs,triplexs,phixs
@@ -1230,7 +1231,7 @@
       degrad=pi/180.d0
       mtot=mc+mv+mt
 !!!! REDEFINE Mp as IN TESTN 
-      mp=mc+mv
+!      mp=mc+mv
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       excore=qnc(icore)%exc
       write(*,'(5x,a,i3,a,1f7.3,a)')                                    &
@@ -1409,7 +1410,7 @@
 
       if (allocated(xyt)) deallocate(xyt)
       allocate(xyt(2,maxne))
-      write(0,*)'allocating xyt with dims:',2,maxne
+!      write(0,*)'allocating xyt with dims:',2,maxne
       if (allocated(fxyc)) deallocate(fxyc)
       allocate(fxyc(10,maxne))
 
@@ -1548,6 +1549,7 @@
       cq=(dot(tem,tem)/mt+dot(pvL,pvL)/mv)/2.d0
       endif
 !      if (wrt)write(99,*)'a,b,c=',aq,bq,cq
+!       write(0,*) 'ebind=',ebind
       if(sys.eq.'lab') cq=cq-(elab+ebind-excore) !!! CHECK CHANGE WITH JAT CODE!!!!!!!!!!!!!!!!!!!!
       if(sys.eq.'com') cq=cq-(ecmi+ebind-excore)  !!! CHECK CHANGE WITH JAT CODE!!!!!!!!!!!!!!!!!!!!
 !*     -----------------------------------------------------------------

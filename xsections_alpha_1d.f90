@@ -17,7 +17,8 @@
       include "omp_lib.h"
 
 !c     ----------------------------------------------------------------------- 
-      character*40:: line,fileamp
+      character*256:: line
+      character*40:: fileamp
       logical :: writewf=.false.
       logical, parameter:: energy=.true.   ! NEEDED FOR FFC4 INTERPOLATION!! 
       logical :: jsets(maxsets),doublexs,triplexs,phixs
