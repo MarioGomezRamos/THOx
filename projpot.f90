@@ -46,6 +46,7 @@ c
        real*8:: Vsoc(0:10),rsoc,asoc       ! spin-orbit for core !MGR
        real*8:: Vss0(0:10),rss,ass       ! spin-spin
        real*8:: Vll0(0:10),rll,all       ! l.l !MGR
+       real*8:: Vt0(0:10),Vtens0(0:10),rtens,atens,rt,rt0,vtensaux ! tensor
        real*8:: rc0               ! charge radius
        real*8:: rcp0
        real*8:: p0,acp !coupling
@@ -63,6 +64,7 @@ c
      & Vsoc,rsoc,asoc,         !spin-orbit: l*jc
      & Vss0,rss,ass,           !spin-spin : sv.sc
      & Vll0, rll,all,          !l.l
+     & Vt0,Vtens0,rtens,atens,rt,rt0, !tensor
      & cptype,lpot,beta,delta,Vcp0,rcp0,acp,
      & np,nv,pfact,pgfact,
      & kband, lambda,pcmodel,normr,
@@ -85,11 +87,13 @@ c
      &    vlsc(0:maxl,1:nr),           ! spin-orbit for core MGR
      &    vss(0:maxl,1:nr),     ! spin-spin
      &    vll(0:maxl,1:nr),            ! l.l MGR
+     &    vtens(0:maxl,1:nr),          ! tensor
      &    vlcoup(0:maxlamb,0:maxl,1:nr),  ! coupling
      &    vcou(1:nr))           ! Coulomb monopole
 
           vcl(:,:)=0d0; vls(:,:)=0d0; vss(:,:)=0d0; vlsc(:,:)=0d0!MGR
           vcou(:)=0d0; vcaux(:)=0d0; vlcoup(:,:,:)=0d0;vll(:,:)=0d0!MGR
+          vtens(:,:)=0d0
         endif
 
        vcp(:,:)=0d0
@@ -100,6 +104,7 @@ c
        Vcp0(:)=0d0; rcp0=0d0; acp=0d0!MGR
        Vss0(:)=0d0; rss=0d0; ass=0d0!MGR
        Vll0(:)=0d0; rll=0d0; all=0d0!MGR
+       Vt0(:)=0d0; Vtens0(:)=0d0; rtens=0d0; atens=0d0; rt=0d0; rt0=0d0
        vcp(:,:)=0d0
        npow=1
        ap=0
@@ -159,6 +164,15 @@ c
         Vll0(l)=Vll0(0)
         enddo
       endif
+
+      if (maxval(abs(Vtens0)).gt.1e-12) Vt0=Vtens0
+      if (rt.gt.1e-12) rtens=rt
+      if (rt0.gt.1e-12 .and. rtens.lt.1e-12) rtens=rt0
+      if((abs(Vt0(0)).gt.0d0).and.(sum(abs(Vt0(1:10))).lt.1e-12)) then
+        do l=1,10
+        Vt0(l)=Vt0(0)
+        enddo
+      endif
 !MGR--------------------------------------------------------------------
        if (abs(vl0(0))>0d0) v0=vl0(0)
        write(*,'(3x,"NUCLEAR part:",$)')
@@ -187,6 +201,8 @@ c ------------------------------------------------------
      &           ' fm, aso=',f6.3,' fm ',/)
  124       format(7x,'o Spin-spin : Vss(l=0-3)=(',4f8.3,') MeV, Rss=',
      &          f6.3, ' fm, ass=',f6.3,' fm ',/)
+ 126       format(7x,'o Tensor    : Vt(l=0-3)=(',4f8.3,') MeV, Rt=',
+     &          f6.3, ' fm, at=',f6.3,' fm ',/)
 
 
 c ------------------------------------------------------
@@ -230,6 +246,8 @@ c ------------------------------------------------------
      &    rso*A13, aso!MGR
              if (maxval(abs(Vss0)).gt.0) 
      &          write(*,124) Vss0(0:3),rss*A13, ass
+             if (maxval(abs(Vt0)).gt.0) 
+     &          write(*,126) Vt0(0:3),rtens*A13, atens
 
  140       format(3x,'[Vso(l=0-3)=(',4f8.3,') MeV  Rso=',f6.3,
      &           'aso=',f6.3,' fm  Rc0=',f6.3,' fm ]',/)
@@ -244,6 +262,8 @@ c ------------------------------------------------------
      &    rso*A13, aso!MGR
              if (maxval(abs(Vss0)).gt.0) 
      &          write(*,124) Vss0(0:3),rss*A13, ass
+             if (maxval(abs(Vt0)).gt.0) 
+     &          write(*,126) Vt0(0:3),rtens*A13, atens
 
  142       format(3x,'[Vso(l=0-3)=(',4f8.3,') MeV  Rso=',f6.3,
      &           'aso=',f6.3,' fm  Rc0=',f6.3,' fm ]',/)
@@ -627,6 +647,28 @@ c ... Spin-orbit for core ...
         endif
         enddo ! l
 
+! ...  tensor potential (sv.jc tensor)
+       do l=0,maxl
+       v0=vt0(l)
+       if (abs(v0)>1e-5) then
+       do ir=1,nr
+           r=rvec(ir) 
+           if (r.lt.1e-6) r=0.5*dr
+            select case(ptype)
+            case(1)  ! WS type
+              vtensaux=ws(r,v0,rtens*a13,atens)		
+            case(2) !  Posch-Teller
+              vtensaux=pt(r,v0,atens)
+            case(3) ! Gaussian 
+ 	      vtensaux=gausspot(r,v0,rtens*a13,atens)
+            case(30) ! Gaussian x r2
+              vtensaux=gausspotr2(r,v0,rtens*a13,atens)
+	    end select
+	    vtens(l,ir)=vtens(l,ir)+vtensaux 
+        enddo !ir
+        endif
+        enddo ! l
+
       
     
 c Coupling (deformed) potential
@@ -841,7 +883,9 @@ c     We use fresco definiton for spin-orbit
         if (r<1e-6) r=1e-6
 	if (a>1e-6) then
           rh=(r-r0)/a
-	  gausder=-exp(-rh**2)**rh*conls*v0/(r*a)	  
+! Fixed type 3/1/26          
+!   	  gausder=-exp(-rh**2)**rh*conls*v0/(r*a)
+  	  gausder=-exp(-rh**2)*rh*conls*v0/(r*a)	  
 	else
 	  write(0,*)'Gauss spin-orbit : a too small!'
 	endif
