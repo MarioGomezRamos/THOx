@@ -310,7 +310,8 @@ c Scattering states of core+valence system
          logical:: laminc(0:maxlamb)
          logical:: reid93
          real*8,allocatable,target::vcl(:,:)
-         real*8,allocatable::vls(:,:),vss(:,:),vll(:,:),vlsc(:,:) !MGR
+         real*8,allocatable::vls(:,:),vss(:,:),vll(:,:),vlsc(:,:),
+     &    vtens(:,:) !MGR
          real*8,allocatable::vtran(:,:,:,:,:)
          real*8,allocatable,target::vcou(:),vlcoup(:,:,:)
          complex*16,allocatable:: ccmat(:,:,:)

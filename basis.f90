@@ -451,9 +451,11 @@ c --------------------------------------------------
        call cgbasis(l,r1,rnmax,nho)
         do n = 1, nho
 	do i = 1, nr
+	if (verb.ge.4) then
         write(unit_out,*) rvec(i), wftho(n, l, i)
+        endif
         enddo
-	write(unit_out,*)'&'
+        if (verb.ge.4) 	write(unit_out,*)'&'
         enddo
         enddo
 		

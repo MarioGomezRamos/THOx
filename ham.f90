@@ -299,7 +299,7 @@ c *** ---------------------------------------------------
       function hnm(n,nchani,m,nchanf)
       use globals
       use sistema
-      use potentials, only: vls,vlsc,vss,vcl,vcou,vlcoup,
+      use potentials, only: vls,vlsc,vss,vcl,vcou,vlcoup,vtens,
      &lpot,vll,vtran,cptype,maxlamb,  
      &lambda,pcmodel,laminc,vscale,reid93 ! v2.1          
       use constants
@@ -315,7 +315,7 @@ c *** ---------------------------------------------------
       integer::i,ip,n,nchani,m,nchanf,ichn,ichm
       integer li,lf
       real*8::ji,jf
-      real*8:: un,um,aux,knm,vnm
+      real*8:: un,um,aux,knm,vnm,vtens_r
       real*8,allocatable:: fmaux(:),fnaux(:),hnmaux(:)
       real*8,allocatable:: fpaux(:),gpaux(:)
       real*8:: uno,cero
@@ -591,6 +591,24 @@ c Non-diagonal
        if ((li.eq.lf).and.abs(ass*vss(li,i)).gt.0) then
 !       if (i.eq.1) write(*,*)'spin.spin included! ass=',ass,vss(li,i)
              vnm=vnm + ass*vss(li,i)*un*um  ! spin-spin 
+       endif
+
+       if (abs(atens).gt.1d-10) then
+          select case (lpot)
+          case (0)
+             vtens_r = vtens(min(li,lf), i)
+          case (1)
+             vtens_r = 0.5d0 * (vtens(li,i) + vtens(lf,i))
+          case (2)
+             vtens_r = vtens(max(li,lf), i)
+          case (3)
+             vtens_r = vtens(lf, i)
+          case default
+             vtens_r = vtens(min(li,lf), i)
+          end select
+          if (abs(vtens_r).gt.0d0) then
+             vnm = vnm + atens * vtens_r * un * um  ! tensor
+          endif
        endif
           endif
 

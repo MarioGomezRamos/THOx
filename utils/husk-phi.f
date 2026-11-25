@@ -79,7 +79,7 @@
       phi=phl + (ip-1)*dph
       phir=phi*degrad
       icount=icount + 1 
-      read(77,*) i1,i2,i3,i4,raux,ev,ev
+      read(77,*) i1,i2,i3,i4,raux,ec,ev
 !      write(*,'(5i7,1g14.6)') icount,ien,iv,ic,ip,raux
       sig(ic,iv,ien,ip)=raux
       xstot=xstot + raux*2.*pi*sin(tcr)*dtcr

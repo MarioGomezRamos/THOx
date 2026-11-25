@@ -33,3 +33,12 @@ fort.*
 # Editor files
 *.swp
 *.swo
+
+# Utility binaries
+utils/husk-phi
+utils/trip2lab
+
+# Calculation runs / temporary outputs
+l08_ebin/
+examples/vertex.1
+

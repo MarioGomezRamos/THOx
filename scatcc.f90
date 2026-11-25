@@ -4179,7 +4179,6 @@ c     The lower triangle stores packed Householder reflectors which are
 c     not needed here -- only R (upper triangle) is passed to ZTRSM.
       rt=yp
 
-      write(0,*)'qrfac'
 c ... Workspace query then optimal factorization
       allocate(work(1))
       call ZGEQRF( N, N, RT, N, TAU, WORK, -1, INFO )

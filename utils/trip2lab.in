@@ -1,0 +1,12 @@
+&control filecm="fort.777" elaba=80
+        thblabmin=0 thblabmax=60 thblabinc=1
+        eblabmin=1 eblabmax=80 eblabinc=2,
+        thxlabmin=0 thxlabmax=60 thxlabinc=1
+        exlabmin=0 exlabmax=80 exlabinc=2
+        dphlabmin=0 dphlabmax=360 dphlabinc=5 /
+!        nsubc,nsubv,nsubphi,isymphi,wtol
+
+&gridener Enlow=1 Enup=80 dEn=2 /      
+&gridthetac tcl=0.0 tcu=60.0  dtc=1 /      
+&gridthetav tvl=0.0 tvu=60.0  dtv=1  /
+&gridphi phil=0.0 phiu=360.0 dphi=5.0 /
