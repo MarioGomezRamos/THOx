@@ -11,7 +11,7 @@
 !       use wfs, only:rfrag,nr
        use globals , only: written,verb
        implicit none
-       integer kin,ir,ncomp,kpot,iq,i
+       integer kin,ir,ncomp,kpot,iq,i,imult
        real*8 a13,r,rc,rabs,rabsi,zfrag
        real*8:: vaux,vcoul,ws,pt,gausspot,yukawa
        real*8:: vlsaux,wsso,dws,vllaux
@@ -32,10 +32,11 @@
        real*8:: betai(1:10),deltai(1:10),Vcp0i,rcp0i,acpi,normr,normi !MGR
        integer np,nv,iv!,maxlamb    !Lay:added for read external potential   
        real*8,allocatable:: veaux(:),weaux(:),rvaux(:)!Lay:added for read external potential   
-       real*8:: fival,pi,raux
+       real*8:: fival,pi,raux,deriv1,hfrag
+       real*8:: dvdr(nr),dwdr(nr)
        real*8, parameter::alpha=0d0
        
-              !MGR   
+       real*8:: dvcaux(nr),dwcaux(nr)       !MGR   
        real*8:: betat(1:10),deltat(1:10)
        real*8:: betait(1:10),deltait(1:10)
        logical:: deftarget,defcore
@@ -250,7 +251,7 @@
 
 
 !c coupling component, if any
-       if (sum(abs(delta)).lt.1e-4) goto 200
+       if (sum(abs(delta))+sum(abs(deltai)).lt.1e-4) goto 200
        write(*, '(/,2x,"o Deformed potential",$)')
        select case(cptype)
 !c ------------------------------------------------------
@@ -276,6 +277,10 @@
  143       format(3x,'[Vcp=',1f8.3,' MeV acp=',f6.3,'  rcp0=',f6.3,     &
      &           ' fm ]',/)
  141       format(6x,'[delta(',i3,')=',1f6.3,' fm ]',/)
+        else if (ptype.eq.2) then
+           write(*,*)'- Coupling Pot. type=1 => deriv. surface W-S'
+        else if (ptype.eq.7) then
+           write(*,*)'- Coupling Pot. type=1 => deriv. external table'
 	else
 	   write(*,*)'- Coupling Pot. type=1 => deriv. PT/Gaussian'
 	   write(*,*)'- WARNING!!!! => not implemented yet'
@@ -379,6 +384,25 @@
           endif
         endif
 
+!c Linear quadrupole coupling from the normalized external nuclear
+!c potential. Reuse deriv1 and supply the missing last-point formula.
+        if ((cptype.eq.1).and.(ptype.eq.7)) then
+          if (nr.lt.4) error stop 'External derivative needs 4 points'
+          hfrag=rfrag(2)-rfrag(1)
+          if (hfrag.le.0d0) error stop 'Invalid fragment radial step'
+          if (maxval(abs(rfrag(2:nr)-rfrag(1:nr-1)-hfrag))
+     &        .gt.1d-8*hfrag) then
+            error stop 'External derivative needs a uniform grid'
+          endif
+          do ir=1,nr-1
+            dvdr(ir)=deriv1(vcl,hfrag,nr,ir)
+            dwdr(ir)=deriv1(vcli,hfrag,nr,ir)
+          enddo
+          dvdr(nr)=(3d0*vcl(nr)-4d0*vcl(nr-1)+vcl(nr-2))
+     &             /(2d0*hfrag)
+          dwdr(nr)=(3d0*vcli(nr)-4d0*vcli(nr-1)+vcli(nr-2))
+     &             /(2d0*hfrag)
+        endif
 
 !c! Spin-orbit
 !c       if (abs(vso)>1e-5) then
@@ -429,12 +453,22 @@
         select case(cptype)
              case(0) ! no coupling
              case(1) ! derivative formfactor
-		 if (Vcp0.eq.0 .and. (v0.ne.0)) then
-                vdef(2)=-delta(2)*dws(r,v0,  rabs,    a0)
-		 else if (Vcp0.ne.0) then !MGR
-                vdef(2)=-delta(2)*dws(r,Vcp0,rcp0*a13,acp)
-	        endif
-                vdef(2)=vdef(2)/sqrt(4.*pi)
+                 do imult=2,nmult
+                 if (abs(delta(imult)).lt.1e-6) cycle
+                 if (Vcp0.ne.0d0) then
+                   vdef(imult)=-delta(imult)*dws(r,Vcp0,rcp0*a13,acp)
+                 else if (ptype.eq.7) then
+                   vdef(imult)=-delta(imult)*dvdr(ir)
+                 else if (v0.ne.0d0) then
+                   vdef(imult)=-delta(imult)*dws(r,v0,rabs,a0)
+                   if (ptype.eq.2) then
+!c d[-4*a*dWS/dr]/dr = 4*dWS/dr*tanh((r-R)/(2*a)).
+                     vdef(imult)=4d0*vdef(imult)
+     &                    *tanh((r-rabs)/(2d0*a0))
+                   endif
+                 endif
+                vdef(imult)=vdef(imult)/sqrt(4.*pi)
+                enddo
 
               case(2,3) ! Numerical projection on multipoles
                  call potdef2(rfrag,nr,vcl(:),nmult,r,vdef,delta)
@@ -463,13 +497,21 @@
         select case(cptype)
              case(0) ! no coupling
              case(1) ! derivative formfactor
-!!!!! CHECK THIS!!!!
-		   if (Vcp0i.eq.0.and.V0i .ne.0) then
-		    vdef(2)=-deltai(2)*dws(r,v0i,rabsi,a0i)
-		   else if (Vcp0i.ne.0) then !MGR
-		    vdef(2)=-deltai(2)*dws(r,Vcp0i,rcp0i*a13,acpi)
-	           endif
-                   vdef(2)=vdef(2)/sqrt(4.*pi)
+             do imult=2,nmult
+             if (abs(deltai(imult)).lt.1e-6) cycle
+                 if (Vcp0i.ne.0d0) then
+                  vdef(imult)=-deltai(imult)*dws(r,Vcp0i,rcp0i*a13,acpi)
+                 else if (ptype.eq.7) then
+                   vdef(imult)=-deltai(imult)*dwdr(ir)
+                 else if (v0i.ne.0d0) then
+                   vdef(imult)=-deltai(imult)*dws(r,v0i,rabsi,a0i)
+                   if (ptype.eq.2) then
+                     vdef(imult)=4d0*vdef(imult)
+     &                    *tanh((r-rabsi)/(2d0*a0i))
+                   endif
+                 endif
+                   vdef(imult)=vdef(imult)/sqrt(4.*pi)
+             enddo
 
              case(2,3) ! Numerical projection on multipoles
                  call potdef2(rfrag,nr,vcli(:),nmult,r,vdef,deltai)
@@ -513,6 +555,25 @@
 				
          vfrag (1:nr,0)=vfrag (1:nr,0) + vcaux(1:nr)
          vfragi(1:nr,0)=vfragi(1:nr,0) + wcaux(1:nr)
+
+         call deriv_fragpot(rfrag,vcaux,wcaux,nr,dvcaux,dwcaux)
+
+         if (cptype.eq.1) then
+           do ir=1,nr
+             do imult=2,nmult
+               if (abs((delta(imult))+abs(beta(imult))).ge.1e-6) then
+                 vdef(imult)=-delta(imult)*dvcaux(ir)/sqrt(4.*pi)
+                 vfrag(ir,imult)=vfrag(ir,imult)+vdef(imult)
+               endif
+               if (abs((deltai(imult))+abs(betai(imult))).ge.1e-6) then
+                 vdef(imult)=-deltai(imult)*dwcaux(ir)/sqrt(4.*pi)
+                 vfragi(ir,imult)=vfragi(ir,imult)+vdef(imult)
+               endif
+             enddo !imult
+           enddo !ir
+         endif
+
+
 					   
          if (cptype.eq.5) then	   
              written(42)=.true.
@@ -754,5 +815,212 @@
 !c       vdefr=vdef(qmax)
 	return
       end
+
+
+c ======================================================================
+c Subroutine to compute derivatives of real and imaginary potentials
+c vcaux and wcaux with respect to radial coordinate rfrag
+c ----------------------------------------------------------------------
+c Inputs:
+c   rfrag(nr) : radial grid points (fm)
+c   vcaux(nr) : real part of central potential at rfrag(i) (MeV)
+c   wcaux(nr) : imaginary part of central potential at rfrag(i) (MeV)
+c   nr        : number of radial grid points
+c Outputs:
+c   dvcaux(nr): derivative d(vcaux)/dr at rfrag(i) (MeV/fm)
+c   dwcaux(nr): derivative d(wcaux)/dr at rfrag(i) (MeV/fm)
+c ======================================================================
+      subroutine deriv_fragpot(rfrag,vcaux,wcaux,nr,dvcaux,dwcaux)
+      implicit none
+      integer nr
+      real*8 rfrag(nr),vcaux(nr),wcaux(nr)
+      real*8 dvcaux(nr),dwcaux(nr)
+
+      call deriv1d(rfrag,vcaux,dvcaux,nr)
+      call deriv1d(rfrag,wcaux,dwcaux,nr)
+
+      return
+      end subroutine deriv_fragpot
+
+
+c Also provide alias pot_derivative with identical interface
+      subroutine pot_derivative(rfrag,vcaux,wcaux,nr,dvcaux,dwcaux)
+      implicit none
+      integer nr
+      real*8 rfrag(nr),vcaux(nr),wcaux(nr)
+      real*8 dvcaux(nr),dwcaux(nr)
+
+      call deriv_fragpot(rfrag,vcaux,wcaux,nr,dvcaux,dwcaux)
+
+      return
+      end subroutine pot_derivative
+
+
+c ======================================================================
+c Subroutine to compute first derivative dy/dx of a 1D function y(x)
+c on grid x(1:n).
+c
+c Method:
+c - For uniform (equidistant) grids, uses 5-point finite-difference
+c   stencils of O(h^4) accuracy:
+c     * Left boundary (i=1, 2): 5-point forward/shifted stencils
+c     * Interior (i=3..n-2): 5-point central stencil
+c     * Right boundary (i=n-1, n): 5-point backward/shifted stencils
+c - For non-uniform grids, uses analytical derivatives of the 5-point
+c   Lagrange interpolating polynomials (exact for degree <= 4).
+c - For n < 5, uses lower-order stencils (3-point or 2-point).
+c ======================================================================
+      subroutine deriv1d(x,y,dy,n)
+      implicit none
+      integer n,i,p,m,ip,im,istart
+      real*8 x(n),y(n),dy(n)
+      real*8 h,term,val,diff
+      logical is_uniform
+
+      if (n.le.0) return
+
+      if (n.eq.1) then
+         dy(1)=0.0d0
+         return
+      endif
+
+      if (n.eq.2) then
+         diff=x(2)-x(1)
+         if (abs(diff).gt.1.0d-14) then
+            dy(1)=(y(2)-y(1))/diff
+         else
+            dy(1)=0.0d0
+         endif
+         dy(2)=dy(1)
+         return
+      endif
+
+      if (n.eq.3) then
+         h=x(2)-x(1)
+         diff=abs((x(3)-x(2))-h)
+         if (diff.le.1.0d-5*abs(h) .and. abs(h).gt.1.0d-14) then
+            dy(1)=(-3.0d0*y(1)+4.0d0*y(2)-y(3))/(2.0d0*h)
+            dy(2)=(y(3)-y(1))/(2.0d0*h)
+            dy(3)=(y(1)-4.0d0*y(2)+3.0d0*y(3))/(2.0d0*h)
+         else
+            do i=1,3
+               val=0.0d0
+               do p=1,3
+                  if (p.eq.i) then
+                     term=0.0d0
+                     do m=1,3
+                        if (m.ne.p) term=term+1.0d0/(x(i)-x(m))
+                     enddo
+                  else
+                     term=1.0d0/(x(p)-x(i))
+                     do m=1,3
+                        if (m.ne.p .and. m.ne.i) then
+                           term=term*(x(i)-x(m))/(x(p)-x(m))
+                        endif
+                     enddo
+                  endif
+                  val=val+y(p)*term
+               enddo
+               dy(i)=val
+            enddo
+         endif
+         return
+      endif
+
+      if (n.eq.4) then
+         do i=1,4
+            val=0.0d0
+            do p=1,4
+               if (p.eq.i) then
+                  term=0.0d0
+                  do m=1,4
+                     if (m.ne.p) term=term+1.0d0/(x(i)-x(m))
+                  enddo
+               else
+                  term=1.0d0/(x(p)-x(i))
+                  do m=1,4
+                     if (m.ne.p .and. m.ne.i) then
+                        term=term*(x(i)-x(m))/(x(p)-x(m))
+                     endif
+                  enddo
+               endif
+               val=val+y(p)*term
+            enddo
+            dy(i)=val
+         enddo
+         return
+      endif
+
+c For n >= 5: check if grid is uniform
+      h=x(2)-x(1)
+      is_uniform=.true.
+      if (abs(h).le.1.0d-14) then
+         is_uniform=.false.
+      else
+         do i=2,n-1
+            if (abs((x(i+1)-x(i))-h).gt.1.0d-5*abs(h)) then
+               is_uniform=.false.
+               exit
+            endif
+         enddo
+      endif
+
+      if (is_uniform) then
+c 5-point uniform finite difference stencils (O(h^4) order)
+c Left boundary
+         dy(1)=(-25.0d0*y(1)+48.0d0*y(2)-36.0d0*y(3)+16.0d0*y(4)
+     &         -3.0d0*y(5))/(12.0d0*h)
+         dy(2)=(-3.0d0*y(1)-10.0d0*y(2)+18.0d0*y(3)-6.0d0*y(4)
+     &         +y(5))/(12.0d0*h)
+
+c Interior points (central 5-point difference)
+         do i=3,n-2
+            dy(i)=(y(i-2)-8.0d0*y(i-1)+8.0d0*y(i+1)-y(i+2))/(12.0d0*h)
+         enddo
+
+c Right boundary
+         dy(n-1)=(-y(n-4)+6.0d0*y(n-3)-18.0d0*y(n-2)+10.0d0*y(n-1)
+     &           +3.0d0*y(n))/(12.0d0*h)
+         dy(n)=(3.0d0*y(n-4)-16.0d0*y(n-3)+36.0d0*y(n-2)-48.0d0*y(n-1)
+     &         +25.0d0*y(n))/(12.0d0*h)
+      else
+c Non-uniform grid: 5-point Lagrange polynomial differentiation
+         do i=1,n
+            if (i.le.2) then
+               istart=1
+            else if (i.ge.n-1) then
+               istart=n-4
+            else
+               istart=i-2
+            endif
+
+            val=0.0d0
+            do p=1,5
+               ip=istart+p-1
+               if (ip.eq.i) then
+                  term=0.0d0
+                  do m=1,5
+                     if (m.ne.p) then
+                        im=istart+m-1
+                        term=term+1.0d0/(x(i)-x(im))
+                     endif
+                  enddo
+               else
+                  term=1.0d0/(x(ip)-x(i))
+                  do m=1,5
+                     if (m.ne.p .and. m.ne.(i-istart+1)) then
+                        im=istart+m-1
+                        term=term*(x(i)-x(im))/(x(ip)-x(im))
+                     endif
+                  enddo
+               endif
+               val=val+y(ip)*term
+            enddo
+            dy(i)=val
+         enddo
+      endif
+
+      return
+      end subroutine deriv1d
 
 
