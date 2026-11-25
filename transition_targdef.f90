@@ -371,7 +371,7 @@
       rfirst=rstep 
       write(*,300) rfirst,rmax,rstep
 300   format(/,5x,"[Radial grid: Rmin=",1f6.3," fm,",                   &
-     &      " Rmax=",1f6.1," fm,"                                       &
+     &      " Rmax=",1f6.1," fm,",                                      &
      &      " Step=",1f6.3," fm]",/)
 
       if (rextrap.gt.rmax) then

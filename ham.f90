@@ -1031,7 +1031,7 @@ c cleb6 -> cleb ???
       T = 0.0
 !      DO 80 S=SMIN,SMAX
       NS=NINT(SMAX-SMIN)
-      DO 80 IS=0,NS
+      DO 70 IS=0,NS
       S=SMIN+IS
       T1 = SQRT((2*J+1)*(2*S+1)) * RAC(L+Z, S1,JT,S2,J,S)
         SPMIN= MAX(ABS(LP-JT),ABS(S1-S2),ABS(S-2))
@@ -1051,6 +1051,7 @@ c cleb6 -> cleb ???
      &      * SQRT(S1*(S1+1) * S2*(S2+1))
       T = T + T1 * T2 * T3 * T4 * T5
  80    CONTINUE
+ 70    CONTINUE
 !      write(*,*)'TENSOR: type,L,S1,J,S2,JT,LP,S1P,JP,S2P,LAM',
 !     & L,S1,J,S2,JT,LP,S1P,JP,S2P,LAM
       CTENS = T
@@ -1605,8 +1606,8 @@ c  -----------------------------------------
       do j=1, nch !output chanel
 !      if (ch.GT.0 .and. ch.NE.j) cycle !if a chanel is selected
       if ((froverlaps.eq.1).and.(j>1)) cycle
-       write(525, '("#Single particle COMPLEX wf & vertex for bin",i2,2x,
-     &  "Chan=",i3," E=",f10.5," MeV")') i,j,energ(jset,i)
+       write(525, '("#Single particle COMPLEX wf & vertex for bin",
+     &  i2,2x,"Chan=",i3," E=",f10.5," MeV")') i,j,energ(jset,i)
         write(525,*)np, dr, rmin
         write(525,'(1P 6E12.4)') (CONJG(wfc(jset,i,j,ir)), ir=1,np)
         write(525,'(1P 6E12.4)') 

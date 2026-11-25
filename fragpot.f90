@@ -205,7 +205,7 @@
  120       format(3x,'[V0=',1f7.2,' MeV, Rr=',f5.2,                     &
      &           ' fm, ar=',f5.2,' fm, ',                               &
      &           ' W0=',1f7.2,' MeV, Ri=',f5.2,                         &
-     &           ' fm, ai=',f5.2,' fm, '                                &
+     &           ' fm, ai=',f5.2,' fm, ',                               &
      &           ' Rc=',f5.2,' fm ]')
 !c ------------------------------------------------------
         case(3) 
@@ -674,7 +674,7 @@
       write(*,'(3x,"=> read:",i4," points")') npt 
       write(*,250) xv(1),xv(npt),xv(2)-xv(1)
 250   format(/,5x,"[Radial grid: Rmin=",1f6.3," fm,",                   &
-     &      " Rmax=",1f6.1," fm,"                                       &
+     &      " Rmax=",1f6.1," fm,",                                      &
      &      " Step=",1f6.3," fm]",/)
 
         do n=1,nr

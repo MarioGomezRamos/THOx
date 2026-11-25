@@ -267,7 +267,7 @@ c *** Set limits for quantum numbers & multipoles ------------------------------
 400   format(/,2x,"o Quantum numbers limits:",/,5x,
      &  "- Core multipoles:",i2,"-",i1,/,5x,
      &  "- K:",i2,"-",i2,/,5x,
-     &  "- Proj.-target multipoles:", i2,"-" i1)
+     &  "- Proj.-target multipoles:", i2,"-",i1)
 c -------------------------------------------------------------------------------------
 
 
@@ -338,7 +338,7 @@ c commented by AMoro, to save memory
       rfirst=rstep 
       write(*,300) rfirst,rmax,rstep
 300   format(/,5x,"[Radial grid: Rmin=",1f6.3," fm,", 
-     &      " Rmax=",1f6.1," fm," 
+     &      " Rmax=",1f6.1," fm,", 
      &      " Step=",1f6.3," fm]",/)
 
       if (rextrap.gt.rmax) then

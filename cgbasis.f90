@@ -10,8 +10,8 @@
 		
         use wfs, only: wftho,dr,rvec,nr !Revisar modulo wfs de Fortran
         implicit none
-        integer:: nmin,ibas,jbas,nho,l,n,ir,kbout
-        real*8:: r,wf,acg,r1,rnmax,wf1,wf2,nhomitad,norm1,norm2
+        integer:: nmin,ibas,jbas,nho,l,n,ir,kbout,nhomitad
+        real*8:: r,wf,acg,r1,rnmax,wf1,wf2,norm1,norm2
 !		real*8,allocatable:: wfaux(:,:),faux(:),gaux(:)
 !		real*8,allocatable:: norm(:,:)
 !		real*8,allocatable:: eigv(:,:)
@@ -40,7 +40,7 @@
         endif
 
 
-        acg=(rnmax/r1)**(1./nhomitad)
+        acg=(rnmax/r1)**(1.d0/dble(nhomitad))
         write(0,*)'cgbasis: acg=',acg
         do n=nmin,nhomitad 
            norm1=0

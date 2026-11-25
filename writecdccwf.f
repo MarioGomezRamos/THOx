@@ -179,7 +179,7 @@ C    +              "nex=",jpiset(jset)%nex
 
       write(kwf,354) ich,incdcc%n(alphacdcc),ie,jset,lam,
      +               jlp,jp,alphacdcc
-354   format(2x," Channel:",i4, " n: ",i3, " IE:", i3, " jset:",I3
+354   format(2x," Channel:",i4, " n: ",i3, " IE:", i3, " jset:",I3,
      &       " QN:",i3,1f5.1,1f5.1, " alphacdcc:", i3)
 
 

@@ -1225,7 +1225,7 @@ c     ...............................................................
      &             ffcc(idi,idf,nint(lamr),1)
 300   format(5x,"IX=",i5," Ch. IEX L, Jpi=",3i3,f4.1,a1,
      &     " =>",3i3,f4.1,a1,3x,
-     &     'with LAM=',i3,4x,'r1-3='3f8.3,
+     &     'with LAM=',i3,4x,'r1-3=',3f8.3,
      &     2x,'COEF=',1f7.3,' FN(1)=',2g10.4,' FC(1)=',2g10.4)
       endif
 !      write(*,'("#r1,r2,r3,r =",5f8.3)') r1,r2,r3,r13
@@ -1551,8 +1551,8 @@ c ... Memory requirements
       enddo     
  
       write(*,170) nrcc, hcm,rmaxcc,hcm
-170   format(/,5x,"=>  Interpolating F(R) in grid with ",i10, ' points:',
-     &           2x,"[ Rmin=",1f5.2,2x," Rmax=",
+170   format(/,5x,"=>  Interpolating F(R) in grid with ",i10,
+     &           ' points:',2x,"[ Rmin=",1f5.2,2x," Rmax=",
      &           1f6.1,1x," Step=",1f6.3, " fm ]",/)
 
       if (rmaxcc.gt.rv(nrad3)) then

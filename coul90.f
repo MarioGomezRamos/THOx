@@ -285,8 +285,8 @@ C---------------------------------------------------------------------
 C------------------   ERROR MESSAGES
   100 IFAIL = -1
       WRITE(6,1000) X,ACCH
- 1000 FORMAT(' FOR X = ',1PD12.3,'     TRY SMALL-X  SOLUTIONS,'
-     *' OR X IS NEGATIVE'/ ,' SQUARE ROOT (ACCURACY) =  ',D12.3/)
+ 1000 FORMAT(' FOR X = ',1PD12.3,'     TRY SMALL-X  SOLUTIONS,',
+     *' OR X IS NEGATIVE'/' SQUARE ROOT (ACCURACY) =  ',D12.3/)
                      RETURN
   105 IFAIL = -2                                                        
       WRITE (6,1005) LRANGE,XLMIN,XLM                                    

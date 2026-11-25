@@ -47,7 +47,7 @@ c      -------------------------------------------------
        eqsp(npauli)=equasi
 c ------------------------------
        write(*,30) npauli,n,lname(l),NINT(J*2.)
-30     format(5x,"#" i2,":",1x,i2,a1,I1,'/2',$)
+30     format(5x,"#",i2,":",1x,i2,a1,I1,'/2',$)
        if (wfname.eq."") then 
         write(*,*)' (calculated from Hsp diagonalization)'
        else
