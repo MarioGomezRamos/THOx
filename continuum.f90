@@ -16,7 +16,8 @@ c -------------------------------------------------------------------------
       use sistema
       use globals
       use potentials, only:ccmat,vtran,vlcoup,laminc,lpot,pcmodel,kband,
-     &                   cptype,maxlamb,vcou,vss,vcl,vls,vlsc,vll,reid93 
+     &                   cptype,maxlamb,vcou,vss,vcl,vls,vlsc,vll,
+     &                   reid93,vtens 
       use constants
       use forbidden ! added in v2.2f
       implicit none
@@ -25,8 +26,9 @@ c -------------------------------------------------------------------------
       integer  ici,icf,il
       integer  nchani,nchanf,nchan,li,lf,nphi,nphf,nset
 c     -----------------------------------------------------------------------
-      real*8:: fact,ji,jf,xl,jci,jcf,coefss,corels,vaux
-      real*8:: all,ass,als,alsc,allp,ccoef,vcp,rm,conv,faux(nr),zero
+      real*8:: fact,ji,jf,xl,jci,jcf,coefss,corels,vaux,ctens
+      real*8:: all,ass,als,alsc,allp,ccoef,vcp,rm,conv,faux(nr)
+      real*8:: zero,atens
       real*8:: lambdar,sixj,cleb,lfr,lir,cl
       real*8:: allp2, gcoup,big,small
       real*8 :: kbandi,kbandf
@@ -154,6 +156,26 @@ c spin.spin term
 c spin-orbit for core (added to v2.0.2 by AMoro)
       alsc=corels(li,sn,ji,qjc(nchani),lf,sn,jf,qjc(nchanf),jtot)
       faux(1:nr)=faux(1:nr)+ alsc*vlsc(li,1:nr) !MGR l-dependence
+
+c tensor term
+      if (.not.lscoup .and. allocated(vtens)) then
+        atens=ctens(li,sn,ji,jci,lf,sn,jf,jcf,jtot)
+        if (abs(atens).gt.1d-10) then
+          select case (lpot)
+          case (0)
+            faux(1:nr)=faux(1:nr) + atens*vtens(min(li,lf),1:nr)
+          case (1)
+            faux(1:nr)=faux(1:nr) +                                     &
+     &                 atens*0.5d0*(vtens(li,1:nr)+vtens(lf,1:nr))
+          case (2)
+            faux(1:nr)=faux(1:nr) + atens*vtens(max(li,lf),1:nr)
+          case (3)
+            faux(1:nr)=faux(1:nr) + atens*vtens(lf,1:nr)
+          case default
+            faux(1:nr)=faux(1:nr) + atens*vtens(min(li,lf),1:nr)
+          end select
+        endif
+      endif
 
 
 c add particle-core coupling for each lambda
