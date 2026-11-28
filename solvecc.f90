@@ -139,6 +139,8 @@ c ... Numerov specifications
       write(numethod,'(a60)')"ENA with 5 terms and tolsma criterion" 
       case(9)
       write(numethod,'(a60)')"R-matrix solution (HPRMAT)" 
+      case(10)
+      write(numethod,'(a60)')"Log-derivative method (Johnson 1973)"
       end select 
       write(*,350) adjustl(numethod),hcm,rmaxcc
       if (abs(hort).gt.0) then
@@ -900,6 +902,10 @@ c -----------------------------------------------------
       case(9)     ! R-matrix method (HPRMAT high-performance)
         call schcc_rmat_hp_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
      &  rstart,nr,wf,phase,smat,info,nlag,ns,einc,icc)
+
+      case(10)    ! Log-derivative method (Johnson 1973)
+        call schcc_logder_MGR(nch,ecm,zp*zt,incvec,ql,factor,hcm,
+     &  rstart,nr,wf,phase,smat,info,einc,icc)
 
       case default
         write(*,*)'Method',method,' not valid!'

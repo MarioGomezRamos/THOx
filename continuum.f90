@@ -555,6 +555,9 @@ c     ........................................................
       if (method.eq.5) then
        write(*,*)' Using R-matrix with nbas=',nbas,' ns=',ns
       endif
+      if (method.eq.10) then
+       write(*,*)' Using Log-derivative method (Johnson 1973)'
+      endif
       
       if ((.not.ifcont).or.(nk.eq.0)) return
       if ((jset.gt.jpsets).or.(jset.eq.0)) then

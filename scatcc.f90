@@ -223,7 +223,7 @@ c     ------------------------------------------------------------
 
 c Initialize variables for Numerov integration
       r0=rvec(1)
-      method=4       ! enhanced Numerov as used in Fresco
+      if (method.ne.5 .and. method.ne.10) method=4
       hort  =0       ! no stabilization
       info  =.false. ! silent output
       cutr  =-100 
@@ -355,16 +355,13 @@ c ... Real multichannel states from Numerov solutions ...........
  
          case (1)  ! CC continuum wfs
 c *** Scattering states with numerov solution ................
-         if (.not.ifrmat) then
-!                  if (.not.ifrmat.and.(ecm>0.2)) then
-!          call schcc_erwin(nch,ecm,zc*zv,inc,ql,factor,dr,r0,
-!     &                    nr,wf,phase,smat,method,info)
-
+         if (method.eq.10) then
+          call schcc_logder(nch,ecm,zc*zv,inc,ql,factor,dr,r0,
+     &                    nrint,wf,phase,smat,info,eph)
+          wfc(ie,1:nch,1:nrint)=wf(1:nch,1:nrint)
+         else if (.not.ifrmat) then
           call schcc_erwin(nch,ecm,zc*zv,inc,ql,factor,dr,r0,
      &                    nrint,wf,phase,smat,method,info,eph)
-
-!          call schcc(nch,ecm,zc*zv,inc,ql,factor,dr,r0,
-!     &              nrint,wf,phase,smat,info)
 
            wfc(ie,1:nch,1:nrint)=wf(1:nch,1:nrint)
          else    
@@ -5914,6 +5911,850 @@ c
 
       return
       end subroutine
+
+
+c =====================================================================
+c   Solve multichannel Schrodinger equation using Multichannel
+c   Log-Derivative Method (B.R. Johnson, JCP 13, 445, 1973)
+c   (version for coupled channels / reactions)
+c =====================================================================
+      subroutine schcc_logder_MGR(nch,ecm,z12,incvec,ql,factor,dr,r0,
+     & npt,wf,phase,smat,info,einc,icc)
+      use xcdcc, only: smats
+      use nmrv, only: nr,h,vcoup,conv,ech,debug,rmin,hort,rvec,cutr
+      use telp_mod, only: accumulate_telp
+      use channels, only: jptset
+      use globals, only: verb
+      use constants, only: e2, pi
+      implicit none
+      integer, intent(in) :: nch, npt, icc
+      integer, intent(in) :: ql(nch)
+      real*8, intent(in)  :: ecm, z12, factor, dr, r0, einc
+      logical, intent(in) :: incvec(nch), info
+      complex*16, intent(out) :: wf(nch, npt)
+      complex*16, intent(out) :: phase(nch), smat(nch)
+
+      integer :: nopen, ich, inc, i, j, n, ir, nsteps, ifail
+      integer :: info_lapack, ie_flag, maxl_val
+      real*8  :: aux, r, rmatch, k_val, eta, kR, fl, gl, fpl, gpl
+      real*8  :: h2, h2_3, h2_6, h2_12, wn, jtot_loc, svel_mag
+      real*8, allocatable :: f_coul(:), g_coul(:)
+      real*8, allocatable :: fp_coul(:), gp_coul(:)
+      real*8, allocatable :: f1_whit(:), fp1_whit(:)
+
+      complex*16, parameter :: cone = (1d0, 0d0)
+      complex*16, parameter :: czero = (0d0, 0d0)
+      complex*16, parameter :: ci = (0d0, 1d0)
+
+      complex*16, allocatable :: z(:,:), un(:,:), Vmat(:,:), Amat(:,:)
+      complex*16, allocatable :: inv_mat(:,:), yN(:,:), Amat_solve(:,:)
+      complex*16, allocatable :: Hpos(:), Hpos_p(:), Hneg(:), Hneg_p(:)
+      complex*16, allocatable :: Bvec(:), Xvec(:), gamma_closed(:)
+      complex*16, allocatable :: psi_curr(:), psi_prev(:)
+      complex*16, allocatable :: V_prev(:,:), V_curr(:,:), V_next(:,:)
+      complex*16, allocatable :: matC(:,:), rhs_vec(:)
+      complex*16              :: svel
+      integer, allocatable    :: ipiv(:)
+      logical, allocatable    :: copen(:)
+      real*8, allocatable     :: kch(:), kch2(:), etav(:)
+
+      if (ecm .lt. 0d0) then
+        wf(:,:) = czero
+        phase(:) = czero
+        smat(:) = czero
+        return
+      endif
+
+      h = dr
+      h2 = h * h
+      h2_3 = h2 / 3d0
+      h2_6 = h2 / 6d0
+      h2_12 = h2 / 12d0
+      conv = factor
+      nr = npt
+      wf(:,:) = czero
+      phase(:) = czero
+      smat(:) = czero
+
+      if (.not. allocated(rvec)) then
+        allocate(rvec(nr))
+        do ir = 1, nr
+          rvec(ir) = r0 + (ir - 1) * dr
+        enddo
+      else if (size(rvec) .ne. nr) then
+        deallocate(rvec)
+        allocate(rvec(nr))
+        do ir = 1, nr
+          rvec(ir) = r0 + (ir - 1) * dr
+        enddo
+      endif
+
+      maxl_val = maxval(ql)
+      allocate(f_coul(0:maxl_val+1), g_coul(0:maxl_val+1))
+      allocate(fp_coul(0:maxl_val+1), gp_coul(0:maxl_val+1))
+      allocate(f1_whit(maxl_val+2), fp1_whit(maxl_val+2))
+
+      allocate(z(nch,nch), un(nch,nch), Vmat(nch,nch), Amat(nch,nch))
+      allocate(inv_mat(nch,nch), yN(nch,nch), Amat_solve(nch,nch))
+      allocate(Hpos(nch), Hpos_p(nch), Hneg(nch), Hneg_p(nch))
+      allocate(Bvec(nch), Xvec(nch), gamma_closed(nch))
+      allocate(psi_curr(nch), psi_prev(nch))
+      allocate(V_prev(nch,nch), V_curr(nch,nch), V_next(nch,nch))
+      allocate(matC(nch,nch), rhs_vec(nch))
+      allocate(ipiv(nch), copen(nch))
+      allocate(kch(nch), kch2(nch), etav(nch))
+
+      nopen = 0
+      do ich = 1, nch
+        aux = ecm + einc - ech(ich)
+        kch2(ich) = conv * aux
+        if (aux .gt. 0d0) then
+          copen(ich) = .true.
+          nopen = nopen + 1
+          kch(ich) = sqrt(conv * aux)
+          etav(ich) = conv * z12 * e2 / (2d0 * kch(ich))
+        else
+          copen(ich) = .false.
+          kch(ich) = sqrt(-conv * aux)
+          etav(ich) = 0d0
+        endif
+      enddo
+
+      nsteps = npt - 1
+      if (mod(nsteps, 2) .ne. 0) nsteps = nsteps - 1
+      if (nsteps .lt. 2) then
+        write(*,*) 'schcc_logder_MGR: nsteps too small! =', nsteps
+        goto 999
+      endif
+      rmatch = rvec(nsteps + 1)
+
+      z(:,:) = czero
+      do i = 1, nch
+        z(i, i) = (1d20, 0d0)
+      enddo
+
+      do n = 1, nsteps
+        ir = n + 1
+        r = rvec(ir)
+        call get_Vmat_local(nch, ql, kch2, conv, vcoup, ir, r, Vmat)
+
+        if (mod(n, 2) .eq. 0) then
+          if (n .eq. nsteps) then
+            wn = 1d0
+          else
+            wn = 2d0
+          endif
+          un(:,:) = Vmat(:,:)
+        else
+          wn = 4d0
+          Amat(:,:) = h2_6 * Vmat(:,:)
+          do i = 1, nch
+            Amat(i, i) = Amat(i, i) + cone
+          enddo
+          un(:,:) = Vmat(:,:)
+          call ZGESV(nch, nch, Amat, nch, ipiv, un, nch, info_lapack)
+          if (info_lapack .ne. 0) then
+            write(*,*) 'schcc_logder_MGR: ZGESV error in un at n=', n
+            goto 999
+          endif
+        endif
+
+        if (n .eq. 1) then
+          do j = 1, nch
+            do i = 1, nch
+              z(i, j) = - h2_3 * wn * un(i, j)
+            enddo
+            z(j, j) = z(j, j) + cone
+          enddo
+        else
+          Amat(:,:) = z(:,:)
+          do i = 1, nch
+            Amat(i, i) = Amat(i, i) + cone
+          enddo
+          inv_mat(:,:) = czero
+          do i = 1, nch
+            inv_mat(i, i) = cone
+          enddo
+          call ZGESV(nch, nch, Amat, nch, ipiv, inv_mat, nch,
+     &               info_lapack)
+          if (info_lapack .ne. 0) then
+            write(*,*) 'schcc_logder_MGR: ZGESV error in inv at n=', n
+            goto 999
+          endif
+          do j = 1, nch
+            do i = 1, nch
+              z(i, j) = - inv_mat(i, j) - h2_3 * wn * un(i, j)
+            enddo
+            z(j, j) = z(j, j) + cone
+          enddo
+        endif
+      enddo
+
+      yN(:,:) = z(:,:) / h
+
+      do ich = 1, nch
+        if (copen(ich)) then
+          k_val = kch(ich)
+          eta = etav(ich)
+          kR = k_val * rmatch
+          call coul90(kR, eta, 0d0, ql(ich), f_coul, g_coul,
+     &                fp_coul, gp_coul, 0, ifail)
+          fl = f_coul(ql(ich))
+          gl = g_coul(ql(ich))
+          fpl = k_val * fp_coul(ql(ich))
+          gpl = k_val * gp_coul(ql(ich))
+          Hpos(ich) = dcmplx(gl, fl)
+          Hpos_p(ich) = dcmplx(gpl, fpl)
+          Hneg(ich) = dcmplx(gl, -fl)
+          Hneg_p(ich) = dcmplx(gpl, -fpl)
+        else
+          k_val = kch(ich)
+          ie_flag = 0
+          aux = ecm + einc - ech(ich)
+          call whit(etav(ich), rmatch, k_val, aux, ql(ich),
+     &              f1_whit, fp1_whit, ie_flag)
+          if (abs(f1_whit(ql(ich)+1)) .gt. 1d-30) then
+            gamma_closed(ich) = fp1_whit(ql(ich)+1) / f1_whit(ql(ich)+1)
+          else
+            gamma_closed(ich) = - k_val
+          endif
+        endif
+      enddo
+
+      do j = 1, nch
+        if (copen(j)) then
+          do i = 1, nch
+            Amat(i, j) = yN(i, j) * Hpos(j)
+          enddo
+          Amat(j, j) = Amat(j, j) - Hpos_p(j)
+        else
+          do i = 1, nch
+            Amat(i, j) = yN(i, j)
+          enddo
+          Amat(j, j) = Amat(j, j) - gamma_closed(j)
+        endif
+      enddo
+
+      jtot_loc = jptset(icc)%jtot
+
+      do inc = 1, nch
+        if (incvec(inc)) then
+          if (.not. copen(inc)) cycle
+          do i = 1, nch
+            Bvec(i) = yN(i, inc) * Hneg(inc)
+          enddo
+          Bvec(inc) = Bvec(inc) - Hneg_p(inc)
+
+          Amat_solve(:,:) = Amat(:,:)
+          Xvec(:) = Bvec(:)
+          call ZGESV(nch, 1, Amat_solve, nch, ipiv, Xvec, nch,
+     &               info_lapack)
+          if (info_lapack .ne. 0) then
+            write(*,*) 'schcc_logder_MGR: ZGESV error in matching'
+            cycle
+          endif
+
+          do ich = 1, nch
+            if (copen(ich)) then
+              smat(ich) = Xvec(ich)
+              if (abs(smat(ich)) .gt. 1d-30) then
+                phase(ich) = (0d0, -0.5d0) * log(smat(ich)) *
+     &                       180d0 / pi
+              else
+                phase(ich) = czero
+              endif
+            else
+              smat(ich) = Xvec(ich)
+              phase(ich) = czero
+            endif
+          enddo
+          smats(icc, inc, 1:nch) = smat(1:nch)
+
+          if (info .and. verb .ge. 1) then
+            write(*,'(a40,6x,a45)')
+     &        "S-matrix (WITHOUT velocity factors)",
+     &        "S-matrix (WITH velocity factors)"
+            do ich = 1, nch
+              if (copen(ich)) then
+                svel = smat(ich) * sqrt(kch(ich)/kch(inc))
+                svel_mag = abs(svel)
+                write(*,500) ich, smat(ich), svel, svel_mag
+              else
+                write(*,501) ich, smat(ich)
+              endif
+            enddo
+          endif
+
+          do ich = 1, nch
+            if (copen(ich)) then
+              if (ich .eq. inc) then
+                psi_curr(ich) = (0d0, 0.5d0) *
+     &            (Hneg(ich) - smat(ich) * Hpos(ich))
+              else
+                psi_curr(ich) = - (0d0, 0.5d0) * smat(ich) * Hpos(ich)
+              endif
+            else
+              psi_curr(ich) = (0d0, 0.5d0) * Xvec(ich)
+            endif
+            wf(ich, nsteps + 1) = psi_curr(ich)
+          enddo
+
+          do ich = 1, nch
+            if (copen(ich)) then
+              k_val = kch(ich)
+              kR = k_val * rvec(nsteps)
+              call coul90(kR, etav(ich), 0d0, ql(ich), f_coul, g_coul,
+     &                    fp_coul, gp_coul, 0, ifail)
+              if (ich .eq. inc) then
+                psi_prev(ich) = (0d0, 0.5d0) *
+     &            (dcmplx(g_coul(ql(ich)), -f_coul(ql(ich))) -
+     &             smat(ich) * dcmplx(g_coul(ql(ich)), f_coul(ql(ich))))
+              else
+                psi_prev(ich) = - (0d0, 0.5d0) * smat(ich) *
+     &            dcmplx(g_coul(ql(ich)), f_coul(ql(ich)))
+              endif
+            else
+              k_val = kch(ich)
+              ie_flag = 0
+              aux = ecm + einc - ech(ich)
+              call whit(etav(ich), rvec(nsteps), k_val, aux, ql(ich),
+     &                  f1_whit, fp1_whit, ie_flag)
+              psi_prev(ich) = (0d0, 0.5d0) * Xvec(ich) *
+     &          (f1_whit(ql(ich)+1) /
+     &           max(abs(f1_whit(ql(ich)+1)), 1d-30))
+            endif
+            wf(ich, nsteps) = psi_prev(ich)
+          enddo
+
+          call get_Vmat_local(nch, ql, kch2, conv, vcoup, nsteps+1,
+     &                        rvec(nsteps+1), V_next)
+          call get_Vmat_local(nch, ql, kch2, conv, vcoup, nsteps,
+     &                        rvec(nsteps), V_curr)
+
+          do n = nsteps - 1, 2, -1
+            ir = n
+            r = rvec(ir)
+            call get_Vmat_local(nch, ql, kch2, conv, vcoup, n, r,
+     &                          V_prev)
+
+            matC(:,:) = h2_12 * V_prev(:,:)
+            do i = 1, nch
+              matC(i, i) = matC(i, i) + cone
+            enddo
+
+            do i = 1, nch
+              rhs_vec(i) = 2d0 * psi_prev(i) - psi_curr(i)
+              do j = 1, nch
+                rhs_vec(i) = rhs_vec(i)
+     &            - (10d0 * h2_12) * V_curr(i, j) * psi_prev(j)
+     &            - h2_12 * V_next(i, j) * psi_curr(j)
+              enddo
+            enddo
+
+            call ZGESV(nch, 1, matC, nch, ipiv, rhs_vec, nch,
+     &                 info_lapack)
+            psi_curr(:) = psi_prev(:)
+            psi_prev(:) = rhs_vec(:)
+            wf(:, n) = psi_prev(:)
+
+            V_next(:,:) = V_curr(:,:)
+            V_curr(:,:) = V_prev(:,:)
+          enddo
+          wf(:, 1) = czero
+
+          do ir = nsteps + 2, npt
+            r = rvec(ir)
+            do ich = 1, nch
+              if (copen(ich)) then
+                k_val = kch(ich)
+                kR = k_val * r
+                call coul90(kR, etav(ich), 0d0, ql(ich), f_coul,
+     &                      g_coul, fp_coul, gp_coul, 0, ifail)
+                if (ich .eq. inc) then
+                  wf(ich, ir) = (0d0, 0.5d0) *
+     &              (dcmplx(g_coul(ql(ich)), -f_coul(ql(ich))) -
+     &               smat(ich) *
+     &               dcmplx(g_coul(ql(ich)), f_coul(ql(ich))))
+                else
+                  wf(ich, ir) = - (0d0, 0.5d0) * smat(ich) *
+     &              dcmplx(g_coul(ql(ich)), f_coul(ql(ich)))
+                endif
+              else
+                wf(ich, ir) = czero
+              endif
+            enddo
+          enddo
+
+          call accumulate_telp(nch, inc, wf, jtot_loc)
+        endif
+      enddo
+
+500   format(10x,"Chan. #",i3,5x,
+     &       "S=(",1f8.5,",",1f8.5,")", 5x,
+     &       "S=(",1f8.5,",",1f8.5,") ->  |S|=",1f9.6)
+501   format(10x,"Chan. #",i3,5x,
+     &       "S=(",1f10.6,",",1f10.6,")", 5x, ' (closed channel)')
+
+999   continue
+      if (allocated(f_coul)) deallocate(f_coul, g_coul)
+      if (allocated(fp_coul)) deallocate(fp_coul, gp_coul)
+      if (allocated(f1_whit)) deallocate(f1_whit, fp1_whit)
+      if (allocated(z)) deallocate(z, un, Vmat, Amat)
+      if (allocated(inv_mat)) deallocate(inv_mat, yN, Amat_solve)
+      if (allocated(Hpos)) deallocate(Hpos, Hpos_p, Hneg, Hneg_p)
+      if (allocated(Bvec)) deallocate(Bvec, Xvec, gamma_closed)
+      if (allocated(psi_curr)) deallocate(psi_curr, psi_prev)
+      if (allocated(V_prev)) deallocate(V_prev, V_curr, V_next)
+      if (allocated(matC)) deallocate(matC, rhs_vec)
+      if (allocated(ipiv)) deallocate(ipiv, copen)
+      if (allocated(kch)) deallocate(kch, kch2, etav)
+
+      return
+      end subroutine schcc_logder_MGR
+
+
+c =====================================================================
+c   Solve multichannel Schrodinger equation using Multichannel
+c   Log-Derivative Method (B.R. Johnson, JCP 13, 445, 1973)
+c   (version for projectile scattering states)
+c =====================================================================
+      subroutine schcc_logder(nch,ecm,z12,inc,ql,factor,dr,r0,
+     & npt,wf,phase,smat,info,eph)
+      use nmrv, only: nr,h,vcoup,conv,ech,debug,rmin,hort,rvec,cutr,
+     &                nopen
+      use globals, only: verb,written
+      use constants, only: e2, pi
+      use scattering, only: ifcont
+      implicit none
+      integer, intent(in) :: nch, inc, npt
+      integer, intent(in) :: ql(nch)
+      real*8, intent(in)  :: ecm, z12, factor, dr, r0
+      logical, intent(in) :: info
+      complex*16, intent(out) :: wf(nch, npt)
+      complex*16, intent(out) :: phase(nch), smat(nch)
+      real*8, intent(out)     :: eph(nch)
+
+      integer :: ich, i, j, n, ir, nsteps, ifail
+      integer :: info_lapack, ie_flag, maxl_val
+      real*8  :: aux, r, rmatch, k_val, eta, kR, fl, gl, fpl, gpl
+      real*8  :: h2, h2_3, h2_6, h2_12, wn, svel_mag
+      real*8, allocatable :: f_coul(:), g_coul(:)
+      real*8, allocatable :: fp_coul(:), gp_coul(:)
+      real*8, allocatable :: f1_whit(:), fp1_whit(:)
+
+      complex*16, parameter :: cone = (1d0, 0d0)
+      complex*16, parameter :: czero = (0d0, 0d0)
+      complex*16, parameter :: ci = (0d0, 1d0)
+
+      complex*16, allocatable :: z(:,:), un(:,:), Vmat(:,:), Amat(:,:)
+      complex*16, allocatable :: inv_mat(:,:), yN(:,:), Amat_solve(:,:)
+      complex*16, allocatable :: Hpos(:), Hpos_p(:), Hneg(:), Hneg_p(:)
+      complex*16, allocatable :: Bvec(:), Xvec(:), gamma_closed(:)
+      complex*16, allocatable :: psi_curr(:), psi_prev(:)
+      complex*16, allocatable :: V_prev(:,:), V_curr(:,:), V_next(:,:)
+      complex*16, allocatable :: matC(:,:), rhs_vec(:)
+      complex*16, allocatable :: Umat(:,:), evec(:), Smat_full(:,:)
+      complex*16              :: svel
+      integer, allocatable    :: ipiv(:)
+      logical, allocatable    :: copen(:)
+      real*8, allocatable     :: kch(:), kch2(:), etav(:)
+
+      if (ecm .lt. 0d0) then
+        wf(:,:) = czero
+        phase(:) = czero
+        smat(:) = czero
+        eph(:) = 0d0
+        return
+      endif
+
+      h = dr
+      h2 = h * h
+      h2_3 = h2 / 3d0
+      h2_6 = h2 / 6d0
+      h2_12 = h2 / 12d0
+      conv = factor
+      nr = npt
+      wf(:,:) = czero
+      phase(:) = czero
+      smat(:) = czero
+      eph(:) = 0d0
+
+      if (.not. allocated(rvec)) then
+        allocate(rvec(nr))
+        do ir = 1, nr
+          rvec(ir) = r0 + (ir - 1) * dr
+        enddo
+      else if (size(rvec) .ne. nr) then
+        deallocate(rvec)
+        allocate(rvec(nr))
+        do ir = 1, nr
+          rvec(ir) = r0 + (ir - 1) * dr
+        enddo
+      endif
+
+      maxl_val = maxval(ql)
+      allocate(f_coul(0:maxl_val+1), g_coul(0:maxl_val+1))
+      allocate(fp_coul(0:maxl_val+1), gp_coul(0:maxl_val+1))
+      allocate(f1_whit(maxl_val+2), fp1_whit(maxl_val+2))
+
+      allocate(z(nch,nch), un(nch,nch), Vmat(nch,nch), Amat(nch,nch))
+      allocate(inv_mat(nch,nch), yN(nch,nch), Amat_solve(nch,nch))
+      allocate(Hpos(nch), Hpos_p(nch), Hneg(nch), Hneg_p(nch))
+      allocate(Bvec(nch), Xvec(nch), gamma_closed(nch))
+      allocate(psi_curr(nch), psi_prev(nch))
+      allocate(V_prev(nch,nch), V_curr(nch,nch), V_next(nch,nch))
+      allocate(matC(nch,nch), rhs_vec(nch))
+      allocate(Umat(nch,nch), evec(nch), Smat_full(nch,nch))
+      allocate(ipiv(nch), copen(nch))
+      allocate(kch(nch), kch2(nch), etav(nch))
+
+      nopen = 0
+      do ich = 1, nch
+        aux = ecm + ech(inc) - ech(ich)
+        kch2(ich) = conv * aux
+        if (aux .gt. 0d0) then
+          copen(ich) = .true.
+          nopen = nopen + 1
+          kch(ich) = sqrt(conv * aux)
+          etav(ich) = conv * z12 * e2 / (2d0 * kch(ich))
+        else
+          copen(ich) = .false.
+          kch(ich) = sqrt(-conv * aux)
+          etav(ich) = 0d0
+        endif
+      enddo
+
+      nsteps = npt - 1
+      if (mod(nsteps, 2) .ne. 0) nsteps = nsteps - 1
+      if (nsteps .lt. 2) then
+        write(*,*) 'schcc_logder: nsteps too small! =', nsteps
+        goto 998
+      endif
+      rmatch = rvec(nsteps + 1)
+
+      z(:,:) = czero
+      do i = 1, nch
+        z(i, i) = (1d20, 0d0)
+      enddo
+
+      do n = 1, nsteps
+        ir = n + 1
+        r = rvec(ir)
+        call get_Vmat_local(nch, ql, kch2, conv, vcoup, ir, r, Vmat)
+
+        if (mod(n, 2) .eq. 0) then
+          if (n .eq. nsteps) then
+            wn = 1d0
+          else
+            wn = 2d0
+          endif
+          un(:,:) = Vmat(:,:)
+        else
+          wn = 4d0
+          Amat(:,:) = h2_6 * Vmat(:,:)
+          do i = 1, nch
+            Amat(i, i) = Amat(i, i) + cone
+          enddo
+          un(:,:) = Vmat(:,:)
+          call ZGESV(nch, nch, Amat, nch, ipiv, un, nch, info_lapack)
+          if (info_lapack .ne. 0) then
+            write(*,*) 'schcc_logder: ZGESV error in un at n=', n
+            goto 998
+          endif
+        endif
+
+        if (n .eq. 1) then
+          do j = 1, nch
+            do i = 1, nch
+              z(i, j) = - h2_3 * wn * un(i, j)
+            enddo
+            z(j, j) = z(j, j) + cone
+          enddo
+        else
+          Amat(:,:) = z(:,:)
+          do i = 1, nch
+            Amat(i, i) = Amat(i, i) + cone
+          enddo
+          inv_mat(:,:) = czero
+          do i = 1, nch
+            inv_mat(i, i) = cone
+          enddo
+          call ZGESV(nch, nch, Amat, nch, ipiv, inv_mat, nch,
+     &               info_lapack)
+          if (info_lapack .ne. 0) then
+            write(*,*) 'schcc_logder: ZGESV error in inv at n=', n
+            goto 998
+          endif
+          do j = 1, nch
+            do i = 1, nch
+              z(i, j) = - inv_mat(i, j) - h2_3 * wn * un(i, j)
+            enddo
+            z(j, j) = z(j, j) + cone
+          enddo
+        endif
+      enddo
+
+      yN(:,:) = z(:,:) / h
+
+      do ich = 1, nch
+        if (copen(ich)) then
+          k_val = kch(ich)
+          eta = etav(ich)
+          kR = k_val * rmatch
+          call coul90(kR, eta, 0d0, ql(ich), f_coul, g_coul,
+     &                fp_coul, gp_coul, 0, ifail)
+          fl = f_coul(ql(ich))
+          gl = g_coul(ql(ich))
+          fpl = k_val * fp_coul(ql(ich))
+          gpl = k_val * gp_coul(ql(ich))
+          Hpos(ich) = dcmplx(gl, fl)
+          Hpos_p(ich) = dcmplx(gpl, fpl)
+          Hneg(ich) = dcmplx(gl, -fl)
+          Hneg_p(ich) = dcmplx(gpl, -fpl)
+        else
+          k_val = kch(ich)
+          ie_flag = 0
+          aux = ecm + ech(inc) - ech(ich)
+          call whit(etav(ich), rmatch, k_val, aux, ql(ich),
+     &              f1_whit, fp1_whit, ie_flag)
+          if (abs(f1_whit(ql(ich)+1)) .gt. 1d-30) then
+            gamma_closed(ich) = fp1_whit(ql(ich)+1) / f1_whit(ql(ich)+1)
+          else
+            gamma_closed(ich) = - k_val
+          endif
+        endif
+      enddo
+
+      do j = 1, nch
+        if (copen(j)) then
+          do i = 1, nch
+            Amat(i, j) = yN(i, j) * Hpos(j)
+          enddo
+          Amat(j, j) = Amat(j, j) - Hpos_p(j)
+        else
+          do i = 1, nch
+            Amat(i, j) = yN(i, j)
+          enddo
+          Amat(j, j) = Amat(j, j) - gamma_closed(j)
+        endif
+      enddo
+
+      Smat_full(:,:) = czero
+      do j = 1, nch
+        if (copen(j)) then
+          do i = 1, nch
+            Bvec(i) = yN(i, j) * Hneg(j)
+          enddo
+          Bvec(j) = Bvec(j) - Hneg_p(j)
+
+          Amat_solve(:,:) = Amat(:,:)
+          Xvec(:) = Bvec(:)
+          call ZGESV(nch, 1, Amat_solve, nch, ipiv, Xvec, nch,
+     &               info_lapack)
+          if (info_lapack .eq. 0) then
+            do i = 1, nch
+              if (copen(i)) then
+                Smat_full(i, j) = Xvec(i)
+              endif
+            enddo
+          endif
+        endif
+      enddo
+
+      if (copen(inc)) then
+        do ich = 1, nch
+          smat(ich) = Smat_full(ich, inc)
+          if (copen(ich) .and. abs(smat(ich)) .gt. 1d-30) then
+            phase(ich) = (0d0, -0.5d0) * log(smat(ich)) *
+     &                   180d0 / pi
+          else
+            phase(ich) = czero
+          endif
+        enddo
+
+        if (info .and. verb .ge. 1) then
+          write(*,'(a40,6x,a45)')
+     &      "S-matrix (WITHOUT velocity factors)",
+     &      "S-matrix (WITH velocity factors)"
+          do ich = 1, nch
+            if (copen(ich)) then
+              svel = smat(ich) * sqrt(kch(ich)/kch(inc))
+              svel_mag = abs(svel)
+              write(*,500) ich, smat(ich), svel, svel_mag
+            else
+              write(*,501) ich, smat(ich)
+            endif
+          enddo
+        endif
+
+        do ich = 1, nch
+          if (copen(ich)) then
+            if (ich .eq. inc) then
+              psi_curr(ich) = (0d0, 0.5d0) *
+     &          (Hneg(ich) - smat(ich) * Hpos(ich))
+            else
+              psi_curr(ich) = - (0d0, 0.5d0) * smat(ich) * Hpos(ich)
+            endif
+          else
+            psi_curr(ich) = (0d0, 0.5d0) * smat(ich)
+          endif
+          wf(ich, nsteps + 1) = psi_curr(ich)
+        enddo
+
+        do ich = 1, nch
+          if (copen(ich)) then
+            k_val = kch(ich)
+            kR = k_val * rvec(nsteps)
+            call coul90(kR, etav(ich), 0d0, ql(ich), f_coul, g_coul,
+     &                  fp_coul, gp_coul, 0, ifail)
+            if (ich .eq. inc) then
+              psi_prev(ich) = (0d0, 0.5d0) *
+     &          (dcmplx(g_coul(ql(ich)), -f_coul(ql(ich))) -
+     &           smat(ich) * dcmplx(g_coul(ql(ich)), f_coul(ql(ich))))
+            else
+              psi_prev(ich) = - (0d0, 0.5d0) * smat(ich) *
+     &          dcmplx(g_coul(ql(ich)), f_coul(ql(ich)))
+            endif
+          else
+            k_val = kch(ich)
+            ie_flag = 0
+            aux = ecm + ech(inc) - ech(ich)
+            call whit(etav(ich), rvec(nsteps), k_val, aux, ql(ich),
+     &                f1_whit, fp1_whit, ie_flag)
+            psi_prev(ich) = (0d0, 0.5d0) * smat(ich) *
+     &        (f1_whit(ql(ich)+1) /
+     &         max(abs(f1_whit(ql(ich)+1)), 1d-30))
+          endif
+          wf(ich, nsteps) = psi_prev(ich)
+        enddo
+
+        call get_Vmat_local(nch, ql, kch2, conv, vcoup, nsteps+1,
+     &                      rvec(nsteps+1), V_next)
+        call get_Vmat_local(nch, ql, kch2, conv, vcoup, nsteps,
+     &                      rvec(nsteps), V_curr)
+
+        do n = nsteps - 1, 2, -1
+          ir = n
+          r = rvec(ir)
+          call get_Vmat_local(nch, ql, kch2, conv, vcoup, n, r,
+     &                        V_prev)
+
+          matC(:,:) = h2_12 * V_prev(:,:)
+          do i = 1, nch
+            matC(i, i) = matC(i, i) + cone
+          enddo
+
+          do i = 1, nch
+            rhs_vec(i) = 2d0 * psi_prev(i) - psi_curr(i)
+            do j = 1, nch
+              rhs_vec(i) = rhs_vec(i)
+     &          - (10d0 * h2_12) * V_curr(i, j) * psi_prev(j)
+     &          - h2_12 * V_next(i, j) * psi_curr(j)
+            enddo
+          enddo
+
+          call ZGESV(nch, 1, matC, nch, ipiv, rhs_vec, nch,
+     &               info_lapack)
+          psi_curr(:) = psi_prev(:)
+          psi_prev(:) = rhs_vec(:)
+          wf(:, n) = psi_prev(:)
+
+          V_next(:,:) = V_curr(:,:)
+          V_curr(:,:) = V_prev(:,:)
+        enddo
+        wf(:, 1) = czero
+
+        do ir = nsteps + 2, npt
+          r = rvec(ir)
+          do ich = 1, nch
+            if (copen(ich)) then
+              k_val = kch(ich)
+              kR = k_val * r
+              call coul90(kR, etav(ich), 0d0, ql(ich), f_coul,
+     &                    g_coul, fp_coul, gp_coul, 0, ifail)
+              if (ich .eq. inc) then
+                wf(ich, ir) = (0d0, 0.5d0) *
+     &            (dcmplx(g_coul(ql(ich)), -f_coul(ql(ich))) -
+     &             smat(ich) *
+     &             dcmplx(g_coul(ql(ich)), f_coul(ql(ich))))
+              else
+                wf(ich, ir) = - (0d0, 0.5d0) * smat(ich) *
+     &            dcmplx(g_coul(ql(ich)), f_coul(ql(ich)))
+              endif
+            else
+              wf(ich, ir) = czero
+            endif
+          enddo
+        enddo
+      endif
+
+      if (ifcont .and. nopen .gt. 0) then
+        eph(:) = 0d0
+        call SEigensystem(nopen, Smat_full, nch, evec, Umat, nopen, 1)
+        do ich = 1, nopen
+          if (abs(evec(ich)) .gt. 1d-15) then
+            eph(ich) = 0.5d0 * aimag(log(evec(ich)))
+          endif
+        enddo
+        written(46) = .true.
+        write(46,'(1f8.4,50f12.6)') ecm, (eph(n)*180d0/pi, n=1,nopen)
+      endif
+
+500   format(10x,"Chan. #",i3,5x,
+     &       "S=(",1f8.5,",",1f8.5,")", 5x,
+     &       "S=(",1f8.5,",",1f8.5,") ->  |S|=",1f9.6)
+501   format(10x,"Chan. #",i3,5x,
+     &       "S=(",1f10.6,",",1f10.6,")", 5x, ' (closed channel)')
+
+998   continue
+      if (allocated(f_coul)) deallocate(f_coul, g_coul)
+      if (allocated(fp_coul)) deallocate(fp_coul, gp_coul)
+      if (allocated(f1_whit)) deallocate(f1_whit, fp1_whit)
+      if (allocated(z)) deallocate(z, un, Vmat, Amat)
+      if (allocated(inv_mat)) deallocate(inv_mat, yN, Amat_solve)
+      if (allocated(Hpos)) deallocate(Hpos, Hpos_p, Hneg, Hneg_p)
+      if (allocated(Bvec)) deallocate(Bvec, Xvec, gamma_closed)
+      if (allocated(psi_curr)) deallocate(psi_curr, psi_prev)
+      if (allocated(V_prev)) deallocate(V_prev, V_curr, V_next)
+      if (allocated(matC)) deallocate(matC, rhs_vec)
+      if (allocated(Umat)) deallocate(Umat, evec, Smat_full)
+      if (allocated(ipiv)) deallocate(ipiv, copen)
+      if (allocated(kch)) deallocate(kch, kch2, etav)
+
+      return
+      end subroutine schcc_logder
+
+
+c =====================================================================
+c   Helper to evaluate coupling matrix Vmat at radial grid point ir
+c =====================================================================
+      subroutine get_Vmat_local(nch, ql, kch2, conv, vcoup, ir, r,
+     &                          Vmat)
+      use nmrv, only: nr
+      implicit none
+      integer, intent(in) :: nch, ir
+      integer, intent(in) :: ql(nch)
+      real*8, intent(in)  :: kch2(nch), conv, r
+      complex*16, intent(in) :: vcoup(nch, nch, nr)
+      complex*16, intent(out) :: Vmat(nch, nch)
+      integer :: i, j
+      real*8  :: r_eff
+
+      r_eff = max(r, 1d-6)
+      do i = 1, nch
+        Vmat(i, i) = dcmplx(kch2(i) -
+     &               dble(ql(i)*(ql(i)+1))/(r_eff*r_eff) -
+     &               conv * real(vcoup(i, i, ir)),
+     &               - conv * aimag(vcoup(i, i, ir)))
+        do j = 1, nch
+          if (i .ne. j) then
+            Vmat(i, j) = - conv * vcoup(i, j, ir)
+          endif
+        enddo
+      enddo
+      end subroutine get_Vmat_local
+
+
 
 
 
